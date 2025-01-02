@@ -1,33 +1,40 @@
-﻿#include "RealTimeRenderer.h"
+﻿#include "YuvRenderer.h"
 #include "libavutil/pixfmt.h"
 
-#define VSHCODE                                                                                                        \
-    R"(
-attribute highp vec3 qt_Vertex;
-attribute highp vec2 texCoord;
+auto vertCode = R"(
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec2 aUV;
 
-uniform mat4 u_modelMatrix;
-uniform mat4 u_viewMatrix;
-uniform mat4 u_projectMatrix;
+layout(std140) uniform bUniform0 {
+    mat4 u_modelMatrix;
+    mat4 u_viewMatrix;
+    mat4 u_projectMatrix;
+};
 
-varying vec2 v_texCoord;
-void main(void)
-{
-    gl_Position = u_projectMatrix * u_viewMatrix * u_modelMatrix * vec4(qt_Vertex, 1.0f);
-    v_texCoord = texCoord;
+out vec2 v_texCoord;
+
+void main() {
+    gl_Position = u_projectMatrix * u_viewMatrix * u_modelMatrix * vec4(aPos, 1.0f);
+    v_texCoord = aUV;
 }
+)";
 
-)"
-
-#define FSHCPDE                                                                                                        \
+auto fragCode =
     R"(
-varying vec2 v_texCoord;
+in vec2 v_texCoord;
+
 uniform sampler2D tex_y;
 uniform sampler2D tex_u;
 uniform sampler2D tex_v;
-uniform int pixFmt;
-void main(void)
-{
+
+layout(std140) uniform bUniform1 {
+    int pixFmt;
+    int pad0;
+    int pad1;
+    int pad2;
+};
+
+void main() {
     vec3 yuv;
     vec3 rgb;
     if (pixFmt == 0 || pixFmt == 12) {
@@ -59,8 +66,7 @@ void main(void)
     }
     gl_FragColor = vec4(rgb, 1.0);
 }
-
-)"
+)";
 
 static void safeDeleteTexture(QOpenGLTexture *texture) {
     if (texture) {
@@ -75,14 +81,14 @@ static void safeDeleteTexture(QOpenGLTexture *texture) {
     }
 }
 
-RealTimeRenderer::RealTimeRenderer() {}
+YuvRenderer::YuvRenderer() {}
 
-void RealTimeRenderer::init() {
+void YuvRenderer::init() {
 
     initPipeline();
     initGeometry();
 }
-void RealTimeRenderer::resize(int width, int height) {
+void YuvRenderer::resize(int width, int height) {
 
     m_itemWidth = width;
     m_itemHeight = height;
@@ -95,7 +101,7 @@ void RealTimeRenderer::resize(int width, int height) {
     mProjectionMatrix.frustum(-1.0, 1.0, bottom, top, n, f);
 }
 
-void RealTimeRenderer::initPipeline() {
+void YuvRenderer::initPipeline() {
     mVertices << Pathfinder::Vec3F(-1, 1, 0.0f) << Pathfinder::Vec3F(1, 1, 0.0f) << Pathfinder::Vec3F(1, -1, 0.0f)
               << Pathfinder::Vec3F(-1, -1, 0.0f);
     mTexcoords << QVector2D(0, 1) << QVector2D(1, 1) << QVector2D(1, 0) << QVector2D(0, 0);
@@ -120,7 +126,7 @@ void RealTimeRenderer::initPipeline() {
     mProgram.bind();
 }
 
-void RealTimeRenderer::updateTextureInfo(int width, int height, int format) {
+void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     mPixFmt = format;
 
     mTexY = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "y texture");
@@ -148,7 +154,7 @@ void RealTimeRenderer::updateTextureInfo(int width, int height, int format) {
     mTextureAllocated = true;
 }
 
-void RealTimeRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
+void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
     float frameWidth = m_itemWidth;
     float frameHeight = m_itemHeight;
     if (m_itemWidth * (1.0 * data->height / data->width) < m_itemHeight) {
@@ -182,7 +188,7 @@ void RealTimeRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
     mQueue->submit_and_wait(encoder);
 }
 
-void RealTimeRenderer::paint() {
+void YuvRenderer::render() {
     glDepthMask(true);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -216,30 +222,60 @@ void RealTimeRenderer::paint() {
     // pixFmt
     mProgram.setUniformValue("pixFmt", mPixFmt);
 
-    // 纹理
-    //  Y
-    glActiveTexture(GL_TEXTURE0);
-    mTexY->bind();
+    auto encoder = mDevice->create_command_encoder("render yuv");
 
-    // U
-    glActiveTexture(GL_TEXTURE1);
-    mTexU->bind();
+    // Update uniform buffers.
+    {
+        TileUniformD3d9 tile_uniform;
+        tile_uniform.tile_size = {TILE_WIDTH, TILE_HEIGHT};
+        tile_uniform.texture_metadata_size = {TEXTURE_METADATA_TEXTURE_WIDTH, TEXTURE_METADATA_TEXTURE_HEIGHT};
+        tile_uniform.mask_texture_size = {MASK_FRAMEBUFFER_WIDTH,
+                                          (float)(MASK_FRAMEBUFFER_HEIGHT * mask_storage.allocated_page_count)};
 
-    // V
-    glActiveTexture(GL_TEXTURE2);
-    mTexV->bind();
+        // Transform matrix (i.e. the model matrix).
+        Mat4 model_mat = Mat4(1.f);
+        model_mat = model_mat.translate(Vec3F(-1.f, -1.f, 0.f)); // Move to top-left.
+        model_mat = model_mat.scale(Vec3F(2.f / target_texture_size.x, 2.f / target_texture_size.y, 1.f));
+        tile_uniform.transform = model_mat;
 
-    mProgram.setUniformValue("tex_y", 0);
-    mProgram.setUniformValue("tex_u", 1);
-    mProgram.setUniformValue("tex_v", 2);
+        tile_uniform.framebuffer_size = target_texture_size.to_f32();
+        tile_uniform.z_buffer_size = z_buffer_texture->get_size().to_f32();
 
-    glDrawArrays(GL_TRIANGLE_FAN, 0, mVertices.size());
+        if (color_texture_info) {
+            auto color_texture_page = pattern_texture_pages[color_texture_info->page_id];
+            if (color_texture_page) {
+                color_texture = allocator->get_texture(color_texture_page->texture_id_);
+                color_texture_sampler = get_or_create_sampler(color_texture_info->sampling_flags);
 
-    mProgram.disableAttributeArray(mVerticesHandle);
-    mProgram.disableAttributeArray(mTexCoordHandle);
-    mProgram.release();
+                if (color_texture == nullptr) {
+                    Logger::error("Failed to obtain color texture!", "RendererD3D9");
+                    return;
+                }
+            }
+        }
+
+        tile_uniform.color_texture_size = color_texture->get_size().to_f32();
+
+        // We don't need to preserve the data until the upload commands are implemented because
+        // these uniform buffers are host-visible/coherent.
+        encoder->write_buffer(allocator->get_buffer(tile_ub_id), 0, sizeof(TileUniformD3d9), &tile_uniform);
+    }
+
+    // Update descriptor set.
+    mDescriptorSet->add_or_update(
+        {
+            Pathfinder::Descriptor::sampled(0, Pathfinder::ShaderStage::Fragment, "y", mTexY, mSampler),
+            Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "u", mTexU, mSampler),
+            Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "v", mTexV, mSampler),
+        });
+
+    encoder->begin_render_pass(mRenderPass, mOutputTex, Pathfinder::ColorF::black());
+
+    encoder->draw(0, mVertices.size());
+
+    encoder->end_render_pass();
 }
 
-void RealTimeRenderer::clear() {
+void YuvRenderer::clear() {
     mNeedClear = true;
 }

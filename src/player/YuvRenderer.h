@@ -22,10 +22,10 @@
 //     int height;
 // };
 
-class RealTimeRenderer {
+class YuvRenderer {
 public:
-    RealTimeRenderer();
-    ~RealTimeRenderer() = default;
+    YuvRenderer();
+    ~YuvRenderer() = default;
     void init();
     void paint();
     void resize(int width, int height);
@@ -42,9 +42,15 @@ protected:
 private:
     std::shared_ptr<Pathfinder::RenderPipeline> mProgram;
     std::shared_ptr<Pathfinder::Queue> mQueue;
+    std::shared_ptr<Pathfinder::RenderPass> mRenderPass;
     std::shared_ptr<Pathfinder::Texture> mTexY;
     std::shared_ptr<Pathfinder::Texture> mTexU;
     std::shared_ptr<Pathfinder::Texture> mTexV;
+    std::shared_ptr<Pathfinder::DescriptorSet> mDescriptorSet;
+    std::shared_ptr<Pathfinder::Sampler> mSampler;
+
+
+    std::shared_ptr<Pathfinder::Texture> mOutputTex;
 
     std::shared_ptr<Pathfinder::Texture> mDummyTex;
     std::vector<Pathfinder::Vec3F> mVertices;

@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "RealTimeRenderer.h"
+#include "YuvRenderer.h"
 #include "ffmpegDecode.h"
 #include <QQuickFramebufferObject>
 #include <QQuickItem>
