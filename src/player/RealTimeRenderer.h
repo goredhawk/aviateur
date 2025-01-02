@@ -6,6 +6,7 @@
 #include <pathfinder/common/math/mat4.h>
 #include <pathfinder/common/math/vec3.h>
 #include <pathfinder/gpu/device.h>
+#include <pathfinder/gpu/queue.h>
 #include <pathfinder/gpu/render_pipeline.h>
 #include <pathfinder/gpu/texture.h>
 #include <vector>
@@ -24,7 +25,7 @@
 class RealTimeRenderer {
 public:
     RealTimeRenderer();
-    ~RealTimeRenderer();
+    ~RealTimeRenderer() = default;
     void init();
     void paint();
     void resize(int width, int height);
@@ -35,12 +36,12 @@ public:
     friend class TItemRender;
 
 protected:
-    void initTexture();
-    void initShader();
+    void initPipeline();
     void initGeometry();
 
 private:
     std::shared_ptr<Pathfinder::RenderPipeline> mProgram;
+    std::shared_ptr<Pathfinder::Queue> mQueue;
     std::shared_ptr<Pathfinder::Texture> mTexY;
     std::shared_ptr<Pathfinder::Texture> mTexU;
     std::shared_ptr<Pathfinder::Texture> mTexV;

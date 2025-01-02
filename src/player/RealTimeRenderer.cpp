@@ -1,6 +1,5 @@
 ﻿#include "RealTimeRenderer.h"
 #include "libavutil/pixfmt.h"
-#include <QOpenGLPixelTransferOptions>
 
 #define VSHCODE                                                                                                        \
     R"(
@@ -76,23 +75,11 @@ static void safeDeleteTexture(QOpenGLTexture *texture) {
     }
 }
 
-RealTimeRenderer::RealTimeRenderer() {
-    qWarning() << __FUNCTION__;
-}
-
-RealTimeRenderer::~RealTimeRenderer() {
-    qWarning() << __FUNCTION__;
-    safeDeleteTexture(mTexY);
-    safeDeleteTexture(mTexU);
-    safeDeleteTexture(mTexV);
-}
+RealTimeRenderer::RealTimeRenderer() {}
 
 void RealTimeRenderer::init() {
-    qWarning() << __FUNCTION__;
-    initializeOpenGLFunctions();
-    glDepthMask(GL_TRUE);
-    glEnable(GL_TEXTURE_2D);
-    initShader();
+
+    initPipeline();
     initGeometry();
 }
 void RealTimeRenderer::resize(int width, int height) {
@@ -107,7 +94,18 @@ void RealTimeRenderer::resize(int width, int height) {
     mProjectionMatrix.setToIdentity();
     mProjectionMatrix.frustum(-1.0, 1.0, bottom, top, n, f);
 }
-void RealTimeRenderer::initShader() {
+
+void RealTimeRenderer::initPipeline() {
+    mVertices << Pathfinder::Vec3F(-1, 1, 0.0f) << Pathfinder::Vec3F(1, 1, 0.0f) << Pathfinder::Vec3F(1, -1, 0.0f)
+              << Pathfinder::Vec3F(-1, -1, 0.0f);
+    mTexcoords << QVector2D(0, 1) << QVector2D(1, 1) << QVector2D(1, 0) << QVector2D(0, 0);
+
+    mViewMatrix.setToIdentity();
+    mViewMatrix.lookAt(
+        Pathfinder::Vec3F(0.0f, 0.0f, 1.001f), Pathfinder::Vec3F(0.0f, 0.0f, -5.0f),
+        Pathfinder::Vec3F(0.0f, 1.0f, 0.0f));
+    mModelMatrix.setToIdentity();
+
     if (!mProgram.addShaderFromSourceCode(QOpenGLShader::Vertex, VSHCODE)) {
         qWarning() << " add vertex shader file failed.";
         return;
@@ -120,16 +118,6 @@ void RealTimeRenderer::initShader() {
     mProgram.bindAttributeLocation("texCoord", 1);
     mProgram.link();
     mProgram.bind();
-}
-void RealTimeRenderer::initTexture() {}
-
-void RealTimeRenderer::initGeometry() {
-    mVertices << QVector3D(-1, 1, 0.0f) << QVector3D(1, 1, 0.0f) << QVector3D(1, -1, 0.0f) << QVector3D(-1, -1, 0.0f);
-    mTexcoords << QVector2D(0, 1) << QVector2D(1, 1) << QVector2D(1, 0) << QVector2D(0, 0);
-
-    mViewMatrix.setToIdentity();
-    mViewMatrix.lookAt(QVector3D(0.0f, 0.0f, 1.001f), QVector3D(0.0f, 0.0f, -5.0f), QVector3D(0.0f, 1.0f, 0.0f));
-    mModelMatrix.setToIdentity();
 }
 
 void RealTimeRenderer::updateTextureInfo(int width, int height, int format) {
@@ -161,48 +149,39 @@ void RealTimeRenderer::updateTextureInfo(int width, int height, int format) {
 }
 
 void RealTimeRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
-    double frameWidth = m_itemWidth;
-    double frameHeight = m_itemHeight;
+    float frameWidth = m_itemWidth;
+    float frameHeight = m_itemHeight;
     if (m_itemWidth * (1.0 * data->height / data->width) < m_itemHeight) {
         frameHeight = frameWidth * (1.0 * data->height / data->width);
     } else {
         frameWidth = frameHeight * (1.0 * data->width / data->height);
     }
-    double x = (m_itemWidth - frameWidth) / 2;
-    double y = (m_itemHeight - frameHeight) / 2;
+    float x = (m_itemWidth - frameWidth) / 2;
+    float y = (m_itemHeight - frameHeight) / 2;
     // GL顶点坐标转换
-    auto x1 = (float)(-1 + 2.0 / m_itemWidth * x);
-    auto y1 = (float)(1 - 2.0 / m_itemHeight * y);
-    auto x2 = (float)(2.0 / m_itemWidth * frameWidth + x1);
-    auto y2 = (float)(y1 - 2.0 / m_itemHeight * frameHeight);
+    float x1 = -1 + 2.0 / m_itemWidth * x;
+    float y1 = 1 - 2.0 / m_itemHeight * y;
+    float x2 = 2.0 / m_itemWidth * frameWidth + x1;
+    float y2 = y1 - 2.0 / m_itemHeight * frameHeight;
 
-    mVertices.clear();
-    mVertices << QVector3D(x1, y1, 0.0f) << QVector3D(x2, y1, 0.0f) << QVector3D(x2, y2, 0.0f)
-              << QVector3D(x1, y2, 0.0f);
+    mVertices = { Pathfinder::Vec3F(x1, y1, 0.0f), Pathfinder::Vec3F(x2, y1, 0.0f), Pathfinder::Vec3F(x2, y2, 0.0f),
+                  Pathfinder::Vec3F(x1, y2, 0.0f) };
 
-    QOpenGLPixelTransferOptions options;
+    auto encoder = mDevice->create_command_encoder("upload yuv data");
+
     if (data->linesize[0]) {
-        options.setRowLength(data->linesize[0]);
-        options.setImageHeight(data->height);
-        mTexY->setData(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8, data->data[0], &options);
+        encoder->write_texture(mTexY, {}, data->data[0]);
     }
     if (data->linesize[1]) {
-        if (data->format == AV_PIX_FMT_NV12) {
-            options.setRowLength(data->linesize[1] / 2);
-            options.setImageHeight(data->height / 2);
-            mTexU->setData(QOpenGLTexture::LuminanceAlpha, QOpenGLTexture::UInt8, data->data[1], &options);
-        } else {
-            options.setRowLength(data->linesize[1]);
-            options.setImageHeight(data->height);
-            mTexU->setData(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8, data->data[1], &options);
-        }
+        encoder->write_texture(mTexU, {}, data->data[1]);
     }
     if (data->linesize[2]) {
-        options.setRowLength(data->linesize[2]);
-        options.setImageHeight(data->height);
-        mTexV->setData(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8, data->data[2], &options);
+        encoder->write_texture(mTexV, {}, data->data[2]);
     }
+
+    mQueue->submit_and_wait(encoder);
 }
+
 void RealTimeRenderer::paint() {
     glDepthMask(true);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
