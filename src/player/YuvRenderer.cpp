@@ -71,6 +71,9 @@ void main() {
 YuvRenderer::YuvRenderer() = default;
 
 void YuvRenderer::init() {
+    mRenderPass = mDevice->create_render_pass(
+        Pathfinder::TextureFormat::Rgba8Unorm, Pathfinder::AttachmentLoadOp::Clear, "yuv render pass");
+
     initPipeline();
     initGeometry();
 }
@@ -109,8 +112,8 @@ void YuvRenderer::initGeometry() {
 }
 
 void YuvRenderer::initPipeline() {
-    const auto vert_source = std::vector<char>(std::begin(vertCode), std::end(vertCode));
-    const auto frag_source = std::vector<char>(std::begin(fragCode), std::end(fragCode));
+    const auto vert_source = std::vector<char>(vertCode, vertCode + sizeof(vertCode));
+    const auto frag_source = std::vector<char>(fragCode, fragCode + sizeof(fragCode));
 
     std::vector<Pathfinder::VertexInputAttributeDescription> attribute_descriptions;
 
@@ -207,9 +210,6 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
 }
 
 void YuvRenderer::render() {
-    glDepthMask(true);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (!mTextureAllocated) {
         return;
     }
@@ -217,33 +217,19 @@ void YuvRenderer::render() {
         mNeedClear = false;
         return;
     }
-    mProgram.bind();
-
-    mModelMatHandle = mProgram.uniformLocation("u_modelMatrix");
-    mViewMatHandle = mProgram.uniformLocation("u_viewMatrix");
-    mProjectMatHandle = mProgram.uniformLocation("u_projectMatrix");
-    mVerticesHandle = mProgram.attributeLocation("qt_Vertex");
-    mTexCoordHandle = mProgram.attributeLocation("texCoord");
-    // 顶点
-    mProgram.enableAttributeArray(mVerticesHandle);
-    mProgram.setAttributeArray(mVerticesHandle, mVertices.constData());
-
-    // 纹理坐标
-    mProgram.enableAttributeArray(mTexCoordHandle);
-    mProgram.setAttributeArray(mTexCoordHandle, mTexcoords.constData());
-
-    // MVP矩阵
-    mProgram.setUniformValue(mModelMatHandle, mModelMatrix);
-    mProgram.setUniformValue(mViewMatHandle, mViewMatrix);
-    mProgram.setUniformValue(mProjectMatHandle, mProjectionMatrix);
-
-    // pixFmt
-    mProgram.setUniformValue("pixFmt", mPixFmt);
 
     auto encoder = mDevice->create_command_encoder("render yuv");
 
     // Update uniform buffers.
     {
+        // MVP矩阵
+        mProgram.setUniformValue(mModelMatHandle, mModelMatrix);
+        mProgram.setUniformValue(mViewMatHandle, mViewMatrix);
+        mProgram.setUniformValue(mProjectMatHandle, mProjectionMatrix);
+
+        // pixFmt
+        mProgram.setUniformValue("pixFmt", mPixFmt);
+
         TileUniformD3d9 tile_uniform;
         tile_uniform.tile_size = { TILE_WIDTH, TILE_HEIGHT };
         tile_uniform.texture_metadata_size = { TEXTURE_METADATA_TEXTURE_WIDTH, TEXTURE_METADATA_TEXTURE_HEIGHT };

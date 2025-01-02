@@ -27,7 +27,7 @@ public:
     YuvRenderer();
     ~YuvRenderer() = default;
     void init();
-    void paint();
+    void render();
     void resize(int width, int height);
     void updateTextureInfo(int width, int height, int format);
     void updateTextureData(const std::shared_ptr<AVFrame> &data);
@@ -50,15 +50,11 @@ private:
     std::shared_ptr<Pathfinder::Sampler> mSampler;
     std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;
 
-
     std::shared_ptr<Pathfinder::Texture> mOutputTex;
 
     std::shared_ptr<Pathfinder::Texture> mDummyTex;
     std::vector<Pathfinder::Vec3F> mVertices;
     std::vector<Pathfinder::Vec2F> mTexCoords;
-    int mModelMatHandle {}, mViewMatHandle {}, mProjectMatHandle {};
-    int mVerticesHandle {};
-    int mTexCoordHandle {};
 
     Pathfinder::Mat4 mModelMatrix;
     Pathfinder::Mat4 mViewMatrix;
