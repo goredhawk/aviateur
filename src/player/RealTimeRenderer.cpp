@@ -121,29 +121,7 @@ void RealTimeRenderer::initShader() {
     mProgram.link();
     mProgram.bind();
 }
-void RealTimeRenderer::initTexture() {
-    // yuv420p
-    mTexY = new QOpenGLTexture(QOpenGLTexture::Target2D);
-    mTexY->setFormat(QOpenGLTexture::LuminanceFormat);
-    //    mTexY->setFixedSamplePositions(false);
-    mTexY->setMinificationFilter(QOpenGLTexture::Nearest);
-    mTexY->setMagnificationFilter(QOpenGLTexture::Nearest);
-    mTexY->setWrapMode(QOpenGLTexture::ClampToEdge);
-
-    mTexU = new QOpenGLTexture(QOpenGLTexture::Target2D);
-    mTexU->setFormat(mPixFmt == AV_PIX_FMT_NV12?QOpenGLTexture::LuminanceAlphaFormat:QOpenGLTexture::LuminanceFormat);
-    //    mTexU->setFixedSamplePositions(false);
-    mTexU->setMinificationFilter(QOpenGLTexture::Nearest);
-    mTexU->setMagnificationFilter(QOpenGLTexture::Nearest);
-    mTexU->setWrapMode(QOpenGLTexture::ClampToEdge);
-
-    mTexV = new QOpenGLTexture(QOpenGLTexture::Target2D);
-    mTexV->setFormat(QOpenGLTexture::LuminanceFormat);
-    //    mTexV->setFixedSamplePositions(false);
-    mTexV->setMinificationFilter(QOpenGLTexture::Nearest);
-    mTexV->setMagnificationFilter(QOpenGLTexture::Nearest);
-    mTexV->setWrapMode(QOpenGLTexture::ClampToEdge);
-}
+void RealTimeRenderer::initTexture() {}
 
 void RealTimeRenderer::initGeometry() {
     mVertices << QVector3D(-1, 1, 0.0f) << QVector3D(1, 1, 0.0f) << QVector3D(1, -1, 0.0f) << QVector3D(-1, -1, 0.0f);
@@ -153,44 +131,33 @@ void RealTimeRenderer::initGeometry() {
     mViewMatrix.lookAt(QVector3D(0.0f, 0.0f, 1.001f), QVector3D(0.0f, 0.0f, -5.0f), QVector3D(0.0f, 1.0f, 0.0f));
     mModelMatrix.setToIdentity();
 }
+
 void RealTimeRenderer::updateTextureInfo(int width, int height, int format) {
     mPixFmt = format;
-    if(!inited) {
-        inited = true;
-        initTexture();
-    }
+
+    mTexY = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "y texture");
+    // //    mTexY->setFixedSamplePositions(false);
+    // mTexY->setMinificationFilter(QOpenGLTexture::Nearest);
+    // mTexY->setMagnificationFilter(QOpenGLTexture::Nearest);
+    // mTexY->setWrapMode(QOpenGLTexture::ClampToEdge);
+
     if (format == AV_PIX_FMT_YUV420P || format == AV_PIX_FMT_YUVJ420P) {
-        // yuv420p
-        mTexY->setSize(width, height);
-        mTexY->allocateStorage(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8);
+        mTexU = mDevice->create_texture({ { width / 2, height / 2 }, Pathfinder::TextureFormat::R8 }, "u texture");
 
-        mTexU->setSize(width / 2, height / 2);
-        mTexU->allocateStorage(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8);
-
-        mTexV->setSize(width / 2, height / 2);
-        mTexV->allocateStorage(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8);
+        mTexV = mDevice->create_texture({ { width / 2, height / 2 }, Pathfinder::TextureFormat::R8 }, "v texture");
     } else if (format == AV_PIX_FMT_NV12) {
-        mTexY->setSize(width, height);
-        mTexY->allocateStorage(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8);
+        mTexU = mDevice->create_texture({ { width / 2, height / 2 }, Pathfinder::TextureFormat::Rg8 }, "u texture");
 
-        mTexU->setSize(width / 2, height / 2);
-        mTexU->allocateStorage(QOpenGLTexture::LuminanceAlpha, QOpenGLTexture::UInt8);
-
-        // NV12 not use for v
-        mTexV->setSize(2, 2);
-        mTexV->allocateStorage(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8);
-    } else {
-        // 先按yuv444p处理
-        mTexY->setSize(width, height);
-        mTexY->allocateStorage(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8);
-
-        mTexU->setSize(width, height);
-        mTexU->allocateStorage(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8);
-
-        mTexV->setSize(width, height);
-        mTexV->allocateStorage(QOpenGLTexture::Luminance, QOpenGLTexture::UInt8);
+        // V is not used for NV12.
+        mTexV = mDummyTex;
     }
-    mTextureAlloced = true;
+    //  yuv444p
+    else {
+        mTexU = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "u texture");
+
+        mTexV = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "v texture");
+    }
+    mTextureAllocated = true;
 }
 
 void RealTimeRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
@@ -240,7 +207,7 @@ void RealTimeRenderer::paint() {
     glDepthMask(true);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if (!mTextureAlloced) {
+    if (!mTextureAllocated) {
         return;
     }
     if (mNeedClear) {

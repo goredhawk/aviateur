@@ -16,6 +16,8 @@ class QQuickRealTimePlayer;
 using namespace std;
 
 class FFmpegDecoder {
+    friend class RealTimePlayer;
+
 public:
     FFmpegDecoder()
         : pImgConvertCtx(nullptr)
@@ -77,8 +79,6 @@ public:
     }
     // 获取音频frame大小
     int GetAudioFrameSamples() { return pAudioCodecCtx->sample_rate * 2 / 25; }
-    // 有元
-    friend class QQuickRealTimePlayer;
 
 private:
     // 打开视频流

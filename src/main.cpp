@@ -3,6 +3,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <player/QQuickRealTimePlayer.h>
+#include "app.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -32,21 +33,46 @@ LONG ApplicationCrashHandler(EXCEPTION_POINTERS *pException) {
 
 #endif
 
-int main(int argc, char *argv[]) {
+
+class MyNode : public Flint::Node {
+    void custom_ready() override {
+        auto collasping_panel = std::make_shared<Flint::CollapseContainer>();
+        collasping_panel->set_position({400, 200});
+        collasping_panel->set_size({500, 400});
+        add_child(collasping_panel);
+
+        auto vbox = std::make_shared<Flint::VBoxContainer>();
+        collasping_panel->add_child(vbox);
+
+        auto label = std::make_shared<Flint::Label>();
+        label->set_text("This is a label");
+        label->container_sizing.expand_h = true;
+        label->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        vbox->add_child(label);
+
+        auto collasping_panel2 = std::make_shared<Flint::CollapseContainer>();
+        collasping_panel2->set_color(Flint::ColorU{201, 79, 79});
+        vbox->add_child(collasping_panel2);
+
+        auto button = std::make_shared<Flint::Button>();
+        collasping_panel2->add_child(button);
+
+        auto collasping_panel3 = std::make_shared<Flint::CollapseContainer>();
+        collasping_panel3->set_color(Flint::ColorU{66, 105, 183});
+        vbox->add_child(collasping_panel3);
+    }
+};
+
+int main() {
 #ifdef DEBUG_MODE
     SetUnhandledExceptionFilter((LPTOP_LEVEL_EXCEPTION_FILTER)ApplicationCrashHandler);
 #endif
 
-    QGuiApplication app(argc, argv);
+    Flint::App app({1280, 720});
 
-    QQmlApplicationEngine engine;
+    app.get_tree()->replace_root(std::make_shared<MyNode>());
 
-    qmlRegisterType<QQuickRealTimePlayer>("realTimePlayer", 1, 0, "QQuickRealTimePlayer");
+    app.main_loop();
 
-    auto &qmlNativeApi = QmlNativeAPI::Instance();
-    engine.rootContext()->setContextProperty("NativeApi", &qmlNativeApi);
-
-    engine.load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
-
-    return QGuiApplication::exec();
+    return EXIT_SUCCESS;
 }

@@ -1,27 +1,27 @@
 ﻿#pragma once
 
 #include "libavutil/frame.h"
-#include <QOpenGLBuffer>
-#include <QOpenGLFunctions>
-#include <QOpenGLShader>
-#include <QOpenGLShaderProgram>
-#include <QOpenGLTexture>
-#include <QQuickFramebufferObject>
 #include <memory>
+#include <pathfinder/common/color.h>
+#include <pathfinder/common/math/mat4.h>
+#include <pathfinder/common/math/vec3.h>
+#include <pathfinder/gpu/device.h>
+#include <pathfinder/gpu/render_pipeline.h>
+#include <pathfinder/gpu/texture.h>
+#include <vector>
 
-class YUVData {
-public:
-    QByteArray Y;
-    QByteArray U;
-    QByteArray V;
-    int yLineSize;
-    int uLineSize;
-    int vLineSize;
-    int height;
-};
+// class YUVData {
+// public:
+//     QByteArray Y;
+//     QByteArray U;
+//     QByteArray V;
+//     int yLineSize;
+//     int uLineSize;
+//     int vLineSize;
+//     int height;
+// };
 
-class TItemRender;
-class RealTimeRenderer : public QOpenGLFunctions {
+class RealTimeRenderer {
 public:
     RealTimeRenderer();
     ~RealTimeRenderer();
@@ -40,26 +40,30 @@ protected:
     void initGeometry();
 
 private:
-    QOpenGLShaderProgram mProgram;
-    QOpenGLTexture *mTexY = nullptr;
-    QOpenGLTexture *mTexU = nullptr;
-    QOpenGLTexture *mTexV = nullptr;
-    QVector<QVector3D> mVertices;
-    QVector<QVector2D> mTexcoords;
+    std::shared_ptr<Pathfinder::RenderPipeline> mProgram;
+    std::shared_ptr<Pathfinder::Texture> mTexY;
+    std::shared_ptr<Pathfinder::Texture> mTexU;
+    std::shared_ptr<Pathfinder::Texture> mTexV;
+
+    std::shared_ptr<Pathfinder::Texture> mDummyTex;
+    std::vector<Pathfinder::Vec3F> mVertices;
+    std::vector<Pathfinder::Vec2F> mTexCoords;
     int mModelMatHandle {}, mViewMatHandle {}, mProjectMatHandle {};
     int mVerticesHandle {};
     int mTexCoordHandle {};
 
-    QMatrix4x4 mModelMatrix;
-    QMatrix4x4 mViewMatrix;
-    QMatrix4x4 mProjectionMatrix;
-    GLint mPixFmt = 0;
-    bool mTextureAlloced = false;
+    Pathfinder::Mat4 mModelMatrix;
+    Pathfinder::Mat4 mViewMatrix;
+    Pathfinder::Mat4 mProjectionMatrix;
+    int mPixFmt = 0;
+    bool mTextureAllocated = false;
 
     int m_itemWidth = 0;
     int m_itemHeight = 0;
 
     bool mNeedClear = false;
+
+    std::shared_ptr<Pathfinder::Device> mDevice;
 
     volatile bool inited = false;
 };

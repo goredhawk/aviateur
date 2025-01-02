@@ -37,11 +37,14 @@ list(FILTER SRC_LIST EXCLUDE REGEX ".*/3rd.*/src/main.cpp")
 include_directories(src 3rd/rtl8812au-monitor-pcap/src 3rd/rtl8812au-monitor-pcap/hal)
 add_executable(${PROJECT_NAME} ${SRC_LIST} qml.qrc)
 
+add_subdirectory(3rd/flint_gui)
+target_include_directories(${PROJECT_NAME} PRIVATE "3rd/flint_gui/src")
+
 target_link_libraries(${PROJECT_NAME}
-        Qt5::Quick ${FFMPEG_LIBRARIES}
         ${SDL2_LIBRARIES}
         PkgConfig::LIBUSB
-        unofficial-sodium::sodium)
+        unofficial-sodium::sodium
+        flint_gui)
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)

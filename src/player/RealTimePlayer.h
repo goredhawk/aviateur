@@ -12,14 +12,11 @@
 
 class TItemRender;
 
-class QQuickRealTimePlayer : public QQuickFramebufferObject {
-    Q_OBJECT
-    Q_PROPERTY(bool isMuted READ getMuted WRITE setMuted NOTIFY onMutedChanged)
-    Q_PROPERTY(bool hasAudio READ hasAudio NOTIFY onHasAudio)
+class RealTimePlayer {
 public:
-    explicit QQuickRealTimePlayer(QQuickItem *parent = nullptr);
-    ~QQuickRealTimePlayer() override;
-    void timerEvent(QTimerEvent *event) override;
+    explicit RealTimePlayer();
+    ~RealTimePlayer() ;
+    void update(float delta) ;
 
     shared_ptr<AVFrame> getFrame(bool &got);
 
@@ -30,25 +27,25 @@ public:
     int videoFormat() const { return m_videoFormat; }
     bool getMuted() const { return isMuted; }
     // 播放
-    Q_INVOKABLE void play(const QString &playUrl);
+     void play(const QString &playUrl);
     // 停止
-    Q_INVOKABLE void stop();
+     void stop();
     // 静音
-    Q_INVOKABLE void setMuted(bool muted = false);
+     void setMuted(bool muted = false);
     // 截图
-    Q_INVOKABLE QString captureJpeg();
+     QString captureJpeg();
     // 录像
-    Q_INVOKABLE bool startRecord();
-    Q_INVOKABLE QString stopRecord();
+     bool startRecord();
+     QString stopRecord();
     // 录制GIF
-    Q_INVOKABLE bool startGifRecord();
-    Q_INVOKABLE void stopGifRecord();
+     bool startGifRecord();
+     void stopGifRecord();
     // 获取视频宽度
-    Q_INVOKABLE int getVideoWidth();
+     int getVideoWidth();
     // 获取视频高度
-    Q_INVOKABLE int getVideoHeight();
+     int getVideoHeight();
 
-signals:
+// Signals
     // 播放已经停止
     void onPlayStopped();
     // 出错

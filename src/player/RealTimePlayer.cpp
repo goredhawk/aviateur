@@ -1,5 +1,5 @@
 ﻿
-#include "QQuickRealTimePlayer.h"
+#include "RealTimePlayer.h"
 #include "JpegEncoder.h"
 #include <QDir>
 #include <QOpenGLFramebufferObject>
@@ -44,7 +44,7 @@ QOpenGLFramebufferObject *TItemRender::createFramebufferObject(const QSize &size
 
 void TItemRender::synchronize(QQuickFramebufferObject *item) {
 
-    auto *pItem = qobject_cast<QQuickRealTimePlayer *>(item);
+    auto *pItem = qobject_cast<RealTimePlayer *>(item);
     if (pItem) {
         if (!m_window) {
             m_window = pItem->window();
@@ -65,40 +65,38 @@ void TItemRender::synchronize(QQuickFramebufferObject *item) {
     }
 }
 
-//************QQuickRealTimePlayer************//
-QQuickRealTimePlayer::QQuickRealTimePlayer(QQuickItem *parent)
-    : QQuickFramebufferObject(parent) {
+//************RealTimePlayer************//
+RealTimePlayer::RealTimePlayer() {
     SDL_Init(SDL_INIT_AUDIO);
     // 按每秒60帧的帧率更新界面
     startTimer(1000 / 100);
 }
 
-void QQuickRealTimePlayer::timerEvent(QTimerEvent *event) {
+void RealTimePlayer::timerEvent(QTimerEvent *event) {
     Q_UNUSED(event);
     update();
 }
 
-shared_ptr<AVFrame> QQuickRealTimePlayer::getFrame(bool &got) {
+shared_ptr<AVFrame> RealTimePlayer::getFrame(bool &got) {
     got = false;
-    shared_ptr<AVFrame> frame;
-    {
-        lock_guard<mutex> lck(mtx);
-        // 帧缓冲区已被清空,跳过渲染
-        if (videoFrameQueue.empty()) {
-            return {};
-        }
-        // 从帧缓冲区取出帧
-        frame = videoFrameQueue.front();
-        got = true;
-        // 缓冲区出队被渲染的帧
-        videoFrameQueue.pop();
+
+    lock_guard lck(mtx);
+    // 帧缓冲区已被清空,跳过渲染
+    if (videoFrameQueue.empty()) {
+        return {};
     }
+    // 从帧缓冲区取出帧
+    shared_ptr<AVFrame> frame = videoFrameQueue.front();
+    got = true;
+    // 缓冲区出队被渲染的帧
+    videoFrameQueue.pop();
+
     // 缓冲，追帧机制
     _lastFrame = frame;
     return frame;
 }
 
-void QQuickRealTimePlayer::onVideoInfoReady(int width, int height, int format) {
+void RealTimePlayer::onVideoInfoReady(int width, int height, int format) {
     if (m_videoWidth != width) {
         m_videoWidth = width;
         makeInfoDirty(true);
@@ -113,15 +111,17 @@ void QQuickRealTimePlayer::onVideoInfoReady(int width, int height, int format) {
     }
 }
 
-QQuickFramebufferObject::Renderer *QQuickRealTimePlayer::createRenderer() const {
+QQuickFramebufferObject::Renderer *RealTimePlayer::createRenderer() const {
     return new TItemRender;
 }
 
-void QQuickRealTimePlayer::play(const QString &playUrl) {
+void RealTimePlayer::play(const QString &playUrl) {
     playStop = false;
+
     if (analysisThread.joinable()) {
         analysisThread.join();
     }
+
     // 启动分析线程
     analysisThread = std::thread([this, playUrl]() {
         auto decoder_ = make_shared<FFmpegDecoder>();
@@ -179,8 +179,9 @@ void QQuickRealTimePlayer::play(const QString &playUrl) {
     analysisThread.detach();
 }
 
-void QQuickRealTimePlayer::stop() {
+void RealTimePlayer::stop() {
     playStop = true;
+
     if (decoder && decoder->pFormatCtx) {
         decoder->pFormatCtx->interrupt_callback.callback = [](void *) { return 1; };
     }
@@ -191,7 +192,7 @@ void QQuickRealTimePlayer::stop() {
         decodeThread.join();
     }
     while (!videoFrameQueue.empty()) {
-        lock_guard<mutex> lck(mtx);
+        lock_guard lck(mtx);
         // 清空缓冲
         videoFrameQueue.pop();
     }
@@ -201,7 +202,7 @@ void QQuickRealTimePlayer::stop() {
     }
 }
 
-void QQuickRealTimePlayer::setMuted(bool muted) {
+void RealTimePlayer::setMuted(bool muted) {
     if (!decoder->HasAudio()) {
         return;
     }
@@ -215,14 +216,14 @@ void QQuickRealTimePlayer::setMuted(bool muted) {
         disableAudio();
     }
     isMuted = muted;
-    emit onMutedChanged(muted);
+    // emit onMutedChanged(muted);
 }
 
-QQuickRealTimePlayer::~QQuickRealTimePlayer() {
+RealTimePlayer::~RealTimePlayer() {
     stop();
 }
 
-QString QQuickRealTimePlayer::captureJpeg() {
+QString RealTimePlayer::captureJpeg() {
     if (!_lastFrame) {
         return "";
     }
@@ -241,7 +242,7 @@ QString QQuickRealTimePlayer::captureJpeg() {
     return ok ? QString(ss.str().c_str()) : "";
 }
 
-bool QQuickRealTimePlayer::startRecord() {
+bool RealTimePlayer::startRecord() {
     if (playStop && !_lastFrame) {
         return false;
     }
@@ -279,7 +280,7 @@ bool QQuickRealTimePlayer::startRecord() {
     return true;
 }
 
-QString QQuickRealTimePlayer::stopRecord() {
+QString RealTimePlayer::stopRecord() {
     if (!_mp4Encoder) {
         return {};
     }
@@ -288,21 +289,21 @@ QString QQuickRealTimePlayer::stopRecord() {
     return { _mp4Encoder->_saveFilePath.c_str() };
 }
 
-int QQuickRealTimePlayer::getVideoWidth() {
+int RealTimePlayer::getVideoWidth() {
     if (!decoder) {
         return 0;
     }
     return decoder->width;
 }
 
-int QQuickRealTimePlayer::getVideoHeight() {
+int RealTimePlayer::getVideoHeight() {
     if (!decoder) {
         return 0;
     }
     return decoder->height;
 }
 
-bool QQuickRealTimePlayer::enableAudio() {
+bool RealTimePlayer::enableAudio() {
     if (!decoder->HasAudio()) {
         return false;
     }
@@ -318,7 +319,7 @@ bool QQuickRealTimePlayer::enableAudio() {
     audioSpec.userdata = this;
     // 音频样本读取回调
     audioSpec.callback = [](void *Thiz, Uint8 *stream, int len) {
-        auto *pThis = static_cast<QQuickRealTimePlayer *>(Thiz);
+        auto *pThis = static_cast<RealTimePlayer *>(Thiz);
         SDL_memset(stream, 0, len);
         pThis->decoder->ReadAudioBuff(stream, len);
         if (pThis->isMuted) {
@@ -338,11 +339,11 @@ bool QQuickRealTimePlayer::enableAudio() {
     return true;
 }
 
-void QQuickRealTimePlayer::disableAudio() {
+void RealTimePlayer::disableAudio() {
     SDL_CloseAudio();
 }
 
-bool QQuickRealTimePlayer::startGifRecord() {
+bool RealTimePlayer::startGifRecord() {
     if (playStop) {
         return false;
     }
@@ -383,7 +384,7 @@ bool QQuickRealTimePlayer::startGifRecord() {
     return true;
 }
 
-void QQuickRealTimePlayer::stopGifRecord() {
+void RealTimePlayer::stopGifRecord() {
     decoder->_gotFrameCallback = nullptr;
     if (!_gifEncoder) {
         return;
