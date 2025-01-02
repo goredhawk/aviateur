@@ -68,62 +68,80 @@ void main() {
 }
 )";
 
-static void safeDeleteTexture(QOpenGLTexture *texture) {
-    if (texture) {
-        if (texture->isBound()) {
-            texture->release();
-        }
-        if (texture->isCreated()) {
-            texture->destroy();
-        }
-        delete texture;
-        texture = nullptr;
-    }
-}
-
-YuvRenderer::YuvRenderer() {}
+YuvRenderer::YuvRenderer() = default;
 
 void YuvRenderer::init() {
-
     initPipeline();
     initGeometry();
 }
-void YuvRenderer::resize(int width, int height) {
 
+void YuvRenderer::resize(int width, int height) {
+    if (m_itemWidth == width && m_itemHeight == height) {
+        return;
+    }
     m_itemWidth = width;
     m_itemHeight = height;
-    glViewport(0, 0, width, height);
-    float bottom = -1.0f;
-    float top = 1.0f;
-    float n = 1.0f;
-    float f = 100.0f;
-    mProjectionMatrix.setToIdentity();
-    mProjectionMatrix.frustum(-1.0, 1.0, bottom, top, n, f);
+    mOutputTex = mDevice->create_texture(
+        { { width, height }, Pathfinder::TextureFormat::Rgba8Unorm }, "yuv renderer output texture");
+}
+
+void YuvRenderer::initGeometry() {
+    // Set up vertex data (and buffer(s)) and configure vertex attributes.
+    float vertices[] = {
+        // Positions, UVs.
+        -1.0, -1.0, 0.0, 0.0, // 0
+        1.0,  -1.0, 1.0, 0.0, // 1
+        1.0,  1.0,  1.0, 1.0, // 2
+        -1.0, -1.0, 0.0, 0.0, // 3
+        1.0,  1.0,  1.0, 1.0, // 4
+        -1.0, 1.0,  0.0, 1.0 // 5
+    };
+
+    mVertexBuffer = mDevice->create_buffer(
+        { Pathfinder::BufferType::Vertex, sizeof(vertices), Pathfinder::MemoryProperty::DeviceLocal },
+        "yuv renderer vertex buffer");
+
+    mSampler = mDevice->create_sampler(Pathfinder::SamplerDescriptor {});
+
+    auto encoder = mDevice->create_command_encoder("upload yuv vertex buffer");
+    encoder->write_buffer(mVertexBuffer, 0, sizeof(vertices), vertices);
+    mQueue->submit_and_wait(encoder);
 }
 
 void YuvRenderer::initPipeline() {
-    mVertices << Pathfinder::Vec3F(-1, 1, 0.0f) << Pathfinder::Vec3F(1, 1, 0.0f) << Pathfinder::Vec3F(1, -1, 0.0f)
-              << Pathfinder::Vec3F(-1, -1, 0.0f);
-    mTexcoords << QVector2D(0, 1) << QVector2D(1, 1) << QVector2D(1, 0) << QVector2D(0, 0);
+    const auto vert_source = std::vector<char>(std::begin(vertCode), std::end(vertCode));
+    const auto frag_source = std::vector<char>(std::begin(fragCode), std::end(fragCode));
 
-    mViewMatrix.setToIdentity();
-    mViewMatrix.lookAt(
-        Pathfinder::Vec3F(0.0f, 0.0f, 1.001f), Pathfinder::Vec3F(0.0f, 0.0f, -5.0f),
-        Pathfinder::Vec3F(0.0f, 1.0f, 0.0f));
-    mModelMatrix.setToIdentity();
+    std::vector<Pathfinder::VertexInputAttributeDescription> attribute_descriptions;
 
-    if (!mProgram.addShaderFromSourceCode(QOpenGLShader::Vertex, VSHCODE)) {
-        qWarning() << " add vertex shader file failed.";
-        return;
-    }
-    if (!mProgram.addShaderFromSourceCode(QOpenGLShader::Fragment, FSHCPDE)) {
-        qWarning() << " add fragment shader file failed.";
-        return;
-    }
-    mProgram.bindAttributeLocation("qt_Vertex", 0);
-    mProgram.bindAttributeLocation("texCoord", 1);
-    mProgram.link();
-    mProgram.bind();
+    uint32_t stride = 4 * sizeof(float);
+
+    attribute_descriptions.push_back(
+        { 0, 2, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex });
+
+    attribute_descriptions.push_back(
+        { 0, 2, Pathfinder::DataType::f32, stride, 2 * sizeof(float), Pathfinder::VertexInputRate::Vertex });
+
+    auto blend_state = Pathfinder::BlendState::from_over();
+
+    mDescriptorSet = mDevice->create_descriptor_set();
+    mDescriptorSet->add_or_update(
+        {
+            Pathfinder::Descriptor::uniform(0, Pathfinder::ShaderStage::Vertex, "bUniform0"),
+
+            Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y"),
+
+            Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u"),
+
+            Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v"),
+            Pathfinder::Descriptor::uniform(4, Pathfinder::ShaderStage::Fragment, "bUniform1"),
+
+        });
+
+    mPipeline = mDevice->create_render_pipeline(
+        mDevice->create_shader_module(vert_source, Pathfinder::ShaderStage::Vertex, "yuv vert"),
+        mDevice->create_shader_module(frag_source, Pathfinder::ShaderStage::Fragment, "yuv frag"),
+        attribute_descriptions, blend_state, mDescriptorSet, Pathfinder::TextureFormat::Rgba8Unorm, "yuv pipeline");
 }
 
 void YuvRenderer::updateTextureInfo(int width, int height, int format) {
@@ -227,10 +245,10 @@ void YuvRenderer::render() {
     // Update uniform buffers.
     {
         TileUniformD3d9 tile_uniform;
-        tile_uniform.tile_size = {TILE_WIDTH, TILE_HEIGHT};
-        tile_uniform.texture_metadata_size = {TEXTURE_METADATA_TEXTURE_WIDTH, TEXTURE_METADATA_TEXTURE_HEIGHT};
-        tile_uniform.mask_texture_size = {MASK_FRAMEBUFFER_WIDTH,
-                                          (float)(MASK_FRAMEBUFFER_HEIGHT * mask_storage.allocated_page_count)};
+        tile_uniform.tile_size = { TILE_WIDTH, TILE_HEIGHT };
+        tile_uniform.texture_metadata_size = { TEXTURE_METADATA_TEXTURE_WIDTH, TEXTURE_METADATA_TEXTURE_HEIGHT };
+        tile_uniform.mask_texture_size
+            = { MASK_FRAMEBUFFER_WIDTH, (float)(MASK_FRAMEBUFFER_HEIGHT * mask_storage.allocated_page_count) };
 
         // Transform matrix (i.e. the model matrix).
         Mat4 model_mat = Mat4(1.f);

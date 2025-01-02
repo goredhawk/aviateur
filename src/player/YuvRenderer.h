@@ -40,7 +40,7 @@ protected:
     void initGeometry();
 
 private:
-    std::shared_ptr<Pathfinder::RenderPipeline> mProgram;
+    std::shared_ptr<Pathfinder::RenderPipeline> mPipeline;
     std::shared_ptr<Pathfinder::Queue> mQueue;
     std::shared_ptr<Pathfinder::RenderPass> mRenderPass;
     std::shared_ptr<Pathfinder::Texture> mTexY;
@@ -48,6 +48,7 @@ private:
     std::shared_ptr<Pathfinder::Texture> mTexV;
     std::shared_ptr<Pathfinder::DescriptorSet> mDescriptorSet;
     std::shared_ptr<Pathfinder::Sampler> mSampler;
+    std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;
 
 
     std::shared_ptr<Pathfinder::Texture> mOutputTex;
