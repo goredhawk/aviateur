@@ -5,16 +5,10 @@ auto vertCode = R"(
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec2 aUV;
 
-layout(std140) uniform bUniform0 {
-    mat4 u_modelMatrix;
-    mat4 u_viewMatrix;
-    mat4 u_projectMatrix;
-};
-
 out vec2 v_texCoord;
 
 void main() {
-    gl_Position = u_projectMatrix * u_viewMatrix * u_modelMatrix * vec4(aPos, 1.0f);
+    gl_Position = vec4(aPos, 1.0f);
     v_texCoord = aUV;
 }
 )";
@@ -27,7 +21,7 @@ uniform sampler2D tex_y;
 uniform sampler2D tex_u;
 uniform sampler2D tex_v;
 
-layout(std140) uniform bUniform1 {
+layout(std140) uniform bUniform0 {
     int pixFmt;
     int pad0;
     int pad1;
@@ -67,6 +61,13 @@ void main() {
     gl_FragColor = vec4(rgb, 1.0);
 }
 )";
+
+struct FragUniformBlock {
+    int pixFmt;
+    int pad0;
+    int pad1;
+    int pad2;
+};
 
 YuvRenderer::YuvRenderer() = default;
 
@@ -127,18 +128,18 @@ void YuvRenderer::initPipeline() {
 
     auto blend_state = Pathfinder::BlendState::from_over();
 
+    mUniformBuffer = mDevice->create_buffer(
+        { Pathfinder::BufferType::Uniform, sizeof(FragUniformBlock),
+          Pathfinder::MemoryProperty::HostVisibleAndCoherent },
+        "yuv renderer uniform buffer");
+
     mDescriptorSet = mDevice->create_descriptor_set();
     mDescriptorSet->add_or_update(
         {
-            Pathfinder::Descriptor::uniform(0, Pathfinder::ShaderStage::Vertex, "bUniform0"),
-
+            Pathfinder::Descriptor::uniform(0, Pathfinder::ShaderStage::Fragment, "bUniform0", mUniformBuffer),
             Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y"),
-
             Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u"),
-
             Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v"),
-            Pathfinder::Descriptor::uniform(4, Pathfinder::ShaderStage::Fragment, "bUniform1"),
-
         });
 
     mPipeline = mDevice->create_render_pipeline(
@@ -222,47 +223,11 @@ void YuvRenderer::render() {
 
     // Update uniform buffers.
     {
-        // MVP矩阵
-        mProgram.setUniformValue(mModelMatHandle, mModelMatrix);
-        mProgram.setUniformValue(mViewMatHandle, mViewMatrix);
-        mProgram.setUniformValue(mProjectMatHandle, mProjectionMatrix);
-
-        // pixFmt
-        mProgram.setUniformValue("pixFmt", mPixFmt);
-
-        TileUniformD3d9 tile_uniform;
-        tile_uniform.tile_size = { TILE_WIDTH, TILE_HEIGHT };
-        tile_uniform.texture_metadata_size = { TEXTURE_METADATA_TEXTURE_WIDTH, TEXTURE_METADATA_TEXTURE_HEIGHT };
-        tile_uniform.mask_texture_size
-            = { MASK_FRAMEBUFFER_WIDTH, (float)(MASK_FRAMEBUFFER_HEIGHT * mask_storage.allocated_page_count) };
-
-        // Transform matrix (i.e. the model matrix).
-        Mat4 model_mat = Mat4(1.f);
-        model_mat = model_mat.translate(Vec3F(-1.f, -1.f, 0.f)); // Move to top-left.
-        model_mat = model_mat.scale(Vec3F(2.f / target_texture_size.x, 2.f / target_texture_size.y, 1.f));
-        tile_uniform.transform = model_mat;
-
-        tile_uniform.framebuffer_size = target_texture_size.to_f32();
-        tile_uniform.z_buffer_size = z_buffer_texture->get_size().to_f32();
-
-        if (color_texture_info) {
-            auto color_texture_page = pattern_texture_pages[color_texture_info->page_id];
-            if (color_texture_page) {
-                color_texture = allocator->get_texture(color_texture_page->texture_id_);
-                color_texture_sampler = get_or_create_sampler(color_texture_info->sampling_flags);
-
-                if (color_texture == nullptr) {
-                    Logger::error("Failed to obtain color texture!", "RendererD3D9");
-                    return;
-                }
-            }
-        }
-
-        tile_uniform.color_texture_size = color_texture->get_size().to_f32();
+        FragUniformBlock uniform = { mPixFmt };
 
         // We don't need to preserve the data until the upload commands are implemented because
         // these uniform buffers are host-visible/coherent.
-        encoder->write_buffer(allocator->get_buffer(tile_ub_id), 0, sizeof(TileUniformD3d9), &tile_uniform);
+        encoder->write_buffer(mUniformBuffer, 0, sizeof(FragUniformBlock), &uniform);
     }
 
     // Update descriptor set.
@@ -278,6 +243,8 @@ void YuvRenderer::render() {
     encoder->draw(0, mVertices.size());
 
     encoder->end_render_pass();
+
+    mQueue->submit_and_wait(encoder);
 }
 
 void YuvRenderer::clear() {

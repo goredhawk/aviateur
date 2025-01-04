@@ -1,6 +1,4 @@
 ﻿#include "ffmpegDecode.h"
-#include <QDateTime>
-#include <QThread>
 #include <iostream>
 #include <vector>
 
@@ -78,7 +76,7 @@ bool FFmpegDecoder::OpenInput(string &inputFile) {
 bool FFmpegDecoder::CloseInput() {
     isOpen = false;
 
-    lock_guard<mutex> lck(_releaseLock);
+    lock_guard lck(_releaseLock);
 
     // 关闭流
     CloseVideo();

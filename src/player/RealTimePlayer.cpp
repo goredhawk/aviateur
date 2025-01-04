@@ -1,13 +1,9 @@
-﻿
-#include "RealTimePlayer.h"
+﻿#include "RealTimePlayer.h"
 #include "JpegEncoder.h"
-#include <QDir>
-#include <QOpenGLFramebufferObject>
-#include <QQuickWindow>
-#include <QStandardPaths>
 #include <SDL2/SDL.h>
 #include <future>
 #include <sstream>
+
 // GIF默认帧率
 #define DEFAULT_GIF_FRAMERATE 10
 
@@ -69,7 +65,7 @@ void TItemRender::synchronize(QQuickFramebufferObject *item) {
 RealTimePlayer::RealTimePlayer() {
     SDL_Init(SDL_INIT_AUDIO);
     // 按每秒60帧的帧率更新界面
-    startTimer(1000 / 100);
+    update(1000 / 100);
 }
 
 void RealTimePlayer::timerEvent(QTimerEvent *event) {
@@ -115,7 +111,7 @@ QQuickFramebufferObject::Renderer *RealTimePlayer::createRenderer() const {
     return new TItemRender;
 }
 
-void RealTimePlayer::play(const QString &playUrl) {
+void RealTimePlayer::play(const std::string &playUrl) {
     playStop = false;
 
     if (analysisThread.joinable()) {
@@ -223,11 +219,11 @@ RealTimePlayer::~RealTimePlayer() {
     stop();
 }
 
-QString RealTimePlayer::captureJpeg() {
+std::string RealTimePlayer::captureJpeg() {
     if (!_lastFrame) {
         return "";
     }
-    QString dirPath = QFileInfo("jpg/l").absolutePath();
+    std::string dirPath = QFileInfo("jpg/l").absolutePath();
     QDir dir(dirPath);
     if (!dir.exists()) {
         dir.mkpath(dirPath);
@@ -239,14 +235,14 @@ QString RealTimePlayer::captureJpeg() {
        << ".jpg";
     auto ok = JpegEncoder::encodeJpeg(ss.str(), _lastFrame);
     // 截图
-    return ok ? QString(ss.str().c_str()) : "";
+    return ok ? std::string(ss.str().c_str()) : "";
 }
 
 bool RealTimePlayer::startRecord() {
     if (playStop && !_lastFrame) {
         return false;
     }
-    QString dirPath = QFileInfo("mp4/l").absolutePath();
+    std::string dirPath = QFileInfo("mp4/l").absolutePath();
     QDir dir(dirPath);
     if (!dir.exists()) {
         dir.mkpath(dirPath);
@@ -280,7 +276,7 @@ bool RealTimePlayer::startRecord() {
     return true;
 }
 
-QString RealTimePlayer::stopRecord() {
+std::string RealTimePlayer::stopRecord() {
     if (!_mp4Encoder) {
         return {};
     }
@@ -333,7 +329,7 @@ bool RealTimePlayer::enableAudio() {
         // 播放声音
         SDL_PauseAudio(0);
     } else {
-        emit onError("开启音频出错，如需听声音请插入音频外设\n" + QString(SDL_GetError()), -1);
+        emit onError("开启音频出错，如需听声音请插入音频外设\n" + std::string(SDL_GetError()), -1);
         return false;
     }
     return true;

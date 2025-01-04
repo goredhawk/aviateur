@@ -49,6 +49,7 @@ private:
     std::shared_ptr<Pathfinder::DescriptorSet> mDescriptorSet;
     std::shared_ptr<Pathfinder::Sampler> mSampler;
     std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;
+    std::shared_ptr<Pathfinder::Buffer> mUniformBuffer;
 
     std::shared_ptr<Pathfinder::Texture> mOutputTex;
 
