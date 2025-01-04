@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
+
+# This should go before project declaration.
+if (WIN32)
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+endif ()
+
 project(fpv4win)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -16,13 +22,13 @@ find_package(unofficial-sodium CONFIG REQUIRED)
 pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
 include_directories(${FFMPEG_INCLUDE_DIRS})
 
-find_package(Qt5 COMPONENTS Quick Multimedia  REQUIRED)
+find_package(Qt5 COMPONENTS Quick Multimedia REQUIRED)
 
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
     message("build debug")
     add_definitions(-DDEBUG_MODE)
-endif()
+endif ()
 
 
 file(GLOB_RECURSE SRC_LIST
