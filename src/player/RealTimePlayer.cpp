@@ -6,71 +6,35 @@
 
 // GIF默认帧率
 #define DEFAULT_GIF_FRAMERATE 10
+//
+// void TItemRender::synchronize(QQuickFramebufferObject *item) {
+//
+//     auto *pItem = qobject_cast<RealTimePlayer *>(item);
+//     if (pItem) {
+//         if (!m_window) {
+//             m_window = pItem->window();
+//         }
+//         if (pItem->infoDirty()) {
+//             m_render.updateTextureInfo(pItem->videoWidth(), pItem->videoHeght(), pItem->videoFormat());
+//             pItem->makeInfoDirty(false);
+//         }
+//         if (pItem->playStop) {
+//             m_render.clear();
+//             return;
+//         }
+//         bool got = false;
+//         shared_ptr<AVFrame> frame = pItem->getFrame(got);
+//         if (got && frame->linesize[0]) {
+//             m_render.updateTextureData(frame);
+//         }
+//     }
+// }
 
-//************TaoItemRender************//
-class TItemRender : public QQuickFramebufferObject::Renderer {
-public:
-    TItemRender();
+RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
+    m_yuv_renderer = std::make_shared<YuvRenderer>(device, queue);
 
-    void render() override;
-    QOpenGLFramebufferObject *createFramebufferObject(const QSize &size) override;
-    void synchronize(QQuickFramebufferObject *) override;
-
-private:
-    RealTimeRenderer m_render;
-    QQuickWindow *m_window = nullptr;
-};
-
-TItemRender::TItemRender() {
-    m_render.init();
-}
-
-void TItemRender::render() {
-    m_render.paint();
-    m_window->resetOpenGLState();
-}
-
-QOpenGLFramebufferObject *TItemRender::createFramebufferObject(const QSize &size) {
-    QOpenGLFramebufferObjectFormat format;
-    format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-    format.setSamples(4);
-    m_render.resize(size.width(), size.height());
-    return new QOpenGLFramebufferObject(size, format);
-}
-
-void TItemRender::synchronize(QQuickFramebufferObject *item) {
-
-    auto *pItem = qobject_cast<RealTimePlayer *>(item);
-    if (pItem) {
-        if (!m_window) {
-            m_window = pItem->window();
-        }
-        if (pItem->infoDirty()) {
-            m_render.updateTextureInfo(pItem->videoWidth(), pItem->videoHeght(), pItem->videoFormat());
-            pItem->makeInfoDirty(false);
-        }
-        if (pItem->playStop) {
-            m_render.clear();
-            return;
-        }
-        bool got = false;
-        shared_ptr<AVFrame> frame = pItem->getFrame(got);
-        if (got && frame->linesize[0]) {
-            m_render.updateTextureData(frame);
-        }
-    }
-}
-
-//************RealTimePlayer************//
-RealTimePlayer::RealTimePlayer() {
-    SDL_Init(SDL_INIT_AUDIO);
-    // 按每秒60帧的帧率更新界面
-    update(1000 / 100);
-}
-
-void RealTimePlayer::timerEvent(QTimerEvent *event) {
-    Q_UNUSED(event);
-    update();
+    // // 按每秒60帧的帧率更新界面
+    // update(1000 / 100);
 }
 
 shared_ptr<AVFrame> RealTimePlayer::getFrame(bool &got) {
@@ -107,10 +71,6 @@ void RealTimePlayer::onVideoInfoReady(int width, int height, int format) {
     }
 }
 
-QQuickFramebufferObject::Renderer *RealTimePlayer::createRenderer() const {
-    return new TItemRender;
-}
-
 void RealTimePlayer::play(const std::string &playUrl) {
     playStop = false;
 
@@ -118,44 +78,48 @@ void RealTimePlayer::play(const std::string &playUrl) {
         analysisThread.join();
     }
 
-    // 启动分析线程
-    analysisThread = std::thread([this, playUrl]() {
+    url = playUrl;
+
+    analysisThread = std::thread([this]() {
         auto decoder_ = make_shared<FFmpegDecoder>();
-        url = playUrl.toStdString();
+
         // 打开并分析输入
         bool ok = decoder_->OpenInput(url);
         if (!ok) {
-            emit onError("视频加载出错", -2);
+            // emit onError("视频加载出错", -2);
             return;
         }
         decoder = decoder_;
-        // 启动解码线程
+
         decodeThread = std::thread([this]() {
             while (!playStop) {
                 try {
-                    // 循环解码
+                    // Getting frame.
                     auto frame = decoder->GetNextFrame();
                     if (!frame) {
                         continue;
                     }
+
                     {
-                        // 解码获取到视频帧,放入帧缓冲队列
-                        lock_guard<mutex> lck(mtx);
+                        // Push frame to the buffer queue.
+                        lock_guard lck(mtx);
                         if (videoFrameQueue.size() > 10) {
                             videoFrameQueue.pop();
                         }
                         videoFrameQueue.push(frame);
                     }
                 } catch (const exception &e) {
-                    emit onError(e.what(), -2);
-                    // 出错，停止
+                    // emit onError(e.what(), -2);
+                    // Error, stop.
                     break;
                 }
             }
             playStop = true;
             // 解码已经停止，触发信号
-            emit onPlayStopped();
+            // emit onPlayStopped();
         });
+
+        // Start decode thread.
         decodeThread.detach();
 
         if (!isMuted && decoder->HasAudio()) {
@@ -163,15 +127,17 @@ void RealTimePlayer::play(const std::string &playUrl) {
             enableAudio();
         }
         // 是否存在音频
-        emit onHasAudio(decoder->HasAudio());
+        // emit onHasAudio(decoder->HasAudio());
 
         if (decoder->HasVideo()) {
             onVideoInfoReady(decoder->GetWidth(), decoder->GetHeight(), decoder->GetVideoFrameFormat());
         }
 
         // 码率计算回调
-        decoder->onBitrate = [this](uint64_t bitrate) { emit onBitrate(static_cast<long>(bitrate)); };
+        // decoder->onBitrate = [this](uint64_t bitrate) { emit onBitrate(static_cast<long>(bitrate)); };
     });
+
+    // Start analysis thread.
     analysisThread.detach();
 }
 
@@ -223,57 +189,57 @@ std::string RealTimePlayer::captureJpeg() {
     if (!_lastFrame) {
         return "";
     }
-    std::string dirPath = QFileInfo("jpg/l").absolutePath();
-    QDir dir(dirPath);
-    if (!dir.exists()) {
-        dir.mkpath(dirPath);
-    }
-    stringstream ss;
-    ss << "jpg/";
-    ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-              .count()
-       << ".jpg";
-    auto ok = JpegEncoder::encodeJpeg(ss.str(), _lastFrame);
-    // 截图
-    return ok ? std::string(ss.str().c_str()) : "";
+    // std::string dirPath = QFileInfo("jpg/l").absolutePath();
+    // QDir dir(dirPath);
+    // if (!dir.exists()) {
+    //     dir.mkpath(dirPath);
+    // }
+    // stringstream ss;
+    // ss << "jpg/";
+    // ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+    //           .count()
+    //    << ".jpg";
+    // auto ok = JpegEncoder::encodeJpeg(ss.str(), _lastFrame);
+    // // 截图
+    // return ok ? std::string(ss.str().c_str()) : "";
 }
 
 bool RealTimePlayer::startRecord() {
     if (playStop && !_lastFrame) {
         return false;
     }
-    std::string dirPath = QFileInfo("mp4/l").absolutePath();
-    QDir dir(dirPath);
-    if (!dir.exists()) {
-        dir.mkpath(dirPath);
-    }
-    // 保存路径
-    stringstream ss;
-    ss << "mp4/";
-    ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-              .count()
-       << ".mp4";
-    // 创建MP4编码器
-    _mp4Encoder = make_shared<Mp4Encoder>(ss.str());
-
-    // 添加音频流
-    if (decoder->HasAudio()) {
-        _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex]);
-    }
-    // 添加视频流
-    if (decoder->HasVideo()) {
-        _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex]);
-    }
-    if (!_mp4Encoder->start()) {
-        return false;
-    }
-    // 设置获得NALU回调
-    decoder->_gotPktCallback = [this](const shared_ptr<AVPacket> &packet) {
-        // 输入编码器
-        _mp4Encoder->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
-    };
-    // 启动编码器
-    return true;
+    // std::string dirPath = QFileInfo("mp4/l").absolutePath();
+    // QDir dir(dirPath);
+    // if (!dir.exists()) {
+    //     dir.mkpath(dirPath);
+    // }
+    // // 保存路径
+    // stringstream ss;
+    // ss << "mp4/";
+    // ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+    //           .count()
+    //    << ".mp4";
+    // // 创建MP4编码器
+    // _mp4Encoder = make_shared<Mp4Encoder>(ss.str());
+    //
+    // // 添加音频流
+    // if (decoder->HasAudio()) {
+    //     _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex]);
+    // }
+    // // 添加视频流
+    // if (decoder->HasVideo()) {
+    //     _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex]);
+    // }
+    // if (!_mp4Encoder->start()) {
+    //     return false;
+    // }
+    // // 设置获得NALU回调
+    // decoder->_gotPktCallback = [this](const shared_ptr<AVPacket> &packet) {
+    //     // 输入编码器
+    //     _mp4Encoder->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
+    // };
+    // // 启动编码器
+    // return true;
 }
 
 std::string RealTimePlayer::stopRecord() {
@@ -329,7 +295,7 @@ bool RealTimePlayer::enableAudio() {
         // 播放声音
         SDL_PauseAudio(0);
     } else {
-        emit onError("开启音频出错，如需听声音请插入音频外设\n" + std::string(SDL_GetError()), -1);
+        // emit onError("开启音频出错，如需听声音请插入音频外设\n" + std::string(SDL_GetError()), -1);
         return false;
     }
     return true;
@@ -345,10 +311,10 @@ bool RealTimePlayer::startGifRecord() {
     }
     // 保存路径
     stringstream ss;
-    ss << QStandardPaths::writableLocation(QStandardPaths::DesktopLocation).toStdString() << "/";
-    ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-              .count()
-       << ".gif";
+    // ss << QStandardPaths::writableLocation(QStandardPaths::DesktopLocation).toStdString() << "/";
+    // ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+    //           .count()
+    //    << ".gif";
     if (!(decoder && decoder->HasVideo())) {
         return false;
     }

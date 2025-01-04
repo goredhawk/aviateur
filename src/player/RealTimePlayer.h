@@ -1,8 +1,7 @@
 ﻿#pragma once
+
 #include "YuvRenderer.h"
 #include "ffmpegDecode.h"
-#include <QQuickFramebufferObject>
-#include <QQuickItem>
 #include <memory>
 #include <queue>
 #include <thread>
@@ -14,9 +13,9 @@ class TItemRender;
 
 class RealTimePlayer {
 public:
-    explicit RealTimePlayer();
-    ~RealTimePlayer() ;
-    void update(float delta) ;
+    RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);
+    ~RealTimePlayer();
+    void update(float delta);
 
     shared_ptr<AVFrame> getFrame(bool &got);
 
@@ -27,29 +26,29 @@ public:
     int videoFormat() const { return m_videoFormat; }
     bool getMuted() const { return isMuted; }
     // 播放
-     void play(const QString &playUrl);
+    void play(const std::string &playUrl);
     // 停止
-     void stop();
+    void stop();
     // 静音
-     void setMuted(bool muted = false);
+    void setMuted(bool muted = false);
     // 截图
-     QString captureJpeg();
+    std::string captureJpeg();
     // 录像
-     bool startRecord();
-     QString stopRecord();
+    bool startRecord();
+    std::string stopRecord();
     // 录制GIF
-     bool startGifRecord();
-     void stopGifRecord();
+    bool startGifRecord();
+    void stopGifRecord();
     // 获取视频宽度
-     int getVideoWidth();
+    int getVideoWidth();
     // 获取视频高度
-     int getVideoHeight();
+    int getVideoHeight();
 
-// Signals
+    // Signals
     // 播放已经停止
     void onPlayStopped();
     // 出错
-    void onError(QString msg, int code);
+    void onError(std::string msg, int code);
     // 获取录音音量
     void gotRecordVol(double vol);
     // 获得码率
@@ -98,7 +97,7 @@ protected:
     }
 
 public:
-    Renderer *createRenderer() const override;
+    std::shared_ptr<YuvRenderer> m_yuv_renderer;
     int m_videoWidth {};
     int m_videoHeight {};
     int m_videoFormat {};

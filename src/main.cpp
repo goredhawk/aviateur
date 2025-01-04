@@ -5,6 +5,7 @@
 #include <fileapi.h>
 #include <handleapi.h>
 #include <processthreadsapi.h>
+#include <servers/render_server.h>
 #include <winnt.h>
 
 #pragma comment(lib, "ws2_32.lib")
@@ -41,7 +42,10 @@ LONG ApplicationCrashHandler(EXCEPTION_POINTERS *pException) {
 class MyNode : public Flint::Node {
     std::shared_ptr<RealTimePlayer> player;
 
-    void custom_ready() override { player = std::make_any<RealTimePlayer>(); }
+    void custom_ready() override {
+auto render_server = Flint::RenderServer::get_singleton();
+        player = std::make_any<RealTimePlayer>(render_server->device_, render_server->queue_);
+    }
 };
 
 int main() {

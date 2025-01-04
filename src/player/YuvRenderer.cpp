@@ -69,7 +69,10 @@ struct FragUniformBlock {
     int pad2;
 };
 
-YuvRenderer::YuvRenderer() = default;
+YuvRenderer::YuvRenderer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
+    mDevice = device;
+    mQueue = queue;
+}
 
 void YuvRenderer::init() {
     mRenderPass = mDevice->create_render_pass(
@@ -93,12 +96,12 @@ void YuvRenderer::initGeometry() {
     // Set up vertex data (and buffer(s)) and configure vertex attributes.
     float vertices[] = {
         // Positions, UVs.
-        -1.0, -1.0, 0.0, 0.0, // 0
-        1.0,  -1.0, 1.0, 0.0, // 1
-        1.0,  1.0,  1.0, 1.0, // 2
-        -1.0, -1.0, 0.0, 0.0, // 3
-        1.0,  1.0,  1.0, 1.0, // 4
-        -1.0, 1.0,  0.0, 1.0 // 5
+        -1.0, -1.0, 1.0, 0.0, 0.0, // 0
+        1.0,  -1.0, 1.0, 1.0, 0.0, // 1
+        1.0,  1.0,  1.0, 1.0, 1.0, // 2
+        -1.0, -1.0, 1.0, 0.0, 0.0, // 3
+        1.0,  1.0,  1.0, 1.0, 1.0, // 4
+        -1.0, 1.0,  1.0, 0.0, 1.0 // 5
     };
 
     mVertexBuffer = mDevice->create_buffer(
@@ -118,13 +121,13 @@ void YuvRenderer::initPipeline() {
 
     std::vector<Pathfinder::VertexInputAttributeDescription> attribute_descriptions;
 
-    uint32_t stride = 4 * sizeof(float);
+    uint32_t stride = 5 * sizeof(float);
 
     attribute_descriptions.push_back(
-        { 0, 2, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex });
+        { 0, 3, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex });
 
     attribute_descriptions.push_back(
-        { 0, 2, Pathfinder::DataType::f32, stride, 2 * sizeof(float), Pathfinder::VertexInputRate::Vertex });
+        { 0, 2, Pathfinder::DataType::f32, stride, 3 * sizeof(float), Pathfinder::VertexInputRate::Vertex });
 
     auto blend_state = Pathfinder::BlendState::from_over();
 
