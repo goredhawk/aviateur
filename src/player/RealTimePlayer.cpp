@@ -22,7 +22,7 @@
 //             return;
 //         }
 //         bool got = false;
-//         shared_ptr<AVFrame> frame = pItem->getFrame(got);
+//         std::shared_ptr<AVFrame> frame = pItem->getFrame(got);
 //         if (got && frame->linesize[0]) {
 //             m_render.updateTextureData(frame);
 //         }
@@ -37,16 +37,16 @@ void RealTimePlayer::update(float delta) {
 
 }
 
-shared_ptr<AVFrame> RealTimePlayer::getFrame(bool &got) {
+std::shared_ptr<AVFrame> RealTimePlayer::getFrame(bool &got) {
     got = false;
 
-    lock_guard lck(mtx);
+    std::lock_guard lck(mtx);
     // 帧缓冲区已被清空,跳过渲染
     if (videoFrameQueue.empty()) {
         return {};
     }
     // 从帧缓冲区取出帧
-    shared_ptr<AVFrame> frame = videoFrameQueue.front();
+    std::shared_ptr<AVFrame> frame = videoFrameQueue.front();
     got = true;
     // 缓冲区出队被渲染的帧
     videoFrameQueue.pop();
@@ -81,7 +81,7 @@ void RealTimePlayer::play(const std::string &playUrl) {
     url = playUrl;
 
     analysisThread = std::thread([this]() {
-        auto decoder_ = make_shared<FFmpegDecoder>();
+        auto decoder_ = std::make_shared<FFmpegDecoder>();
 
         // 打开并分析输入
         bool ok = decoder_->OpenInput(url);
@@ -102,13 +102,13 @@ void RealTimePlayer::play(const std::string &playUrl) {
 
                     {
                         // Push frame to the buffer queue.
-                        lock_guard lck(mtx);
+                        std::lock_guard lck(mtx);
                         if (videoFrameQueue.size() > 10) {
                             videoFrameQueue.pop();
                         }
                         videoFrameQueue.push(frame);
                     }
-                } catch (const exception &e) {
+                } catch (const std::exception &e) {
                     // emit onError(e.what(), -2);
                     // Error, stop.
                     break;
@@ -154,7 +154,7 @@ void RealTimePlayer::stop() {
         decodeThread.join();
     }
     while (!videoFrameQueue.empty()) {
-        lock_guard lck(mtx);
+        std::lock_guard lck(mtx);
         // 清空缓冲
         videoFrameQueue.pop();
     }
@@ -234,7 +234,7 @@ bool RealTimePlayer::startRecord() {
     //     return false;
     // }
     // // 设置获得NALU回调
-    // decoder->_gotPktCallback = [this](const shared_ptr<AVPacket> &packet) {
+    // decoder->_gotPktCallback = [this](const std::shared_ptr<AVPacket> &packet) {
     //     // 输入编码器
     //     _mp4Encoder->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
     // };
@@ -310,7 +310,7 @@ bool RealTimePlayer::startGifRecord() {
         return false;
     }
     // 保存路径
-    stringstream ss;
+    std::stringstream ss;
     // ss << QStandardPaths::writableLocation(QStandardPaths::DesktopLocation).toStdString() << "/";
     // ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
     //           .count()
@@ -319,13 +319,13 @@ bool RealTimePlayer::startGifRecord() {
         return false;
     }
     // 创建gif编码器
-    _gifEncoder = make_shared<GifEncoder>();
+    _gifEncoder = std::make_shared<GifEncoder>();
     if (!_gifEncoder->open(
             decoder->width, decoder->height, decoder->GetVideoFrameFormat(), DEFAULT_GIF_FRAMERATE, ss.str())) {
         return false;
     }
     // 设置获得解码帧回调
-    decoder->_gotFrameCallback = [this](const shared_ptr<AVFrame> &frame) {
+    decoder->_gotFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
         if (!_gifEncoder) {
             return;
         }

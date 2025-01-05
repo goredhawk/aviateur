@@ -4,9 +4,9 @@
 
 #include "Mp4Encoder.h"
 
-Mp4Encoder::Mp4Encoder(const string &saveFilePath) {
+Mp4Encoder::Mp4Encoder(const std::string &saveFilePath) {
     // 分配
-    _formatCtx = shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
+    _formatCtx = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
     // 设置格式
     _formatCtx->oformat = av_guess_format("mov", nullptr, nullptr);
     // 文件保存路径
@@ -54,7 +54,7 @@ bool Mp4Encoder::start() {
     return true;
 }
 
-void Mp4Encoder::writePacket(const shared_ptr<AVPacket> &pkt, bool isVideo) {
+void Mp4Encoder::writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo) {
     if (!_isOpen) {
         return;
     }

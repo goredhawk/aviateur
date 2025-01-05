@@ -5,12 +5,12 @@
 #include "JpegEncoder.h"
 
 #include <memory>
-inline bool convertToYUV420P(const shared_ptr<AVFrame> &frame, shared_ptr<AVFrame> &yuvFrame) {
+inline bool convertToYUV420P(const std::shared_ptr<AVFrame> &frame, std::shared_ptr<AVFrame> &yuvFrame) {
     int width = frame->width;
     int height = frame->height;
 
     // Allocate YUV frame
-    yuvFrame = shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *f){
+    yuvFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *f){
         av_frame_free(&f);
     });
     if (!yuvFrame) {
@@ -48,14 +48,14 @@ inline bool convertToYUV420P(const shared_ptr<AVFrame> &frame, shared_ptr<AVFram
     return true;
 }
 
-bool JpegEncoder::encodeJpeg(const string &outFilePath, const shared_ptr<AVFrame> &frame) {
+bool JpegEncoder::encodeJpeg(const std::string &outFilePath, const std::shared_ptr<AVFrame> &frame) {
     if (!(frame && frame->height && frame->width && frame->linesize[0])) {
         return false;
     }
 
     // 编码上下文
-    shared_ptr<AVFormatContext> pFormatCtx
-        = shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
+    std::shared_ptr<AVFormatContext> pFormatCtx
+        = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
 
     // 设置格式
     pFormatCtx->oformat = av_guess_format("mjpeg", nullptr, nullptr);
@@ -77,7 +77,7 @@ bool JpegEncoder::encodeJpeg(const string &outFilePath, const shared_ptr<AVFrame
         return false;
     }
     // 设置编码参数
-    shared_ptr<AVCodecContext> codecCtx = shared_ptr<AVCodecContext>(
+    std::shared_ptr<AVCodecContext> codecCtx = std::shared_ptr<AVCodecContext>(
         avcodec_alloc_context3(pCodec), [](AVCodecContext *ctx) { avcodec_free_context(&ctx); });
     codecCtx->codec_id = pFormatCtx->oformat->video_codec;
     codecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -87,7 +87,7 @@ bool JpegEncoder::encodeJpeg(const string &outFilePath, const shared_ptr<AVFrame
     codecCtx->time_base = AVRational { 1, 25 };
 
     // Convert frame to YUV420P if it's not already in that format
-    shared_ptr<AVFrame> yuvFrame;
+    std::shared_ptr<AVFrame> yuvFrame;
     if (
         frame->format != AV_PIX_FMT_YUVJ420P &&
         frame->format != AV_PIX_FMT_YUV420P
@@ -111,7 +111,7 @@ bool JpegEncoder::encodeJpeg(const string &outFilePath, const shared_ptr<AVFrame
     avformat_write_header(pFormatCtx.get(), nullptr);
     int y_size = (codecCtx->width) * (codecCtx->height);
     // 调整包大小
-    shared_ptr<AVPacket> pkt = shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *pkt) { av_packet_free(&pkt); });
+    std::shared_ptr<AVPacket> pkt = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *pkt) { av_packet_free(&pkt); });
     av_new_packet(pkt.get(), y_size);
 
     // 发送帧到编码上下文

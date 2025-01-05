@@ -13,8 +13,6 @@
 
 class QQuickRealTimePlayer;
 
-using namespace std;
-
 class FFmpegDecoder {
     friend class RealTimePlayer;
 
@@ -43,7 +41,7 @@ public:
     virtual bool CloseInput();
 
     // 获取下一帧
-    virtual shared_ptr<AVFrame> GetNextFrame();
+    virtual std::shared_ptr<AVFrame> GetNextFrame();
 
     // 获取宽度
     int GetWidth() const { return width; }
@@ -97,15 +95,15 @@ private:
     int DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
 
     // 解码视频祯
-    bool DecodeVideo(const AVPacket *avpkt, shared_ptr<AVFrame> &pOutFrame);
+    bool DecodeVideo(const AVPacket *avpkt, std::shared_ptr<AVFrame> &pOutFrame);
 
     // 向音频fifo写入数据
     void writeAudioBuff(uint8_t *aSample, size_t aSize);
 
     // 获取到NALU回调
-    std::function<void(const shared_ptr<AVPacket> &packet)> _gotPktCallback = nullptr;
+    std::function<void(const std::shared_ptr<AVPacket> &packet)> _gotPktCallback = nullptr;
     // 获取到已经解码图像回调
-    std::function<void(const shared_ptr<AVFrame> &frame)> _gotFrameCallback = nullptr;
+    std::function<void(const std::shared_ptr<AVFrame> &frame)> _gotFrameCallback = nullptr;
 
     // 初始化硬件解码器
     bool hwDecoderInit(AVCodecContext *ctx, enum AVHWDeviceType type);
@@ -122,7 +120,7 @@ private:
     AVCodecContext *pAudioCodecCtx = nullptr;
 
     // FFmpeg 音频样本格式转换
-    shared_ptr<SwrContext> swrCtx;
+    std::shared_ptr<SwrContext> swrCtx;
 
     // 视频轨道顺序
     int videoStreamIndex = 0;
@@ -146,7 +144,7 @@ private:
     struct SwsContext *pImgConvertCtx = nullptr;
 
     // 解码器全局释放锁
-    mutex _releaseLock;
+    std::mutex _releaseLock;
 
     // 是否存在视频流
     bool hasVideoStream {};
@@ -162,11 +160,11 @@ private:
     volatile uint64_t bytesSecond = 0;
     uint64_t bitrate = 0;
     uint64_t lastCountBitrateTime = 0;
-    function<void(uint64_t bitrate)> onBitrate;
+    std::function<void(uint64_t bitrate)> onBitrate;
 
     // 音频队列
-    mutex abBuffMtx;
-    shared_ptr<AVFifo> audioFifoBuffer;
+    std::mutex abBuffMtx;
+    std::shared_ptr<AVFifo> audioFifoBuffer;
 
     // 硬件解码
     enum AVHWDeviceType hwDecoderType;
@@ -175,7 +173,7 @@ private:
     AVBufferRef *hwDeviceCtx = nullptr;
     volatile bool dropCurrentVideoFrame = false;
     // Hardware frame
-    shared_ptr<AVFrame> hwFrame;
+    std::shared_ptr<AVFrame> hwFrame;
 };
 
 #endif

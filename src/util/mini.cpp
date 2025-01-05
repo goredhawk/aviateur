@@ -21,13 +21,11 @@
 
 #include "mini.h"
 
-using namespace std;
-
 namespace toolkit {
 
 template <>
-mINI_basic<string, variant> &mINI_basic<string, variant>::Instance() {
-    static mINI_basic<string, variant> instance;
+mINI_basic<std::string, variant> &mINI_basic<std::string, variant>::Instance() {
+    static mINI_basic<std::string, variant> instance;
     return instance;
 }
 

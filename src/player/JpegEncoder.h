@@ -8,10 +8,9 @@
 #include <memory>
 #include <string>
 
-using namespace std;
 class JpegEncoder {
 public:
-    static bool encodeJpeg(const string &outFilePath, const shared_ptr<AVFrame> &frame);
+    static bool encodeJpeg(const std::string &outFilePath, const std::shared_ptr<AVFrame> &frame);
 };
 
 #endif // CTRLCENTER_JPEGENCODER_H

@@ -17,7 +17,7 @@ public:
     ~RealTimePlayer();
     void update(float delta);
 
-    shared_ptr<AVFrame> getFrame(bool &got);
+    std::shared_ptr<AVFrame> getFrame(bool &got);
 
     bool infoDirty() const { return m_infoChanged; }
     void makeInfoDirty(bool dirty) { m_infoChanged = dirty; }
@@ -62,22 +62,22 @@ public:
 
 protected:
     // ffmpeg解码器
-    shared_ptr<FFmpegDecoder> decoder;
+    std::shared_ptr<FFmpegDecoder> decoder;
     // 播放地址
-    string url;
+    std::string url;
     // 播放标记位
     volatile bool playStop = true;
     // 静音标记位
     volatile bool isMuted = true;
     // 帧队列
-    std::queue<shared_ptr<AVFrame>> videoFrameQueue;
-    mutex mtx;
+    std::queue<std::shared_ptr<AVFrame>> videoFrameQueue;
+    std::mutex mtx;
     // 解码线程
     std::thread decodeThread;
     // 分析线程
     std::thread analysisThread;
     // 最后输出的帧
-    shared_ptr<AVFrame> _lastFrame;
+    std::shared_ptr<AVFrame> _lastFrame;
     // 视频是否ready
     void onVideoInfoReady(int width, int height, int format);
     // 播放音频
@@ -85,9 +85,9 @@ protected:
     // 停止播放音频
     void disableAudio();
     // MP4录制器
-    shared_ptr<Mp4Encoder> _mp4Encoder;
+    std::shared_ptr<Mp4Encoder> _mp4Encoder;
     // GIF录制器
-    shared_ptr<GifEncoder> _gifEncoder;
+    std::shared_ptr<GifEncoder> _gifEncoder;
     // 是否有声音
     bool hasAudio() {
         if (!decoder) {

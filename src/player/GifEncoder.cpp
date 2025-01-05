@@ -5,9 +5,9 @@
 #include "GifEncoder.h"
 #include <chrono>
 
-bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int frameRate, const string &outputPath) {
+bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int frameRate, const std::string &outputPath) {
     // 编码上下文
-    _formatCtx = shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
+    _formatCtx = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
     // 设置格式
     _formatCtx->oformat = av_guess_format("gif", nullptr, nullptr);
     // 创建流
@@ -21,7 +21,7 @@ bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int fram
         return false;
     }
     // 设置编码参数
-    _codecCtx = shared_ptr<AVCodecContext>(
+    _codecCtx = std::shared_ptr<AVCodecContext>(
         avcodec_alloc_context3(pCodec), [](AVCodecContext *ctx) { avcodec_free_context(&ctx); });
     _frameRate = frameRate;
     _codecCtx->codec_id = _formatCtx->oformat->video_codec;
@@ -58,17 +58,17 @@ bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int fram
     return true;
 }
 
-bool GifEncoder::encodeFrame(const shared_ptr<AVFrame> &frame) {
+bool GifEncoder::encodeFrame(const std::shared_ptr<AVFrame> &frame) {
     if (!_opened) {
         return false;
     }
     // 编码锁
-    lock_guard<mutex> lck(_encodeMtx);
+    std::lock_guard lck(_encodeMtx);
     // 颜色转换
     if (_codecCtx->pix_fmt != frame->format) {
         // 分配帧空间
         if (!_tmpFrame) {
-            _tmpFrame = shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *f) { av_frame_free(&f); });
+            _tmpFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *f) { av_frame_free(&f); });
             if (!_tmpFrame) {
                 return false;
             }
@@ -94,7 +94,7 @@ bool GifEncoder::encodeFrame(const shared_ptr<AVFrame> &frame) {
     // 创建pkt
     int size = (_codecCtx->width) * (_codecCtx->height);
     // 调整包大小
-    shared_ptr<AVPacket> pkt = shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *pkt) { av_packet_free(&pkt); });
+    std::shared_ptr<AVPacket> pkt = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *pkt) { av_packet_free(&pkt); });
     av_new_packet(pkt.get(), size);
     // 记录帧编码时间
     _lastEncodeTime
@@ -113,7 +113,7 @@ bool GifEncoder::encodeFrame(const shared_ptr<AVFrame> &frame) {
 }
 
 void GifEncoder::close() {
-    lock_guard<mutex> lck(_encodeMtx);
+    std::lock_guard lck(_encodeMtx);
     if (!_opened) {
         return;
     }
@@ -135,6 +135,6 @@ GifEncoder::~GifEncoder() {
 }
 
 bool GifEncoder::isOpened() {
-    lock_guard lck(_encodeMtx);
+    std::lock_guard lck(_encodeMtx);
     return _opened;
 }

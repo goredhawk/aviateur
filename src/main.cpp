@@ -1,5 +1,6 @@
 ﻿#include "app.h"
 #include "player/RealTimePlayer.h"
+#include "wifi/WFBReceiver.h"
 
 #include <servers/render_server.h>
 
@@ -11,30 +12,40 @@ class MyPlayer : public Flint::Node {
         player = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
     }
 
-    void custom_update(double delta) override {
-        player->update(delta);
-    }
+    void custom_update(double delta) override { player->update(delta); }
 };
 
 class MyControlPanel : public Flint::Panel {
+    std::shared_ptr<Flint::PopupMenu> dongle_menu_;
+
+    void update_dongle_list() const {
+        auto dongles = WFBReceiver::Instance().GetDongleList();
+
+        dongle_menu_->clear_items();
+        for (auto dongle : dongles) {
+            dongle_menu_->create_item(dongle);
+        }
+    }
+
     void custom_ready() override {
         auto vbox_container = std::make_shared<Flint::VBoxContainer>();
         vbox_container->set_separation(8);
-        vbox_container->set_position({100, 100});
+        vbox_container->set_position({ 100, 100 });
         add_child(vbox_container);
-        //
-        // {
-        //     auto dongle_menu = std::make_shared<Flint::PopupMenu>();
-        //     dongle_menu->container_sizing.flag_h = Flint::ContainerSizingFlag::ShrinkStart;
-        //     vbox_container->add_child(dongle_menu);
-        // }
-        // {
-        //     auto button = std::make_shared<Flint::Button>();
-        //     button->set_text("Start");
-        //     button->container_sizing.flag_h = Flint::ContainerSizingFlag::ShrinkStart;
-        //     vbox_container->add_child(button);
-        // }
 
+        {
+            auto dongle_menu = std::make_shared<Flint::PopupMenu>();
+            dongle_menu->container_sizing.flag_h = Flint::ContainerSizingFlag::ShrinkStart;
+            vbox_container->add_child(dongle_menu);
+
+            update_dongle_list();
+        }
+        {
+            auto button = std::make_shared<Flint::Button>();
+            button->set_text("Start");
+            button->container_sizing.flag_h = Flint::ContainerSizingFlag::ShrinkStart;
+            vbox_container->add_child(button);
+        }
     }
 };
 

@@ -91,7 +91,7 @@ char *av_base64_encode(char *out, int out_size, const uint8_t *in, int in_size) 
     return ret;
 }
 
-string encodeBase64(const string &txt) {
+std::string encodeBase64(const std::string &txt) {
     if (txt.empty()) {
         return "";
     }
@@ -104,7 +104,7 @@ string encodeBase64(const string &txt) {
     return ret;
 }
 
-string decodeBase64(const string &txt) {
+std::string decodeBase64(const std::string &txt) {
     if (txt.empty()) {
         return "";
     }
@@ -114,7 +114,7 @@ string decodeBase64(const string &txt) {
     if (size <= 0) {
         return "";
     }
-    return string(txt_dec.get(), size);
+    return std::string(txt_dec.get(), size);
 }
 
 #ifdef TEST

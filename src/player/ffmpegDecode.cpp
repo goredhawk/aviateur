@@ -4,7 +4,7 @@
 
 #define MAX_AUDIO_PACKET (2 * 1024 * 1024)
 
-bool FFmpegDecoder::OpenInput(string &inputFile) {
+bool FFmpegDecoder::OpenInput(std::string &inputFile) {
     CloseInput();
 
     if (!isHwDecoderEnable) {
@@ -69,7 +69,7 @@ bool FFmpegDecoder::OpenInput(string &inputFile) {
 
     // 创建音频解码缓存
     if (hasAudioStream) {
-        audioFifoBuffer = shared_ptr<AVFifo>(
+        audioFifoBuffer = std::shared_ptr<AVFifo>(
             av_fifo_alloc2(0, GetAudioFrameSamples() * GetAudioChannelCount() * 10, AV_FIFO_FLAG_AUTO_GROW));
     }
     return true;
@@ -78,7 +78,7 @@ bool FFmpegDecoder::OpenInput(string &inputFile) {
 bool FFmpegDecoder::CloseInput() {
     isOpen = false;
 
-    lock_guard lck(_releaseLock);
+    std::lock_guard lck(_releaseLock);
 
     // 关闭流
     CloseVideo();
@@ -101,10 +101,10 @@ void freeSwrCtx(SwrContext *s) {
     swr_free(&s);
 }
 
-shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
+std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
     // 加锁，避免在此方法执行过程中解码器释放，导致崩溃
-    lock_guard<mutex> lck(_releaseLock);
-    shared_ptr<AVFrame> res;
+    std::lock_guard lck(_releaseLock);
+    std::shared_ptr<AVFrame> res;
     if (videoStreamIndex == -1 && audioStreamIndex == -1) {
         return res;
     }
@@ -115,14 +115,14 @@ shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
     // 读输入流
     while (true) {
         if (!pFormatCtx) {
-            throw runtime_error("分配解析器出错");
+            throw std::runtime_error("分配解析器出错");
         }
-        shared_ptr<AVPacket> packet = shared_ptr<AVPacket>(av_packet_alloc(), &freePkt);
+        std::shared_ptr<AVPacket> packet = std::shared_ptr<AVPacket>(av_packet_alloc(), &freePkt);
         int ret = av_read_frame(pFormatCtx, packet.get());
         if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw runtime_error("解析视频出错 " + string(errStr));
+            throw std::runtime_error("解析视频出错 " + std::string(errStr));
         }
         // 计算码率
         {
@@ -146,7 +146,7 @@ shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
                 _gotPktCallback(packet);
             }
             // 处理视频数据
-            shared_ptr<AVFrame> pVideoYuv = shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+            std::shared_ptr<AVFrame> pVideoYuv = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
             // 解码视频祯
             bool isDecodeComplite = DecodeVideo(packet.get(), pVideoYuv);
             if (isDecodeComplite) {
@@ -165,7 +165,7 @@ shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
             // 处理音频数据
             if (packet->dts != AV_NOPTS_VALUE) {
                 int audioFrameSize = MAX_AUDIO_PACKET;
-                shared_ptr<uint8_t> pFrameAudio = shared_ptr<uint8_t>(new uint8_t[audioFrameSize]);
+                std::shared_ptr<uint8_t> pFrameAudio = std::shared_ptr<uint8_t>(new uint8_t[audioFrameSize]);
                 // 解码音频祯
                 int nDecodedSize = DecodeAudio(audioStreamIndex, packet.get(), pFrameAudio.get(), audioFrameSize);
                 // 解码成功，解码数据写入音频缓存
@@ -246,7 +246,7 @@ bool FFmpegDecoder::OpenVideo() {
     return res;
 }
 
-bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, shared_ptr<AVFrame> &pOutFrame) {
+bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame> &pOutFrame) {
     bool res = false;
 
     if (pVideoCodecCtx && av_pkt && pOutFrame) {
@@ -254,13 +254,13 @@ bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, shared_ptr<AVFrame> &pOu
         if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw runtime_error("发送视频包出错 " + string(errStr));
+            throw std::runtime_error("发送视频包出错 " + std::string(errStr));
         }
 
         if (isHwDecoderEnable) {
             // Initialize the hardware frame.
             if (!hwFrame) {
-                hwFrame = shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+                hwFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
             }
 
             ret = avcodec_receive_frame(pVideoCodecCtx, hwFrame.get());
@@ -274,7 +274,7 @@ bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, shared_ptr<AVFrame> &pOu
         } else if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw runtime_error("解码视频出错 " + string(errStr));
+            throw std::runtime_error("解码视频出错 " + std::string(errStr));
         } else {
             // Successfully decoded a frame
             res = true;
@@ -292,7 +292,7 @@ bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, shared_ptr<AVFrame> &pOu
             if (ret < 0) {
                 char errStr[AV_ERROR_MAX_STRING_SIZE];
                 av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-                throw runtime_error("Decode video frame error. " + string(errStr));
+                throw std::runtime_error("Decode video frame error. " + std::string(errStr));
             }
         }
     }
@@ -379,10 +379,10 @@ int FFmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t 
                     if (ret < 0) {
                         char errStr[AV_ERROR_MAX_STRING_SIZE];
                         av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-                        throw runtime_error("解码音频出错 " + string(errStr));
+                        throw std::runtime_error("解码音频出错 " + std::string(errStr));
                         return 0;
                     }
-                    swrCtx = shared_ptr<SwrContext>(ptr, &freeSwrCtx);
+                    swrCtx = std::shared_ptr<SwrContext>(ptr, &freeSwrCtx);
                 }
 
                 // Convert audio frame to S16 format
@@ -420,7 +420,7 @@ int FFmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t 
 }
 
 void FFmpegDecoder::writeAudioBuff(uint8_t *aSample, size_t aSize) {
-    lock_guard<mutex> lck(abBuffMtx);
+    std::lock_guard lck(abBuffMtx);
     if (av_fifo_can_write(audioFifoBuffer.get()) < aSize) {
         std::vector<uint8_t> tmp;
         tmp.resize(aSize);
@@ -430,7 +430,7 @@ void FFmpegDecoder::writeAudioBuff(uint8_t *aSample, size_t aSize) {
 }
 
 size_t FFmpegDecoder::ReadAudioBuff(uint8_t *aSample, size_t aSize) {
-    lock_guard<mutex> lck(abBuffMtx);
+    std::lock_guard lck(abBuffMtx);
     if (av_fifo_elem_size(audioFifoBuffer.get()) < aSize) {
         return 0;
     }
@@ -438,6 +438,6 @@ size_t FFmpegDecoder::ReadAudioBuff(uint8_t *aSample, size_t aSize) {
     return aSize;
 }
 void FFmpegDecoder::ClearAudioBuff() {
-    lock_guard<mutex> lck(abBuffMtx);
+    std::lock_guard lck(abBuffMtx);
     av_fifo_reset2(audioFifoBuffer.get());
 }

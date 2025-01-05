@@ -68,14 +68,12 @@ int uv_exepath(char *buffer, int *size) {
 
 #define PATH_MAX 4096
 
-using namespace std;
-
 namespace toolkit {
 
 static constexpr char CCH[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-string makeRandStr(int sz, bool printable) {
-    string ret;
+std::string makeRandStr(int sz, bool printable) {
+    std::string ret;
     ret.resize(sz);
     std::mt19937 rng(std::random_device {}());
     for (int i = 0; i < sz; ++i) {
@@ -93,8 +91,8 @@ bool is_safe(uint8_t b) {
     return b >= ' ' && b < 128;
 }
 
-string hexdump(const void *buf, size_t len) {
-    string ret("\r\n");
+std::string hexdump(const void *buf, size_t len) {
+    std::string ret("\r\n");
     char tmp[8];
     const uint8_t *data = (const uint8_t *)buf;
     for (size_t i = 0; i < len; i += 16) {
@@ -119,8 +117,8 @@ string hexdump(const void *buf, size_t len) {
     return ret;
 }
 
-string hexmem(const void *buf, size_t len) {
-    string ret;
+std::string hexmem(const void *buf, size_t len) {
+    std::string ret;
     char tmp[8];
     const uint8_t *data = (const uint8_t *)buf;
     for (size_t i = 0; i < len; ++i) {
@@ -130,7 +128,7 @@ string hexmem(const void *buf, size_t len) {
     return ret;
 }
 
-string exePath(bool isExe /*= true*/) {
+std::string exePath(bool isExe /*= true*/) {
     char buffer[PATH_MAX * 2 + 1] = { 0 };
     int n = -1;
 #if defined(_WIN32)
@@ -144,7 +142,7 @@ string exePath(bool isExe /*= true*/) {
     n = readlink("/proc/self/exe", buffer, sizeof(buffer));
 #endif
 
-    string filePath;
+    std::string filePath;
     if (n <= 0) {
         filePath = "./";
     } else {
@@ -163,12 +161,12 @@ string exePath(bool isExe /*= true*/) {
     return filePath;
 }
 
-string exeDir(bool isExe /*= true*/) {
+std::string exeDir(bool isExe /*= true*/) {
     auto path = exePath(isExe);
     return path.substr(0, path.rfind('/') + 1);
 }
 
-string exeName(bool isExe /*= true*/) {
+std::string exeName(bool isExe /*= true*/) {
     auto path = exePath(isExe);
     return path.substr(path.rfind('/') + 1);
 }
@@ -197,11 +195,11 @@ std::string strToUpper(std::string &&str) {
     return std::move(str);
 }
 
-vector<string> split(const string &s, const char *delim) {
-    vector<string> ret;
+std::vector<std::string> split(const std::string &s, const char *delim) {
+    std::vector<std::string> ret;
     size_t last = 0;
     auto index = s.find(delim, last);
-    while (index != string::npos) {
+    while (index != std::string::npos) {
         if (index - last > 0) {
             ret.push_back(s.substr(last, index - last));
         }
@@ -216,7 +214,7 @@ vector<string> split(const string &s, const char *delim) {
 
 #define TRIM(s, chars)                                                                                                 \
     do {                                                                                                               \
-        string map(0xFF, '\0');                                                                                        \
+        std::string map(0xFF, '\0');                                                                                        \
         for (auto &ch : chars) {                                                                                       \
             map[(unsigned char &)ch] = '\1';                                                                           \
         }                                                                                                              \
@@ -227,35 +225,35 @@ vector<string> split(const string &s, const char *delim) {
     } while (0);
 
 // 去除前后的空格、回车符、制表符
-std::string &trim(std::string &s, const string &chars) {
+std::string &trim(std::string &s, const std::string &chars) {
     TRIM(s, chars);
     return s;
 }
 
-std::string trim(std::string &&s, const string &chars) {
+std::string trim(std::string &&s, const std::string &chars) {
     TRIM(s, chars);
     return std::move(s);
 }
 
-void replace(string &str, const string &old_str, const string &new_str) {
+void replace(std::string &str, const std::string &old_str, const std::string &new_str) {
     if (old_str.empty() || old_str == new_str) {
         return;
     }
     auto pos = str.find(old_str);
-    if (pos == string::npos) {
+    if (pos == std::string::npos) {
         return;
     }
     str.replace(pos, old_str.size(), new_str);
     replace(str, old_str, new_str);
 }
 
-bool start_with(const string &str, const string &substr) {
+bool start_with(const std::string &str, const std::string &substr) {
     return str.find(substr) == 0;
 }
 
-bool end_with(const string &str, const string &substr) {
+bool end_with(const std::string &str, const std::string &substr) {
     auto pos = str.rfind(substr);
-    return pos != string::npos && pos == str.size() - substr.size();
+    return pos != std::string::npos && pos == str.size() - substr.size();
 }
 
 #if defined(_WIN32)
@@ -263,12 +261,12 @@ void sleep(int second) {
     Sleep(1000 * second);
 }
 void usleep(int micro_seconds) {
-    this_thread::sleep_for(std::chrono::microseconds(micro_seconds));
+    std::this_thread::sleep_for(std::chrono::microseconds(micro_seconds));
 }
 
 const char *strcasestr(const char *big, const char *little) {
-    string big_str = big;
-    string little_str = little;
+    std::string big_str = big;
+    std::string little_str = little;
     strToLower(big_str);
     strToLower(little_str);
     auto pos = strstr(big_str.data(), little_str.data());
@@ -320,14 +318,14 @@ static inline uint64_t getCurrentMicrosecondOrigin() {
 #endif
 }
 
-string getTimeStr(const char *fmt, time_t time) {
+std::string getTimeStr(const char *fmt, time_t time) {
     if (!time) {
         time = ::time(nullptr);
     }
     auto tm = getLocalTime(time);
     char buffer[64];
     auto success = std::strftime(buffer, sizeof(buffer), fmt, &tm);
-    return 0 == success ? string(fmt) : buffer;
+    return 0 == success ? std::string(fmt) : buffer;
 }
 
 struct tm getLocalTime(time_t sec) {
@@ -340,10 +338,10 @@ struct tm getLocalTime(time_t sec) {
     return tm;
 }
 
-static thread_local string thread_name;
+static thread_local std::string thread_name;
 
-static string limitString(const char *name, size_t max_size) {
-    string str = name;
+static std::string limitString(const char *name, size_t max_size) {
+    std::string str = name;
     if (str.size() + 1 > max_size) {
         auto erased = str.size() + 1 - max_size + 3;
         str.replace(5, erased, "...");

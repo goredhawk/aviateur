@@ -15,7 +15,8 @@ extern "C" {
 #include <string>
 #include <unordered_map>
 
-using namespace std;
+#undef min
+#undef max
 
 inline uint32_t htobe32(uint32_t host_32bits) {
     // 检查主机字节序是否为小端模式
@@ -133,8 +134,8 @@ public:
             rssi_min = rssi;
             rssi_max = rssi;
         } else {
-            rssi_min = min(rssi, rssi_min);
-            rssi_max = max(rssi, rssi_max);
+            rssi_min = std::min(rssi, rssi_min);
+            rssi_max = std::max(rssi, rssi_max);
         }
         rssi_sum += rssi;
         count_all += 1;

@@ -10,14 +10,13 @@
 #include <string>
 #include <vector>
 
-using namespace std;
 class GifEncoder {
 public:
     ~GifEncoder();
     // 初始化编码器
-    bool open(int width, int height, AVPixelFormat pixelFormat, int frameRate, const string &outputPath);
+    bool open(int width, int height, AVPixelFormat pixelFormat, int frameRate, const std::string &outputPath);
     // 编码帧
-    bool encodeFrame(const shared_ptr<AVFrame> &frame);
+    bool encodeFrame(const std::shared_ptr<AVFrame> &frame);
     // 关闭编码器
     void close();
     // 帧率
@@ -28,16 +27,16 @@ public:
     bool isOpened();
 
 protected:
-    mutex _encodeMtx;
+    std::mutex _encodeMtx;
     // 编码上下文
-    shared_ptr<AVFormatContext> _formatCtx;
+    std::shared_ptr<AVFormatContext> _formatCtx;
     // 编码上下文
-    shared_ptr<AVCodecContext> _codecCtx;
+    std::shared_ptr<AVCodecContext> _codecCtx;
     // 色彩空间转换
-    SwsContext *_imgConvertCtx;
+    SwsContext *_imgConvertCtx{};
     // 颜色转换临时frame
-    shared_ptr<AVFrame> _tmpFrame;
-    vector<uint8_t> _buff;
+    std::shared_ptr<AVFrame> _tmpFrame;
+    std::vector<uint8_t> _buff;
     // 最后编码时间
     uint64_t _lastEncodeTime = 0;
     // 帧率

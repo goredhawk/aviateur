@@ -10,9 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-using namespace std;
-
-Aggregator::Aggregator(const string &keypair, uint64_t epoch, uint32_t channel_id, const DataCB &cb)
+Aggregator::Aggregator(const std::string &keypair, uint64_t epoch, uint32_t channel_id, const DataCB &cb)
     : fec_p(NULL)
     , fec_k(-1)
     , fec_n(-1)
@@ -34,15 +32,15 @@ Aggregator::Aggregator(const string &keypair, uint64_t epoch, uint32_t channel_i
 
     FILE *fp;
     if ((fp = fopen(keypair.c_str(), "rb")) == NULL) {
-        throw runtime_error(format("Unable to open {}: {}", keypair.c_str(), strerror(errno)));
+        throw std::runtime_error(std::format("Unable to open {}: {}", keypair.c_str(), strerror(errno)));
     }
     if (fread(rx_secretkey, crypto_box_SECRETKEYBYTES, 1, fp) != 1) {
         fclose(fp);
-        throw runtime_error(format("Unable to read rx secret key: {}", strerror(errno)));
+        throw std::runtime_error(std::format("Unable to read rx secret key: {}", strerror(errno)));
     }
     if (fread(tx_publickey, crypto_box_PUBLICKEYBYTES, 1, fp) != 1) {
         fclose(fp);
-        throw runtime_error(format("Unable to read tx public key: {}", strerror(errno)));
+        throw std::runtime_error(std::format("Unable to read tx public key: {}", strerror(errno)));
     }
     fclose(fp);
 }
@@ -140,7 +138,7 @@ int Aggregator::get_block_ring_idx(uint64_t block_idx) {
     }
 
     int new_blocks
-        = (int)min(last_known_block != (uint64_t)-1 ? block_idx - last_known_block : 1, (uint64_t)RX_RING_SIZE);
+        = (int)std::min(last_known_block != (uint64_t)-1 ? block_idx - last_known_block : 1, (uint64_t)RX_RING_SIZE);
     assert(new_blocks > 0);
 
     last_known_block = block_idx;
