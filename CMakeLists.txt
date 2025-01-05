@@ -44,6 +44,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE "3rd/flint_gui/src")
 add_subdirectory(3rd/libsdptransform)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/libsdptransform/include")
 
+add_subdirectory(3rd/json)
+target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
+
 target_link_libraries(${PROJECT_NAME}
         ${FFMPEG_LIBRARIES}
         PkgConfig::LIBUSB

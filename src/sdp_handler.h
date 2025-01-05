@@ -5,8 +5,8 @@
 #include <filesystem>
 #include <fstream>
 #include <future>
-#include <util/mini.h>
 #include <nlohmann/json.hpp>
+#include <util/mini.h>
 
 using namespace toolkit;
 
@@ -34,7 +34,7 @@ public:
 
     // Get config
     nlohmann::json GetConfig() {
-        QJsonObject config;
+        nlohmann::json config;
         for (const auto &item : mINI::Instance()) {
             config[std::string(item.first.c_str())] = std::string(item.second.c_str());
         }
@@ -46,7 +46,8 @@ public:
     static bool Start(
         const std::string &vidPid, int channel, int channelWidth, const std::string &keyPath,
         const std::string &codec) {
-        // save config
+
+        // Save config.
         mINI::Instance()[CONFIG_CHANNEL] = channel;
         mINI::Instance()[CONFIG_CHANNEL_WIDTH] = channelWidth;
         mINI::Instance()[CONFIG_CHANNEL_KEY] = keyPath;
@@ -60,7 +61,7 @@ public:
     }
 
     static bool Stop() {
-        std::async([]() { WFBReceiver::Instance().Stop(); });
+        std::future f = std::async([]() { WFBReceiver::Instance().Stop(); });
         return true;
     }
 
@@ -114,6 +115,7 @@ public:
         // emit onWfbFrameCount(wfbFrameCount_);
         // emit onRtpPktCount(rtpPktCount_);
     }
+
     long long wfbFrameCount() { return wfbFrameCount_; }
     long long rtpPktCount() { return rtpPktCount_; }
     long long wifiFrameCount() { return wifiFrameCount_; }

@@ -1,6 +1,7 @@
 ﻿#include "app.h"
 #include "player/RealTimePlayer.h"
 #include "resources/render_image.h"
+#include "sdp_handler.h"
 #include "wifi/WFBReceiver.h"
 
 #include <servers/render_server.h>
@@ -9,25 +10,26 @@
 class MyRenderRect : public Flint::TextureRect {
     std::shared_ptr<RealTimePlayer> player_;
 
-    std::shared_ptr<Flint::RenderImage> image_;
-
     void custom_ready() override {
+        set_custom_minimum_size({400, 400});
+        container_sizing.expand_h = true;
+        container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+
         auto render_server = Flint::RenderServer::get_singleton();
         player_ = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
-
-        image_ = std::make_shared<Flint::RenderImage>(size.to_i32());
     }
 
-    void custom_update(double delta) override { player_->update(delta); }
+    void custom_update(double delta) override {
+        player_->update(delta);
+        texture = std::make_shared<Flint::RenderImage>(size.to_i32());
+
+        Flint::VectorServer::get_singleton()->canvas->get_scene()->push_render_target(render_target_desc);
+    }
 
     void custom_draw() override {
-        if (image_->get_size() != size.to_i32()) {
-            image_ = std::make_shared<Flint::RenderImage>(size.to_i32());
-        }
-        image_->reclaim_render_target();
-
+        auto render_image = (Flint::RenderImage *)texture.get();
         auto yuv_texture
-            = Flint::VectorServer::get_singleton()->get_texture_by_render_target_id(image_->get_render_target());
+            = Flint::VectorServer::get_singleton()->get_texture_by_render_target_id(render_image->get_render_target());
         player_->m_yuv_renderer->render(yuv_texture);
     }
 
@@ -39,8 +41,14 @@ class MyRenderRect : public Flint::TextureRect {
 class MyControlPanel : public Flint::Panel {
     std::shared_ptr<Flint::PopupMenu> dongle_menu_;
 
+    std::string vidPid = "obda:8812";
+    int channel = 173;
+    int channelWidth = 20;
+    std::string keyPath = "D:/Dev/Projects/fpv4win/gs.key";
+    std::string codec = "AUTO";
+
     void update_dongle_list() const {
-        auto dongles = WFBReceiver::Instance().GetDongleList();
+        auto dongles = SdpHandler::GetDongleList();
 
         dongle_menu_->clear_items();
         for (auto dongle : dongles) {
@@ -66,6 +74,19 @@ class MyControlPanel : public Flint::Panel {
             button->set_text("Start");
             button->container_sizing.expand_h = true;
             button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+
+            auto button_raw = button.get();
+
+            auto callback1 = [button_raw, this] {
+                if (button_raw->get_text() == "Start") {
+                    button_raw->set_text("Stop");
+                    SdpHandler::Instance().Stop();
+                } else {
+                    button_raw->set_text("Start");
+                    SdpHandler::Instance().Start(vidPid, channel, channelWidth, keyPath, codec);
+                }
+            };
+            button->connect_signal("pressed", callback1);
             vbox_container->add_child(button);
         }
     }
@@ -79,8 +100,6 @@ int main() {
     app.get_tree_root()->add_child(hbox_container);
 
     auto render_rect = std::make_shared<MyRenderRect>();
-    render_rect->container_sizing.expand_h = true;
-    render_rect->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
     hbox_container->add_child(render_rect);
 
     auto control_panel = std::make_shared<MyControlPanel>();
