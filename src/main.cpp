@@ -13,25 +13,25 @@ public:
     bool playing_ = false;
 
     void custom_ready() override {
-        set_custom_minimum_size({ 200, 100 });
+        set_custom_minimum_size({ 640, 360 });
         container_sizing.expand_h = false;
         container_sizing.flag_h = Flint::ContainerSizingFlag::ShrinkCenter;
 
         auto render_server = Flint::RenderServer::get_singleton();
         player_ = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
 
-        auto render_image = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I { 400, 400 });
+        auto render_image = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I { 640, 360 });
         texture = render_image;
 
-        {
-            auto image_buffer = Pathfinder::ImageBuffer::from_memory(Pathfinder::load_file_as_bytes("logo.png"), false);
-
-            auto encoder = render_server->device_->create_command_encoder("upload common renderer data");
-
-            encoder->write_texture(render_image->get_texture(), {}, image_buffer->get_data());
-
-            render_server->queue_->submit_and_wait(encoder);
-        }
+        // {
+        //     auto image_buffer = Pathfinder::ImageBuffer::from_memory(Pathfinder::load_file_as_bytes("logo.png"), false);
+        //
+        //     auto encoder = render_server->device_->create_command_encoder("upload common renderer data");
+        //
+        //     encoder->write_texture(render_image->get_texture(), {}, image_buffer->get_data());
+        //
+        //     render_server->queue_->submit_and_wait(encoder);
+        // }
 
         set_stretch_mode(StretchMode::KeepAspect);
     }

@@ -3,13 +3,13 @@
 
 std::string vertCode = R"(#version 310 es
 
-layout(location = 0) in vec3 aPos;
+layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec2 aUV;
 
 out vec2 v_texCoord;
 
 void main() {
-    gl_Position = vec4(aPos, 1.0f);
+    gl_Position = vec4(aPos, 1.0f, 1.0f);
     v_texCoord = aUV;
 }
 )";
@@ -52,7 +52,7 @@ void main() {
         // NV12
         yuv.x = texture(tex_y, v_texCoord).r;
         yuv.y = texture(tex_u, v_texCoord).r - 0.5;
-        yuv.z = texture(tex_u, v_texCoord).a - 0.5;
+        yuv.z = texture(tex_u, v_texCoord).g - 0.5;
         rgb = mat3( 1.0,       1.0,         1.0,
                     0.0,       -0.3455,  1.779,
                     1.4075, -0.7169,  0.0) * yuv;
@@ -96,19 +96,17 @@ void YuvRenderer::initGeometry() {
     // Set up vertex data (and buffer(s)) and configure vertex attributes.
     float vertices[] = {
         // Positions, UVs.
-        -1.0, -1.0, 1.0, 0.0, 0.0, // 0
-        1.0,  -1.0, 1.0, 1.0, 0.0, // 1
-        1.0,  1.0,  1.0, 1.0, 1.0, // 2
-        -1.0, -1.0, 1.0, 0.0, 0.0, // 3
-        1.0,  1.0,  1.0, 1.0, 1.0, // 4
-        -1.0, 1.0,  1.0, 0.0, 1.0 // 5
+        -1.0, -1.0, 0.0, 0.0, // 0
+        1.0,  -1.0, 1.0, 0.0, // 1
+        1.0,  1.0,  1.0, 1.0, // 2
+        -1.0, -1.0, 0.0, 0.0, // 3
+        1.0,  1.0,  1.0, 1.0, // 4
+        -1.0, 1.0,  0.0, 1.0 // 5
     };
 
     mVertexBuffer = mDevice->create_buffer(
         { Pathfinder::BufferType::Vertex, sizeof(vertices), Pathfinder::MemoryProperty::DeviceLocal },
         "yuv renderer vertex buffer");
-
-    mSampler = mDevice->create_sampler(Pathfinder::SamplerDescriptor {});
 
     auto encoder = mDevice->create_command_encoder("upload yuv vertex buffer");
     encoder->write_buffer(mVertexBuffer, 0, sizeof(vertices), vertices);
@@ -121,15 +119,16 @@ void YuvRenderer::initPipeline() {
 
     std::vector<Pathfinder::VertexInputAttributeDescription> attribute_descriptions;
 
-    uint32_t stride = 5 * sizeof(float);
+    uint32_t stride = 4 * sizeof(float);
 
     attribute_descriptions.push_back(
-        { 0, 3, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex });
+        { 0, 2, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex });
 
     attribute_descriptions.push_back(
-        { 0, 2, Pathfinder::DataType::f32, stride, 3 * sizeof(float), Pathfinder::VertexInputRate::Vertex });
+        { 0, 2, Pathfinder::DataType::f32, stride, 2 * sizeof(float), Pathfinder::VertexInputRate::Vertex });
 
-    auto blend_state = Pathfinder::BlendState::from_over();
+    Pathfinder::BlendState blend_state;
+    blend_state.enabled = false;
 
     mUniformBuffer = mDevice->create_buffer(
         { Pathfinder::BufferType::Uniform, sizeof(FragUniformBlock),
@@ -145,6 +144,18 @@ void YuvRenderer::initPipeline() {
             Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v"),
         });
 
+    // //    mTexY->setFixedSamplePositions(false);
+    // mTexY->setMinificationFilter(QOpenGLTexture::Nearest);
+    // mTexY->setMagnificationFilter(QOpenGLTexture::Nearest);
+    // mTexY->setWrapMode(QOpenGLTexture::ClampToEdge);
+    Pathfinder::SamplerDescriptor sampler_desc;
+    sampler_desc.mag_filter = Pathfinder::SamplerFilter::Nearest;
+    sampler_desc.min_filter = Pathfinder::SamplerFilter::Nearest;
+    sampler_desc.address_mode_u = Pathfinder::SamplerAddressMode::ClampToEdge;
+    sampler_desc.address_mode_v = Pathfinder::SamplerAddressMode::ClampToEdge;
+
+    mSampler = mDevice->create_sampler(sampler_desc);
+
     mPipeline = mDevice->create_render_pipeline(
         mDevice->create_shader_module(vert_source, Pathfinder::ShaderStage::Vertex, "yuv vert"),
         mDevice->create_shader_module(frag_source, Pathfinder::ShaderStage::Fragment, "yuv frag"),
@@ -159,10 +170,6 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     mPixFmt = format;
 
     mTexY = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "y texture");
-    // //    mTexY->setFixedSamplePositions(false);
-    // mTexY->setMinificationFilter(QOpenGLTexture::Nearest);
-    // mTexY->setMagnificationFilter(QOpenGLTexture::Nearest);
-    // mTexY->setWrapMode(QOpenGLTexture::ClampToEdge);
 
     if (format == AV_PIX_FMT_YUV420P || format == AV_PIX_FMT_YUVJ420P) {
         mTexU = mDevice->create_texture({ { width / 2, height / 2 }, Pathfinder::TextureFormat::R8 }, "u texture");
@@ -173,7 +180,7 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
 
         // V is not used for NV12.
         if (mTexV == nullptr) {
-            mTexV = mDevice->create_texture({ { 2, 2 }, Pathfinder::TextureFormat::Rg8 }, "dummy v texture");
+            mTexV = mDevice->create_texture({ { 2, 2 }, Pathfinder::TextureFormat::R8 }, "dummy v texture");
         }
     }
     //  yuv444p
@@ -186,33 +193,19 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
 }
 
 void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
-    // float frameWidth = m_itemWidth;
-    // float frameHeight = m_itemHeight;
-    // if (m_itemWidth * (1.0 * data->height / data->width) < m_itemHeight) {
-    //     frameHeight = frameWidth * (1.0 * data->height / data->width);
-    // } else {
-    //     frameWidth = frameHeight * (1.0 * data->width / data->height);
-    // }
-    // float x = (m_itemWidth - frameWidth) / 2;
-    // float y = (m_itemHeight - frameHeight) / 2;
-    // // GL顶点坐标转换
-    // float x1 = -1 + 2.0 / m_itemWidth * x;
-    // float y1 = 1 - 2.0 / m_itemHeight * y;
-    // float x2 = 2.0 / m_itemWidth * frameWidth + x1;
-    // float y2 = y1 - 2.0 / m_itemHeight * frameHeight;
-    //
-    // mVertices = { Pathfinder::Vec3F(x1, y1, 0.0f), Pathfinder::Vec3F(x2, y1, 0.0f), Pathfinder::Vec3F(x2, y2, 0.0f),
-    //               Pathfinder::Vec3F(x1, y2, 0.0f) };
-
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
     if (data->linesize[0]) {
+        int RowLength = data->linesize[0];
+        int ImageHeight = data->height;
         encoder->write_texture(mTexY, {}, data->data[0]);
     }
     if (data->linesize[1]) {
+        int RowLength = data->linesize[1];
+        int ImageHeight = data->height;
         encoder->write_texture(mTexU, {}, data->data[1]);
     }
-    if (data->linesize[2]) {
+    if (data->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
         encoder->write_texture(mTexV, {}, data->data[2]);
     }
 
