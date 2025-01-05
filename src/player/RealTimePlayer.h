@@ -22,7 +22,7 @@ public:
     bool infoDirty() const { return m_infoChanged; }
     void makeInfoDirty(bool dirty) { m_infoChanged = dirty; }
     int videoWidth() const { return m_videoWidth; }
-    int videoHeght() const { return m_videoHeight; }
+    int videoHeight() const { return m_videoHeight; }
     int videoFormat() const { return m_videoFormat; }
     bool getMuted() const { return isMuted; }
     // 播放

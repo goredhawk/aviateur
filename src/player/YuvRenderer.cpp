@@ -150,6 +150,10 @@ void YuvRenderer::initPipeline() {
 }
 
 void YuvRenderer::updateTextureInfo(int width, int height, int format) {
+    if (width == 0 || height == 0) {
+        return;
+    }
+
     mPixFmt = format;
 
     mTexY = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "y texture");

@@ -2,6 +2,7 @@
 #define SDP_HANDLER_H
 
 #include "wifi/WFBReceiver.h"
+#include <common/any_callable.h>
 #include <filesystem>
 #include <fstream>
 #include <future>
@@ -95,25 +96,23 @@ public:
     }
 
     void PutLog(const std::string &level, const std::string &msg) {
-        // emit onLog(std::string(level.c_str()), std::string(msg.c_str()));
+        onLog(std::string(level.c_str()), std::string(msg.c_str()));
     }
 
-    void NotifyWifiStop() {
-        // emit onWifiStop();
-    }
+    void NotifyWifiStop() { onWifiStop(); }
 
     int NotifyRtpStream(int pt, uint16_t ssrc) {
-        // get free port
+        // Get free port.
         const std::string sdpFile = "sdp/sdp.sdp";
         BuildSdp(sdpFile, playerCodec, pt, playerPort);
-        // emit onRtpStream(sdpFile);
+        onRtpStream(sdpFile);
         return Instance().playerPort;
     }
 
     void UpdateCount() {
-        // emit onWifiFrameCount(wifiFrameCount_);
-        // emit onWfbFrameCount(wfbFrameCount_);
-        // emit onRtpPktCount(rtpPktCount_);
+        onWifiFrameCount(wifiFrameCount_);
+        onWfbFrameCount(wfbFrameCount_);
+        onRtpPktCount(rtpPktCount_);
     }
 
     long long wfbFrameCount() { return wfbFrameCount_; }
@@ -128,13 +127,22 @@ public:
     int playerPort = 0;
     std::string playerCodec;
 
-    // signals:
-    void onLog(std::string level, std::string msg);
-    void onWifiStop();
-    void onWifiFrameCount(long long count);
-    void onWfbFrameCount(long long count);
-    void onRtpPktCount(long long count);
-    void onRtpStream(std::string sdp);
+    // Signals.
+    Flint::AnyCallable<void> onLog;
+    Flint::AnyCallable<void> onWifiStop;
+    Flint::AnyCallable<void> onWifiFrameCount;
+    Flint::AnyCallable<void> onWfbFrameCount;
+    Flint::AnyCallable<void> onRtpPktCount;
+    Flint::AnyCallable<void> onRtpStream;
+
+    /*
+    Flint::AnyCallable<void> onLog(std::string level, std::string msg);
+    Flint::AnyCallable<void> onWifiStop();
+    Flint::AnyCallable<void> onWifiFrameCount(long long count);
+    Flint::AnyCallable<void> onWfbFrameCount(long long count);
+    Flint::AnyCallable<void> onRtpPktCount(long long count);
+    Flint::AnyCallable<void> onRtpStream(std::string sdp);
+     */
 };
 
 #endif // SDP_HANDLER_H

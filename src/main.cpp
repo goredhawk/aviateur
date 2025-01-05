@@ -8,29 +8,26 @@
 #include <servers/vector_server.h>
 
 class MyRenderRect : public Flint::TextureRect {
+public:
     std::shared_ptr<RealTimePlayer> player_;
+    std::string playing_file_;
 
     void custom_ready() override {
-        set_custom_minimum_size({400, 400});
+        set_custom_minimum_size({ 400, 400 });
         container_sizing.expand_h = true;
         container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
 
         auto render_server = Flint::RenderServer::get_singleton();
         player_ = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
+
+        texture = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I { 400, 400 });
     }
 
-    void custom_update(double delta) override {
-        player_->update(delta);
-        texture = std::make_shared<Flint::RenderImage>(size.to_i32());
-
-        Flint::VectorServer::get_singleton()->canvas->get_scene()->push_render_target(render_target_desc);
-    }
+    void custom_update(double delta) override { player_->update(delta); }
 
     void custom_draw() override {
         auto render_image = (Flint::RenderImage *)texture.get();
-        auto yuv_texture
-            = Flint::VectorServer::get_singleton()->get_texture_by_render_target_id(render_image->get_render_target());
-        player_->m_yuv_renderer->render(yuv_texture);
+        player_->m_yuv_renderer->render(render_image->get_texture());
     }
 
     void start_playing(std::string url) { player_->play(url); }
@@ -41,11 +38,13 @@ class MyRenderRect : public Flint::TextureRect {
 class MyControlPanel : public Flint::Panel {
     std::shared_ptr<Flint::PopupMenu> dongle_menu_;
 
-    std::string vidPid = "obda:8812";
+    std::string vidPid = "0bda:8812";
     int channel = 173;
     int channelWidth = 20;
     std::string keyPath = "D:/Dev/Projects/fpv4win/gs.key";
     std::string codec = "AUTO";
+
+    std::shared_ptr<Flint::Button> play_button_;
 
     void update_dongle_list() const {
         auto dongles = SdpHandler::GetDongleList();
@@ -70,24 +69,22 @@ class MyControlPanel : public Flint::Panel {
             update_dongle_list();
         }
         {
-            auto button = std::make_shared<Flint::Button>();
-            button->set_text("Start");
-            button->container_sizing.expand_h = true;
-            button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            play_button_ = std::make_shared<Flint::Button>();
+            play_button_->set_text("Start");
+            play_button_->container_sizing.expand_h = true;
+            play_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
 
-            auto button_raw = button.get();
-
-            auto callback1 = [button_raw, this] {
-                if (button_raw->get_text() == "Start") {
-                    button_raw->set_text("Stop");
-                    SdpHandler::Instance().Stop();
-                } else {
-                    button_raw->set_text("Start");
+            auto callback1 = [this] {
+                if (this->play_button_->get_text() == "Start") {
+                    this->play_button_->set_text("Stop");
                     SdpHandler::Instance().Start(vidPid, channel, channelWidth, keyPath, codec);
+                } else {
+                    this->play_button_->set_text("Start");
+                    SdpHandler::Instance().Stop();
                 }
             };
-            button->connect_signal("pressed", callback1);
-            vbox_container->add_child(button);
+            play_button_->connect_signal("pressed", callback1);
+            vbox_container->add_child(play_button_);
         }
     }
 };
@@ -105,6 +102,16 @@ int main() {
     auto control_panel = std::make_shared<MyControlPanel>();
     control_panel->set_custom_minimum_size({ 280, 720 });
     hbox_container->add_child(control_panel);
+
+    auto render_rect_raw = render_rect.get();
+    auto onRtpStream = [render_rect_raw](std::string sdp_file) {
+        render_rect_raw->playing_file_ = sdp_file;
+        render_rect_raw->start_playing(sdp_file);
+    };
+    SdpHandler::Instance().onRtpStream = onRtpStream;
+
+    auto onWifiStop = [render_rect_raw]() { render_rect_raw->stop_playing(); };
+    SdpHandler::Instance().onWifiStop = onWifiStop;
 
     app.main_loop();
 

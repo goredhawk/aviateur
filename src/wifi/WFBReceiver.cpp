@@ -66,12 +66,13 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
     libusb_exit(findctx);
     return list;
 }
+
 bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelWidth, const std::string &kPath) {
 
-    // QmlNativeAPI::Instance().wifiFrameCount_ = 0;
-    // QmlNativeAPI::Instance().wfbFrameCount_ = 0;
-    // QmlNativeAPI::Instance().rtpPktCount_ = 0;
-    // QmlNativeAPI::Instance().UpdateCount();
+    SdpHandler::Instance().wifiFrameCount_ = 0;
+    SdpHandler::Instance().wfbFrameCount_ = 0;
+    SdpHandler::Instance().rtpPktCount_ = 0;
+    SdpHandler::Instance().UpdateCount();
 
     keyPath = kPath;
     if (usbThread) {
@@ -85,9 +86,8 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
     char c;
     iss >> std::hex >> wifiDeviceVid >> c >> wifiDevicePid;
 
-    auto logger = std::make_shared<Logger>([](const std::string &level, const std::string &msg) {
-        // QmlNativeAPI::Instance().PutLog(level, msg);
-    });
+    auto logger = std::make_shared<Logger>(
+        [](const std::string &level, const std::string &msg) { SdpHandler::Instance().PutLog(level, msg); });
 
     rc = libusb_init(&ctx);
     if (rc < 0) {
@@ -117,7 +117,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
             rtlDevice->Init(
                 [](const Packet &p) {
                     WFBReceiver::Instance().handle80211Frame(p);
-                    // QmlNativeAPI::Instance().UpdateCount();
+                    SdpHandler::Instance().UpdateCount();
                 },
                 SelectedChannel {
                     .Channel = channel,
@@ -145,13 +145,12 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
     return true;
 }
 void WFBReceiver::handle80211Frame(const Packet &packet) {
-
-    // QmlNativeAPI::Instance().wifiFrameCount_++;
+    SdpHandler::Instance().wifiFrameCount_++;
     RxFrame frame(packet.Data);
     if (!frame.IsValidWfbFrame()) {
         return;
     }
-    // QmlNativeAPI::Instance().wfbFrameCount_++;
+    SdpHandler::Instance().wfbFrameCount_++;
 
     static int8_t rssi[4] = { 1, 1, 1, 1 };
     static uint8_t antenna[4] = { 1, 1, 1, 1 };
@@ -170,7 +169,7 @@ void WFBReceiver::handle80211Frame(const Packet &packet) {
         keyPath.c_str(), epoch, video_channel_id_f,
         [](uint8_t *payload, uint16_t packet_size) { WFBReceiver::Instance().handleRtp(payload, packet_size); });
 
-    std::lock_guard<std::mutex> lock(agg_mutex);
+    std::lock_guard lock(agg_mutex);
     if (frame.MatchesChannelID(video_channel_id_be8)) {
         video_aggregator->process_packet(
             packet.Data.data() + sizeof(ieee80211_header), packet.Data.size() - sizeof(ieee80211_header) - 4, 0,
@@ -188,8 +187,8 @@ inline bool isH264(const uint8_t *data) {
 }
 
 void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
-    // QmlNativeAPI::Instance().rtpPktCount_++;
-    // QmlNativeAPI::Instance().UpdateCount();
+    SdpHandler::Instance().rtpPktCount_++;
+    SdpHandler::Instance().UpdateCount();
     if (rtlDevice->should_stop) {
         return;
     }
@@ -206,22 +205,20 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
 
     if (!playing) {
         playing = true;
-        // if(QmlNativeAPI::Instance().playerCodec=="AUTO") {
-        //     // judge H264 or h265
-        //     if (isH264(header->getPayloadData())) {
-        //         QmlNativeAPI::Instance().playerCodec = "H264";
-        //         QmlNativeAPI::Instance().PutLog("debug",
-        //                                         "judge Codec " + QmlNativeAPI::Instance().playerCodec.toStdString());
-        //     } else{
-        //         QmlNativeAPI::Instance().playerCodec = "H265";
-        //         QmlNativeAPI::Instance().PutLog("debug",
-        //                                         "judge Codec " + QmlNativeAPI::Instance().playerCodec.toStdString());
-        //     }
-        // }
-        // QmlNativeAPI::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
+        if (SdpHandler::Instance().playerCodec == "AUTO") {
+            // judge H264 or h265
+            if (isH264(header->getPayloadData())) {
+                SdpHandler::Instance().playerCodec = "H264";
+                SdpHandler::Instance().PutLog("debug", "judge Codec " + SdpHandler::Instance().playerCodec);
+            } else {
+                SdpHandler::Instance().playerCodec = "H265";
+                SdpHandler::Instance().PutLog("debug", "judge Codec " + SdpHandler::Instance().playerCodec);
+            }
+        }
+        SdpHandler::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
     }
 
-    // send video to player
+    // Send video to player.
     sendto(
         sendFd, reinterpret_cast<const char *>(payload), packet_size, 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
 }
@@ -231,7 +228,7 @@ bool WFBReceiver::Stop() {
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
-    // QmlNativeAPI::Instance().NotifyWifiStop();
+    SdpHandler::Instance().NotifyWifiStop();
 
     return true;
 }

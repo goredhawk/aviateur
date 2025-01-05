@@ -5,36 +5,22 @@
 
 // GIF默认帧率
 #define DEFAULT_GIF_FRAMERATE 10
-//
-// void TItemRender::synchronize(QQuickFramebufferObject *item) {
-//
-//     auto *pItem = qobject_cast<RealTimePlayer *>(item);
-//     if (pItem) {
-//         if (!m_window) {
-//             m_window = pItem->window();
-//         }
-//         if (pItem->infoDirty()) {
-//             m_render.updateTextureInfo(pItem->videoWidth(), pItem->videoHeght(), pItem->videoFormat());
-//             pItem->makeInfoDirty(false);
-//         }
-//         if (pItem->playStop) {
-//             m_render.clear();
-//             return;
-//         }
-//         bool got = false;
-//         std::shared_ptr<AVFrame> frame = pItem->getFrame(got);
-//         if (got && frame->linesize[0]) {
-//             m_render.updateTextureData(frame);
-//         }
-//     }
-// }
 
 RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
     m_yuv_renderer = std::make_shared<YuvRenderer>(device, queue);
 }
 
 void RealTimePlayer::update(float delta) {
+    if (m_infoChanged) {
+        m_yuv_renderer->updateTextureInfo(m_videoWidth, m_videoHeight, m_videoFormat);
+        m_infoChanged = false;
+    }
 
+    bool got = false;
+    std::shared_ptr<AVFrame> frame = getFrame(got);
+    if (got && frame->linesize[0]) {
+        m_yuv_renderer->updateTextureData(frame);
+    }
 }
 
 std::shared_ptr<AVFrame> RealTimePlayer::getFrame(bool &got) {
