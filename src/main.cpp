@@ -13,14 +13,27 @@ public:
     bool playing_ = false;
 
     void custom_ready() override {
-        set_custom_minimum_size({ 400, 400 });
-        container_sizing.expand_h = true;
-        container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        set_custom_minimum_size({ 200, 100 });
+        container_sizing.expand_h = false;
+        container_sizing.flag_h = Flint::ContainerSizingFlag::ShrinkCenter;
 
         auto render_server = Flint::RenderServer::get_singleton();
         player_ = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
 
-        texture = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I { 400, 400 });
+        auto render_image = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I { 400, 400 });
+        texture = render_image;
+
+        {
+            auto image_buffer = Pathfinder::ImageBuffer::from_memory(Pathfinder::load_file_as_bytes("logo.png"), false);
+
+            auto encoder = render_server->device_->create_command_encoder("upload common renderer data");
+
+            encoder->write_texture(render_image->get_texture(), {}, image_buffer->get_data());
+
+            render_server->queue_->submit_and_wait(encoder);
+        }
+
+        set_stretch_mode(StretchMode::KeepAspect);
     }
 
     void custom_update(double delta) override { player_->update(delta); }
@@ -105,12 +118,12 @@ int main() {
     hbox_container->set_separation(8);
     app.get_tree_root()->add_child(hbox_container);
 
-    auto render_rect = std::make_shared<MyRenderRect>();
-    hbox_container->add_child(render_rect);
-
     auto control_panel = std::make_shared<MyControlPanel>();
     control_panel->set_custom_minimum_size({ 280, 720 });
     hbox_container->add_child(control_panel);
+
+    auto render_rect = std::make_shared<MyRenderRect>();
+    hbox_container->add_child(render_rect);
 
     auto render_rect_raw = render_rect.get();
     auto onRtpStream = [render_rect_raw](std::string sdp_file) {
