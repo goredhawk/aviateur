@@ -41,6 +41,9 @@ add_executable(${PROJECT_NAME} ${SRC_LIST} qml.qrc)
 add_subdirectory(3rd/flint_gui)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/flint_gui/src")
 
+add_subdirectory(3rd/libsdptransform)
+target_include_directories(${PROJECT_NAME} PRIVATE "3rd/libsdptransform/include")
+
 target_link_libraries(${PROJECT_NAME}
         ${FFMPEG_LIBRARIES}
         PkgConfig::LIBUSB
