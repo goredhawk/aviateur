@@ -88,8 +88,6 @@ void YuvRenderer::resize(int width, int height) {
     }
     m_itemWidth = width;
     m_itemHeight = height;
-    mOutputTex = mDevice->create_texture(
-        { { width, height }, Pathfinder::TextureFormat::Rgba8Unorm }, "yuv renderer output texture");
 }
 
 void YuvRenderer::initGeometry() {
@@ -213,7 +211,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
     mQueue->submit_and_wait(encoder);
 }
 
-void YuvRenderer::render() {
+void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex) {
     if (!mTextureAllocated) {
         return;
     }
@@ -241,7 +239,7 @@ void YuvRenderer::render() {
             Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "v", mTexV, mSampler),
         });
 
-    encoder->begin_render_pass(mRenderPass, mOutputTex, Pathfinder::ColorF::black());
+    encoder->begin_render_pass(mRenderPass, outputTex, Pathfinder::ColorF::black());
 
     encoder->draw(0, mVertices.size());
 

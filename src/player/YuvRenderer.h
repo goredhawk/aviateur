@@ -27,7 +27,7 @@ public:
     YuvRenderer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);
     ~YuvRenderer() = default;
     void init();
-    void render();
+    void render(std::shared_ptr<Pathfinder::Texture> outputTex);
     void resize(int width, int height);
     void updateTextureInfo(int width, int height, int format);
     void updateTextureData(const std::shared_ptr<AVFrame> &data);
@@ -48,8 +48,6 @@ private:
     std::shared_ptr<Pathfinder::Sampler> mSampler;
     std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;
     std::shared_ptr<Pathfinder::Buffer> mUniformBuffer;
-
-    std::shared_ptr<Pathfinder::Texture> mOutputTex;
 
     std::shared_ptr<Pathfinder::Texture> mDummyTex;
     std::vector<Pathfinder::Vec3F> mVertices;
