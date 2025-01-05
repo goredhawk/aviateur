@@ -9,6 +9,8 @@
 #include "GifEncoder.h"
 #include "Mp4Encoder.h"
 
+#include <common/any_callable.h>
+
 class TItemRender;
 
 class RealTimePlayer {
@@ -46,17 +48,22 @@ public:
 
     // Signals
     // 播放已经停止
-    void onPlayStopped();
+    Flint::AnyCallable<void> onPlayStopped;
     // 出错
-    void onError(std::string msg, int code);
+    // void onError(std::string msg, int code);
+    Flint::AnyCallable<void> onError;
     // 获取录音音量
-    void gotRecordVol(double vol);
+    // void gotRecordVol(double vol);
+    Flint::AnyCallable<void> gotRecordVol;
     // 获得码率
-    void onBitrate(long bitrate);
+    // void onBitrate(long bitrate);
+    Flint::AnyCallable<void> onBitrate;
     // 静音
-    void onMutedChanged(bool muted);
+    // void onMutedChanged(bool muted);
+    Flint::AnyCallable<void> onMutedChanged;
     // 是否有音频
-    void onHasAudio(bool has);
+    // void onHasAudio(bool has);
+    Flint::AnyCallable<void> onHasAudio;
 
     friend class TItemRender;
 

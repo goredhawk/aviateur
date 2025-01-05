@@ -28,12 +28,12 @@ bool FFmpegDecoder::OpenInput(std::string &inputFile) {
         return false;
     }
     // 超时机制
-    static const int timeout = 10;
+    static const int timeout = 20;
     startTime = std::chrono::steady_clock::now();
 
     pFormatCtx->interrupt_callback.callback = [](void *timestamp) -> int {
         auto now = std::chrono::steady_clock::now();
-        std::chrono::duration<double> duration = now - *(std::chrono::time_point<std::chrono::steady_clock> *)timestamp;
+        std::chrono::duration<double, std::chrono::seconds::period> duration = now - *(std::chrono::time_point<std::chrono::steady_clock> *)timestamp;
         return duration.count() > timeout;
     };
     pFormatCtx->interrupt_callback.opaque = &startTime;
@@ -43,7 +43,7 @@ bool FFmpegDecoder::OpenInput(std::string &inputFile) {
         return false;
     }
 
-    auto duration = std::chrono::steady_clock::now() - startTime;
+    std::chrono::duration<double, std::chrono::seconds::period> duration = std::chrono::steady_clock::now() - startTime;
     // 分析超时，退出，可能格式不正确
     if (duration.count() > timeout) {
         CloseInput();

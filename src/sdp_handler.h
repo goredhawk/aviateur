@@ -96,23 +96,24 @@ public:
     }
 
     void PutLog(const std::string &level, const std::string &msg) {
-        onLog(std::string(level.c_str()), std::string(msg.c_str()));
+        // onLog(std::string(level.c_str()), std::string(msg.c_str()));
     }
 
     void NotifyWifiStop() { onWifiStop(); }
 
     int NotifyRtpStream(int pt, uint16_t ssrc) {
         // Get free port.
-        const std::string sdpFile = "sdp/sdp.sdp";
+        std::string sdpFile = "sdp/sdp.sdp";
         BuildSdp(sdpFile, playerCodec, pt, playerPort);
-        onRtpStream(sdpFile);
+        // Emit signal.
+        onRtpStream.operator()<std::string>(std::move(sdpFile));
         return Instance().playerPort;
     }
 
     void UpdateCount() {
-        onWifiFrameCount(wifiFrameCount_);
-        onWfbFrameCount(wfbFrameCount_);
-        onRtpPktCount(rtpPktCount_);
+        // onWifiFrameCount(wifiFrameCount_);
+        // onWfbFrameCount(wfbFrameCount_);
+        // onRtpPktCount(rtpPktCount_);
     }
 
     long long wfbFrameCount() { return wfbFrameCount_; }

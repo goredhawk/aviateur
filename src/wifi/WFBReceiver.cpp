@@ -68,7 +68,6 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
 }
 
 bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelWidth, const std::string &kPath) {
-
     SdpHandler::Instance().wifiFrameCount_ = 0;
     SdpHandler::Instance().wfbFrameCount_ = 0;
     SdpHandler::Instance().rtpPktCount_ = 0;

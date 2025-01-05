@@ -72,6 +72,7 @@ void RealTimePlayer::play(const std::string &playUrl) {
         // 打开并分析输入
         bool ok = decoder_->OpenInput(url);
         if (!ok) {
+            abort();
             // emit onError("视频加载出错", -2);
             return;
         }

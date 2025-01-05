@@ -11,6 +11,7 @@ class MyRenderRect : public Flint::TextureRect {
 public:
     std::shared_ptr<RealTimePlayer> player_;
     std::string playing_file_;
+    bool playing_ = false;
 
     void custom_ready() override {
         set_custom_minimum_size({ 400, 400 });
@@ -26,13 +27,22 @@ public:
     void custom_update(double delta) override { player_->update(delta); }
 
     void custom_draw() override {
+        if (!playing_) {
+            return;
+        }
         auto render_image = (Flint::RenderImage *)texture.get();
         player_->m_yuv_renderer->render(render_image->get_texture());
     }
 
-    void start_playing(std::string url) { player_->play(url); }
+    void start_playing(std::string url) {
+        playing_ = true;
+        player_->play(url);
+    }
 
-    void stop_playing() { player_->stop(); }
+    void stop_playing() {
+        playing_ = false;
+        player_->stop();
+    }
 };
 
 class MyControlPanel : public Flint::Panel {
@@ -40,7 +50,7 @@ class MyControlPanel : public Flint::Panel {
 
     std::string vidPid = "0bda:8812";
     int channel = 173;
-    int channelWidth = 20;
+    int channelWidthMode = 0;
     std::string keyPath = "D:/Dev/Projects/fpv4win/gs.key";
     std::string codec = "AUTO";
 
@@ -77,7 +87,7 @@ class MyControlPanel : public Flint::Panel {
             auto callback1 = [this] {
                 if (this->play_button_->get_text() == "Start") {
                     this->play_button_->set_text("Stop");
-                    SdpHandler::Instance().Start(vidPid, channel, channelWidth, keyPath, codec);
+                    SdpHandler::Instance().Start(vidPid, channel, channelWidthMode, keyPath, codec);
                 } else {
                     this->play_button_->set_text("Start");
                     SdpHandler::Instance().Stop();
