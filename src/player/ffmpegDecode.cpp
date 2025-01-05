@@ -28,7 +28,7 @@ bool FFmpegDecoder::OpenInput(std::string &inputFile) {
         return false;
     }
     // 超时机制
-    static const int timeout = 20;
+    static const int timeout = 10;
     startTime = std::chrono::steady_clock::now();
 
     pFormatCtx->interrupt_callback.callback = [](void *timestamp) -> int {

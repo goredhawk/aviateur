@@ -8,6 +8,7 @@
 
 RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
     m_yuv_renderer = std::make_shared<YuvRenderer>(device, queue);
+    m_yuv_renderer->init();
 }
 
 void RealTimePlayer::update(float delta) {

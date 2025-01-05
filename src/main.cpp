@@ -5,7 +5,6 @@
 #include "wifi/WFBReceiver.h"
 
 #include <servers/render_server.h>
-#include <servers/vector_server.h>
 
 class MyRenderRect : public Flint::TextureRect {
 public:

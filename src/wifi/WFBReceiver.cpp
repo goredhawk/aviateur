@@ -35,7 +35,7 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
     // Iterate over devices
     for (ssize_t i = 0; i < count; ++i) {
         libusb_device *dev = devs[i];
-        struct libusb_device_descriptor desc;
+        libusb_device_descriptor desc;
         if (libusb_get_device_descriptor(dev, &desc) == 0) {
             // Check if the device is using libusb driver
             if (desc.bDeviceClass == LIBUSB_CLASS_PER_INTERFACE) {
@@ -99,7 +99,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
         return false;
     }
 
-    /*Check if kenel driver attached*/
+    /*Check if kernel driver attached*/
     if (libusb_kernel_driver_active(dev_handle, 0)) {
         rc = libusb_detach_kernel_driver(dev_handle, 0); // detach driver
     }
@@ -115,7 +115,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
             rtlDevice = wifi_driver.CreateRtlDevice(dev_handle);
             rtlDevice->Init(
                 [](const Packet &p) {
-                    WFBReceiver::Instance().handle80211Frame(p);
+                    Instance().handle80211Frame(p);
                     SdpHandler::Instance().UpdateCount();
                 },
                 SelectedChannel {
@@ -188,6 +188,7 @@ inline bool isH264(const uint8_t *data) {
 void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
     SdpHandler::Instance().rtpPktCount_++;
     SdpHandler::Instance().UpdateCount();
+
     if (rtlDevice->should_stop) {
         return;
     }
@@ -197,7 +198,7 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
 
     sockaddr_in serverAddr {};
     serverAddr.sin_family = AF_INET;
-    // serverAddr.sin_port = htons(QmlNativeAPI::Instance().playerPort);
+    serverAddr.sin_port = htons(SdpHandler::Instance().playerPort);
     serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     auto *header = (RtpHeader *)payload;

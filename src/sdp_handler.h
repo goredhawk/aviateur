@@ -70,10 +70,9 @@ public:
         std::string dirPath = std::filesystem::absolute(filePath).string();
 
         try {
-            if (std::filesystem::create_directory(dirPath))
-                std::cout << "Created a directory\n";
-            else
-                std::cerr << "Failed to create a directory\n";
+            if (!std::filesystem::exists(dirPath)) {
+                std::filesystem::create_directory(dirPath);
+            }
         } catch (const std::exception &e) {
             std::cerr << e.what() << '\n';
         }

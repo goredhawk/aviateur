@@ -1,7 +1,8 @@
 ﻿#include "YuvRenderer.h"
 #include "libavutil/pixfmt.h"
 
-auto vertCode = R"(
+std::string vertCode = R"(#version 310 es
+
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec2 aUV;
 
@@ -13,8 +14,16 @@ void main() {
 }
 )";
 
-auto fragCode =
-    R"(
+std::string fragCode =
+    R"(#version 310 es
+
+#ifdef GL_ES
+precision highp float;
+precision highp sampler2D;
+#endif
+
+out vec4 oFragColor;
+
 in vec2 v_texCoord;
 
 uniform sampler2D tex_y;
@@ -33,32 +42,33 @@ void main() {
     vec3 rgb;
     if (pixFmt == 0 || pixFmt == 12) {
         //yuv420p
-        yuv.x = texture2D(tex_y, v_texCoord).r;
-        yuv.y = texture2D(tex_u, v_texCoord).r - 0.5;
-        yuv.z = texture2D(tex_v, v_texCoord).r - 0.5;
+        yuv.x = texture(tex_y, v_texCoord).r;
+        yuv.y = texture(tex_u, v_texCoord).r - 0.5;
+        yuv.z = texture(tex_v, v_texCoord).r - 0.5;
         rgb = mat3( 1.0,       1.0,         1.0,
                     0.0,       -0.3455,  1.779,
                     1.4075, -0.7169,  0.0) * yuv;
     } else if( pixFmt == 23 ){
         // NV12
-        yuv.x = texture2D(tex_y, v_texCoord).r;
-        yuv.y = texture2D(tex_u, v_texCoord).r - 0.5;
-        yuv.z = texture2D(tex_u, v_texCoord).a - 0.5;
+        yuv.x = texture(tex_y, v_texCoord).r;
+        yuv.y = texture(tex_u, v_texCoord).r - 0.5;
+        yuv.z = texture(tex_u, v_texCoord).a - 0.5;
         rgb = mat3( 1.0,       1.0,         1.0,
                     0.0,       -0.3455,  1.779,
                     1.4075, -0.7169,  0.0) * yuv;
 
     } else {
         //YUV444P
-        yuv.x = texture2D(tex_y, v_texCoord).r;
-        yuv.y = texture2D(tex_u, v_texCoord).r - 0.5;
-        yuv.z = texture2D(tex_v, v_texCoord).r - 0.5;
+        yuv.x = texture(tex_y, v_texCoord).r;
+        yuv.y = texture(tex_u, v_texCoord).r - 0.5;
+        yuv.z = texture(tex_v, v_texCoord).r - 0.5;
 
         rgb.x = clamp( yuv.x + 1.402 *yuv.z, 0.0, 1.0);
         rgb.y = clamp( yuv.x - 0.34414 * yuv.y - 0.71414 * yuv.z, 0.0, 1.0);
         rgb.z = clamp( yuv.x + 1.772 * yuv.y, 0.0, 1.0);
     }
-    gl_FragColor = vec4(rgb, 1.0);
+
+    oFragColor = vec4(rgb, 1.0);
 }
 )";
 
@@ -80,14 +90,6 @@ void YuvRenderer::init() {
 
     initPipeline();
     initGeometry();
-}
-
-void YuvRenderer::resize(int width, int height) {
-    if (m_itemWidth == width && m_itemHeight == height) {
-        return;
-    }
-    m_itemWidth = width;
-    m_itemHeight = height;
 }
 
 void YuvRenderer::initGeometry() {
@@ -114,8 +116,8 @@ void YuvRenderer::initGeometry() {
 }
 
 void YuvRenderer::initPipeline() {
-    const auto vert_source = std::vector<char>(vertCode, vertCode + sizeof(vertCode));
-    const auto frag_source = std::vector<char>(fragCode, fragCode + sizeof(fragCode));
+    const auto vert_source = std::vector<char>(vertCode.begin(), vertCode.end());
+    const auto frag_source = std::vector<char>(fragCode.begin(), fragCode.end());
 
     std::vector<Pathfinder::VertexInputAttributeDescription> attribute_descriptions;
 
@@ -170,7 +172,9 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
         mTexU = mDevice->create_texture({ { width / 2, height / 2 }, Pathfinder::TextureFormat::Rg8 }, "u texture");
 
         // V is not used for NV12.
-        mTexV = mDummyTex;
+        if (mTexV == nullptr) {
+            mTexV = mDevice->create_texture({ { 2, 2 }, Pathfinder::TextureFormat::Rg8 }, "dummy v texture");
+        }
     }
     //  yuv444p
     else {
@@ -182,23 +186,23 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
 }
 
 void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
-    float frameWidth = m_itemWidth;
-    float frameHeight = m_itemHeight;
-    if (m_itemWidth * (1.0 * data->height / data->width) < m_itemHeight) {
-        frameHeight = frameWidth * (1.0 * data->height / data->width);
-    } else {
-        frameWidth = frameHeight * (1.0 * data->width / data->height);
-    }
-    float x = (m_itemWidth - frameWidth) / 2;
-    float y = (m_itemHeight - frameHeight) / 2;
-    // GL顶点坐标转换
-    float x1 = -1 + 2.0 / m_itemWidth * x;
-    float y1 = 1 - 2.0 / m_itemHeight * y;
-    float x2 = 2.0 / m_itemWidth * frameWidth + x1;
-    float y2 = y1 - 2.0 / m_itemHeight * frameHeight;
-
-    mVertices = { Pathfinder::Vec3F(x1, y1, 0.0f), Pathfinder::Vec3F(x2, y1, 0.0f), Pathfinder::Vec3F(x2, y2, 0.0f),
-                  Pathfinder::Vec3F(x1, y2, 0.0f) };
+    // float frameWidth = m_itemWidth;
+    // float frameHeight = m_itemHeight;
+    // if (m_itemWidth * (1.0 * data->height / data->width) < m_itemHeight) {
+    //     frameHeight = frameWidth * (1.0 * data->height / data->width);
+    // } else {
+    //     frameWidth = frameHeight * (1.0 * data->width / data->height);
+    // }
+    // float x = (m_itemWidth - frameWidth) / 2;
+    // float y = (m_itemHeight - frameHeight) / 2;
+    // // GL顶点坐标转换
+    // float x1 = -1 + 2.0 / m_itemWidth * x;
+    // float y1 = 1 - 2.0 / m_itemHeight * y;
+    // float x2 = 2.0 / m_itemWidth * frameWidth + x1;
+    // float y2 = y1 - 2.0 / m_itemHeight * frameHeight;
+    //
+    // mVertices = { Pathfinder::Vec3F(x1, y1, 0.0f), Pathfinder::Vec3F(x2, y1, 0.0f), Pathfinder::Vec3F(x2, y2, 0.0f),
+    //               Pathfinder::Vec3F(x1, y2, 0.0f) };
 
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
@@ -238,14 +242,22 @@ void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex) {
     // Update descriptor set.
     mDescriptorSet->add_or_update(
         {
-            Pathfinder::Descriptor::sampled(0, Pathfinder::ShaderStage::Fragment, "y", mTexY, mSampler),
-            Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "u", mTexU, mSampler),
-            Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "v", mTexV, mSampler),
+            Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y", mTexY, mSampler),
+            Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u", mTexU, mSampler),
+            Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v", mTexV, mSampler),
         });
 
     encoder->begin_render_pass(mRenderPass, outputTex, Pathfinder::ColorF::black());
 
-    encoder->draw(0, mVertices.size());
+    encoder->set_viewport({ { 0, 0 }, outputTex->get_size() });
+
+    encoder->bind_render_pipeline(mPipeline);
+
+    encoder->bind_vertex_buffers({ mVertexBuffer });
+
+    encoder->bind_descriptor_set(mDescriptorSet);
+
+    encoder->draw(0, 6);
 
     encoder->end_render_pass();
 
