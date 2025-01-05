@@ -1,6 +1,5 @@
 ﻿#include "RealTimePlayer.h"
 #include "JpegEncoder.h"
-#include <SDL2/SDL.h>
 #include <future>
 #include <sstream>
 
@@ -32,9 +31,10 @@
 
 RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
     m_yuv_renderer = std::make_shared<YuvRenderer>(device, queue);
+}
 
-    // // 按每秒60帧的帧率更新界面
-    // update(1000 / 100);
+void RealTimePlayer::update(float delta) {
+
 }
 
 shared_ptr<AVFrame> RealTimePlayer::getFrame(bool &got) {
@@ -158,7 +158,7 @@ void RealTimePlayer::stop() {
         // 清空缓冲
         videoFrameQueue.pop();
     }
-    SDL_CloseAudio();
+    // SDL_CloseAudio();
     if (decoder) {
         decoder->CloseInput();
     }
@@ -270,39 +270,39 @@ bool RealTimePlayer::enableAudio() {
         return false;
     }
     // 音频参数
-    SDL_AudioSpec audioSpec;
-    audioSpec.freq = decoder->GetAudioSampleRate();
-    audioSpec.format = AUDIO_S16;
-    audioSpec.channels = decoder->GetAudioChannelCount();
-    audioSpec.silence = 1;
-    audioSpec.samples = decoder->GetAudioFrameSamples();
-    audioSpec.padding = 0;
-    audioSpec.size = 0;
-    audioSpec.userdata = this;
-    // 音频样本读取回调
-    audioSpec.callback = [](void *Thiz, Uint8 *stream, int len) {
-        auto *pThis = static_cast<RealTimePlayer *>(Thiz);
-        SDL_memset(stream, 0, len);
-        pThis->decoder->ReadAudioBuff(stream, len);
-        if (pThis->isMuted) {
-            SDL_memset(stream, 0, len);
-        }
-    };
-    // 关闭音频
-    SDL_CloseAudio();
-    // 开启声音
-    if (SDL_OpenAudio(&audioSpec, nullptr) == 0) {
-        // 播放声音
-        SDL_PauseAudio(0);
-    } else {
-        // emit onError("开启音频出错，如需听声音请插入音频外设\n" + std::string(SDL_GetError()), -1);
-        return false;
-    }
+    // SDL_AudioSpec audioSpec;
+    // audioSpec.freq = decoder->GetAudioSampleRate();
+    // audioSpec.format = AUDIO_S16;
+    // audioSpec.channels = decoder->GetAudioChannelCount();
+    // audioSpec.silence = 1;
+    // audioSpec.samples = decoder->GetAudioFrameSamples();
+    // audioSpec.padding = 0;
+    // audioSpec.size = 0;
+    // audioSpec.userdata = this;
+    // // 音频样本读取回调
+    // audioSpec.callback = [](void *Thiz, Uint8 *stream, int len) {
+    //     auto *pThis = static_cast<RealTimePlayer *>(Thiz);
+    //     SDL_memset(stream, 0, len);
+    //     pThis->decoder->ReadAudioBuff(stream, len);
+    //     if (pThis->isMuted) {
+    //         SDL_memset(stream, 0, len);
+    //     }
+    // };
+    // // 关闭音频
+    // SDL_CloseAudio();
+    // // 开启声音
+    // if (SDL_OpenAudio(&audioSpec, nullptr) == 0) {
+    //     // 播放声音
+    //     SDL_PauseAudio(0);
+    // } else {
+    //     // emit onError("开启音频出错，如需听声音请插入音频外设\n" + std::string(SDL_GetError()), -1);
+    //     return false;
+    // }
     return true;
 }
 
 void RealTimePlayer::disableAudio() {
-    SDL_CloseAudio();
+    // SDL_CloseAudio();
 }
 
 bool RealTimePlayer::startGifRecord() {

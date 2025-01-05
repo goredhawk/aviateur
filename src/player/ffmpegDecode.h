@@ -110,6 +110,8 @@ private:
     // 初始化硬件解码器
     bool hwDecoderInit(AVCodecContext *ctx, enum AVHWDeviceType type);
 
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
+
     // FFmpeg 解封装上下文
     AVFormatContext *pFormatCtx = nullptr;
 

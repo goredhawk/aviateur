@@ -17,19 +17,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 find_package(PkgConfig REQUIRED)
 
 find_package(FFmpeg REQUIRED)
-find_package(SDL2 REQUIRED)
 find_package(unofficial-sodium CONFIG REQUIRED)
 pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
 include_directories(${FFMPEG_INCLUDE_DIRS})
-
-find_package(Qt5 COMPONENTS Quick Multimedia REQUIRED)
-
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
     message("build debug")
     add_definitions(-DDEBUG_MODE)
 endif ()
-
 
 file(GLOB_RECURSE SRC_LIST
         3rd/rtl8812au-monitor-pcap/*.c
@@ -47,7 +42,7 @@ add_subdirectory(3rd/flint_gui)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/flint_gui/src")
 
 target_link_libraries(${PROJECT_NAME}
-        ${SDL2_LIBRARIES}
+        ${FFMPEG_LIBRARIES}
         PkgConfig::LIBUSB
         unofficial-sodium::sodium
         flint_gui)

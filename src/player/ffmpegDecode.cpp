@@ -29,21 +29,23 @@ bool FFmpegDecoder::OpenInput(string &inputFile) {
     }
     // 超时机制
     static const int timeout = 10;
-    auto startTime = std::make_shared<uint64_t>();
-    *startTime = QDateTime::currentSecsSinceEpoch();
-    pFormatCtx->interrupt_callback.callback = [](void *ctx) -> int {
-        uint64_t now = QDateTime::currentSecsSinceEpoch();
-        return now - *(uint64_t *)ctx > timeout;
+    startTime = std::chrono::steady_clock::now();
+
+    pFormatCtx->interrupt_callback.callback = [](void *timestamp) -> int {
+        auto now = std::chrono::steady_clock::now();
+        std::chrono::duration<double> duration = now - *(std::chrono::time_point<std::chrono::steady_clock> *)timestamp;
+        return duration.count() > timeout;
     };
-    pFormatCtx->interrupt_callback.opaque = startTime.get();
+    pFormatCtx->interrupt_callback.opaque = &startTime;
 
     if (avformat_find_stream_info(pFormatCtx, nullptr) < 0) {
         CloseInput();
         return false;
     }
 
+    auto duration = std::chrono::steady_clock::now() - startTime;
     // 分析超时，退出，可能格式不正确
-    if (QDateTime::currentSecsSinceEpoch() - *startTime > timeout) {
+    if (duration.count() > timeout) {
         CloseInput();
         return false;
     }

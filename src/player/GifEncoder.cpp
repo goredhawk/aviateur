@@ -3,7 +3,6 @@
 //
 
 #include "GifEncoder.h"
-#include <QDebug>
 #include <chrono>
 
 bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int frameRate, const string &outputPath) {
@@ -132,11 +131,10 @@ void GifEncoder::close() {
 }
 
 GifEncoder::~GifEncoder() {
-    qWarning() << __FUNCTION__;
     close();
 }
 
 bool GifEncoder::isOpened() {
-    lock_guard<mutex> lck(_encodeMtx);
+    lock_guard lck(_encodeMtx);
     return _opened;
 }

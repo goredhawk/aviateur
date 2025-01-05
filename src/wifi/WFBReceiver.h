@@ -2,11 +2,11 @@
 // Created by Talus on 2024/6/10.
 //
 
-#ifndef WFBRECEIVER_H
-#define WFBRECEIVER_H
+#ifndef WFB_RECEIVER_H
+#define WFB_RECEIVER_H
+
 #include "FrameParser.h"
 #include "Rtl8812aDevice.h"
-#include <QUdpSocket>
 #include <libusb.h>
 #include <string>
 #include <thread>
@@ -27,11 +27,11 @@ public:
     void handleRtp(uint8_t *payload, uint16_t packet_size);
 
 protected:
-    libusb_context *ctx;
-    libusb_device_handle *dev_handle;
+    libusb_context *ctx{};
+    libusb_device_handle *dev_handle{};
     std::shared_ptr<std::thread> usbThread;
     std::unique_ptr<Rtl8812aDevice> rtlDevice;
     std::string keyPath;
 };
 
-#endif // WFBRECEIVER_H
+#endif // WFB_RECEIVER_H
