@@ -32,6 +32,7 @@ public:
         try {
             mINI::Instance().parseFile(CONFIG_FILE);
         } catch (...) {
+            config_file_exists = false;
         }
     }
 
@@ -112,9 +113,9 @@ public:
     }
 
     void UpdateCount() {
-        // onWifiFrameCount(wifiFrameCount_);
-        // onWfbFrameCount(wfbFrameCount_);
-        // onRtpPktCount(rtpPktCount_);
+        WhenWifiFrameCountUpdated(wifiFrameCount_);
+        WhenWfbFrameCountUpdated(wfbFrameCount_);
+        WhenRtpPktCountUpdated(rtpPktCount_);
     }
 
     long long GetWfbFrameCount() const { return wfbFrameCount_; }
@@ -129,6 +130,8 @@ public:
     long long rtpPktCount_ = 0;
     int playerPort = 0;
     std::string playerCodec;
+
+    bool config_file_exists = true;
 
     // Signals.
     std::vector<Flint::AnyCallable<void>> onLog;

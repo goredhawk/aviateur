@@ -58,7 +58,7 @@ class MyControlPanel : public Flint::Panel {
     std::string vidPid = "";
     int channel = 173;
     int channelWidthMode = 0;
-    std::string keyPath = "D:/Dev/Projects/fpv4win/gs.key";
+    std::string keyPath = "gs.key";
     std::string codec = "AUTO";
 
     std::shared_ptr<Flint::Button> play_button_;
@@ -72,11 +72,13 @@ class MyControlPanel : public Flint::Panel {
     }
 
     void custom_ready() override {
-        vidPid = mINI::Instance()[CONFIG_DEVICE];
-        channel = mINI::Instance()[CONFIG_CHANNEL];
-        channelWidthMode = mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE];
-        keyPath = mINI::Instance()[CONFIG_CHANNEL_KEY];
-        codec = mINI::Instance()[CONFIG_CHANNEL_CODEC];
+        if (GuiInterface::Instance().config_file_exists) {
+            vidPid = mINI::Instance()[CONFIG_DEVICE];
+            channel = mINI::Instance()[CONFIG_CHANNEL];
+            channelWidthMode = mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE];
+            keyPath = mINI::Instance()[CONFIG_CHANNEL_KEY];
+            codec = mINI::Instance()[CONFIG_CHANNEL_CODEC];
+        }
 
         auto margin_container = std::make_shared<Flint::MarginContainer>();
         margin_container->set_margin_all(8);
