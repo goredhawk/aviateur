@@ -64,12 +64,11 @@ class MyControlPanel : public Flint::Panel {
 
     std::shared_ptr<Flint::Button> play_button_;
 
-    void update_dongle_list() const {
+    void update_dongle_list(Flint::PopupMenu &menu) const {
         auto dongles = SdpHandler::GetDongleList();
 
-        auto root = dongle_menu_->create_item(nullptr, "Dongles");
         for (auto dongle : dongles) {
-            dongle_menu_->create_item(root, dongle);
+            menu.create_item(dongle);
         }
     }
 
@@ -94,16 +93,11 @@ class MyControlPanel : public Flint::Panel {
             dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
             dongle_menu_button_->set_text("Select a device");
             vbox_container->add_child(dongle_menu_button_);
-        }
 
-        // {
-        //     dongle_menu_ = std::make_shared<Flint::Tree>();
-        //     dongle_menu_->container_sizing.expand_h = true;
-        //     dongle_menu_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
-        //     vbox_container->add_child(dongle_menu_);
-        //
-        //     update_dongle_list();
-        // }
+            auto dongle_menu = dongle_menu_button_->get_popup_menu();
+
+            update_dongle_list(*dongle_menu.lock());
+        }
 
         {
             auto hbox_container = std::make_shared<Flint::HBoxContainer>();
