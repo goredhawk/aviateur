@@ -1,7 +1,7 @@
 ﻿#include "app.h"
+#include "gui_interface.h"
 #include "player/RealTimePlayer.h"
 #include "resources/render_image.h"
-#include "sdp_handler.h"
 #include "wifi/WFBReceiver.h"
 
 #include <glad/gl.h>
@@ -54,9 +54,8 @@ public:
 
 class MyControlPanel : public Flint::Panel {
     std::shared_ptr<Flint::MenuButton> dongle_menu_button_;
-    std::shared_ptr<Flint::Tree> dongle_menu_;
 
-    std::string vidPid = "0bda:8812";
+    std::string vidPid = "";
     int channel = 173;
     int channelWidthMode = 0;
     std::string keyPath = "D:/Dev/Projects/fpv4win/gs.key";
@@ -65,7 +64,7 @@ class MyControlPanel : public Flint::Panel {
     std::shared_ptr<Flint::Button> play_button_;
 
     void update_dongle_list(Flint::PopupMenu &menu) const {
-        auto dongles = SdpHandler::GetDongleList();
+        auto dongles = GuiInterface::GetDongleList();
 
         for (auto dongle : dongles) {
             menu.create_item(dongle);
@@ -73,6 +72,12 @@ class MyControlPanel : public Flint::Panel {
     }
 
     void custom_ready() override {
+        vidPid = mINI::Instance()[CONFIG_DEVICE];
+        channel = mINI::Instance()[CONFIG_CHANNEL];
+        channelWidthMode = mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE];
+        keyPath = mINI::Instance()[CONFIG_CHANNEL_KEY];
+        codec = mINI::Instance()[CONFIG_CHANNEL_CODEC];
+
         auto margin_container = std::make_shared<Flint::MarginContainer>();
         margin_container->set_margin_all(8);
         margin_container->set_anchor_flag(Flint::AnchorFlag::FullRect);
@@ -91,10 +96,14 @@ class MyControlPanel : public Flint::Panel {
 
         {
             dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
-            dongle_menu_button_->set_text("Select a device");
+            dongle_menu_button_->set_text(vidPid);
             vbox_container->add_child(dongle_menu_button_);
 
             auto dongle_menu = dongle_menu_button_->get_popup_menu();
+
+            auto callback = [this](bool) { vidPid = dongle_menu_button_->get_selected_item_text(); };
+            dongle_menu_button_->connect_signal("item_selected", callback);
+            Flint::Logger::debug("Selected device: " + vidPid, "fpv4win");
 
             update_dongle_list(*dongle_menu.lock());
         }
@@ -172,10 +181,10 @@ class MyControlPanel : public Flint::Panel {
             auto callback1 = [this] {
                 if (this->play_button_->get_text() == "Start") {
                     this->play_button_->set_text("Stop");
-                    SdpHandler::Instance().Start(vidPid, channel, channelWidthMode, keyPath, codec);
+                    GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
                 } else {
                     this->play_button_->set_text("Start");
-                    SdpHandler::Instance().Stop();
+                    GuiInterface::Stop();
                 }
             };
             play_button_->connect_signal("pressed", callback1);
@@ -206,14 +215,14 @@ int main() {
     hbox_container->add_child(control_panel);
 
     auto render_rect_raw = render_rect.get();
-    auto onRtpStream = [render_rect_raw](std::string sdp_file) {
+    auto onRtpStream = [render_rect_raw](const std::string &sdp_file) {
         render_rect_raw->playing_file_ = sdp_file;
         render_rect_raw->start_playing(sdp_file);
     };
-    SdpHandler::Instance().onRtpStream = onRtpStream;
+    GuiInterface::Instance().onRtpStream.emplace_back(onRtpStream);
 
     auto onWifiStop = [render_rect_raw]() { render_rect_raw->stop_playing(); };
-    SdpHandler::Instance().onWifiStop = onWifiStop;
+    GuiInterface::Instance().onWifiStop.emplace_back(onWifiStop);
 
     app.main_loop();
 

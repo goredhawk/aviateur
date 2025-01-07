@@ -6,8 +6,8 @@
 #include "RxFrame.h"
 #include "WFBProcessor.h"
 #include "WiFiDriver.h"
+#include "gui_interface.h"
 #include "logger.h"
-#include "sdp_handler.h"
 
 #include <iomanip>
 #include <mutex>
@@ -67,11 +67,11 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
     return list;
 }
 
-bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelWidth, const std::string &kPath) {
-    SdpHandler::Instance().wifiFrameCount_ = 0;
-    SdpHandler::Instance().wfbFrameCount_ = 0;
-    SdpHandler::Instance().rtpPktCount_ = 0;
-    SdpHandler::Instance().UpdateCount();
+bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelWidthMode, const std::string &kPath) {
+    GuiInterface::Instance().wifiFrameCount_ = 0;
+    GuiInterface::Instance().wfbFrameCount_ = 0;
+    GuiInterface::Instance().rtpPktCount_ = 0;
+    GuiInterface::Instance().UpdateCount();
 
     keyPath = kPath;
     if (usbThread) {
@@ -86,7 +86,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
     iss >> std::hex >> wifiDeviceVid >> c >> wifiDevicePid;
 
     auto logger = std::make_shared<Logger>(
-        [](const std::string &level, const std::string &msg) { SdpHandler::Instance().PutLog(level, msg); });
+        [](const std::string &level, const std::string &msg) { GuiInterface::Instance().PutLog(level, msg); });
 
     rc = libusb_init(&ctx);
     if (rc < 0) {
@@ -116,12 +116,12 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
             rtlDevice->Init(
                 [](const Packet &p) {
                     Instance().handle80211Frame(p);
-                    SdpHandler::Instance().UpdateCount();
+                    GuiInterface::Instance().UpdateCount();
                 },
                 SelectedChannel {
                     .Channel = channel,
                     .ChannelOffset = 0,
-                    .ChannelWidth = static_cast<ChannelWidth_t>(channelWidth),
+                    .ChannelWidth = static_cast<ChannelWidth_t>(channelWidthMode),
                 });
         } catch (const std::runtime_error &e) {
             logger->error(e.what());
@@ -144,12 +144,12 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
     return true;
 }
 void WFBReceiver::handle80211Frame(const Packet &packet) {
-    SdpHandler::Instance().wifiFrameCount_++;
+    GuiInterface::Instance().wifiFrameCount_++;
     RxFrame frame(packet.Data);
     if (!frame.IsValidWfbFrame()) {
         return;
     }
-    SdpHandler::Instance().wfbFrameCount_++;
+    GuiInterface::Instance().wfbFrameCount_++;
 
     static int8_t rssi[4] = { 1, 1, 1, 1 };
     static uint8_t antenna[4] = { 1, 1, 1, 1 };
@@ -186,8 +186,8 @@ inline bool isH264(const uint8_t *data) {
 }
 
 void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
-    SdpHandler::Instance().rtpPktCount_++;
-    SdpHandler::Instance().UpdateCount();
+    GuiInterface::Instance().rtpPktCount_++;
+    GuiInterface::Instance().UpdateCount();
 
     if (rtlDevice->should_stop) {
         return;
@@ -198,24 +198,24 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
 
     sockaddr_in serverAddr {};
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(SdpHandler::Instance().playerPort);
+    serverAddr.sin_port = htons(GuiInterface::Instance().playerPort);
     serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     auto *header = (RtpHeader *)payload;
 
     if (!playing) {
         playing = true;
-        if (SdpHandler::Instance().playerCodec == "AUTO") {
+        if (GuiInterface::Instance().playerCodec == "AUTO") {
             // judge H264 or h265
             if (isH264(header->getPayloadData())) {
-                SdpHandler::Instance().playerCodec = "H264";
-                SdpHandler::Instance().PutLog("debug", "judge Codec " + SdpHandler::Instance().playerCodec);
+                GuiInterface::Instance().playerCodec = "H264";
+                GuiInterface::Instance().PutLog("debug", "judge Codec " + GuiInterface::Instance().playerCodec);
             } else {
-                SdpHandler::Instance().playerCodec = "H265";
-                SdpHandler::Instance().PutLog("debug", "judge Codec " + SdpHandler::Instance().playerCodec);
+                GuiInterface::Instance().playerCodec = "H265";
+                GuiInterface::Instance().PutLog("debug", "judge Codec " + GuiInterface::Instance().playerCodec);
             }
         }
-        SdpHandler::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
+        GuiInterface::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
     }
 
     // Send video to player.
@@ -228,7 +228,7 @@ bool WFBReceiver::Stop() {
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
-    SdpHandler::Instance().NotifyWifiStop();
+    GuiInterface::Instance().NotifyWifiStop();
 
     return true;
 }
