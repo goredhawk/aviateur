@@ -34,6 +34,8 @@ list(FILTER SRC_LIST EXCLUDE REGEX ".*/3rd.*/src/main.cpp")
 
 include_directories(src 3rd/rtl8812au-monitor-pcap/src 3rd/rtl8812au-monitor-pcap/hal)
 
+file(COPY gs.key openipc-logo-white.svg DESTINATION ${CMAKE_BINARY_DIR})
+
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 add_subdirectory(3rd/flint_gui)
