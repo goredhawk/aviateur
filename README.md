@@ -1,32 +1,29 @@
-# WiFi Broadcast FPV client for Windows platform.
+# Wi-Fi Broadcast FPV client for Windows platform.
 
-fpv4win is an app for Windows that packages multiple components together to decode an H264/H265 video feed broadcasted by wfb-ng over the air.
-
+Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]), aviateur is an app for Windows that packages multiple components together to decode an H264/H265 video feed broadcast by wfb-ng over the air.
 
 - [devourer](https://github.com/openipc/devourer): A userspace rtl8812au driver initially created by [buldo](https://github.com/buldo) and converted to C by [josephnef](https://github.com/josephnef) .
 - [wfb-ng](https://github.com/svpcom/wfb-ng): A library that allows broadcasting the video feed over the air.
 
-Supported rtl8812au WiFi adapter only.
+Supports RTL8812AU Wi-Fi adapter only.
 
-It is recommended to use with [OpenIPC](https://github.com/OpenIPC) FPV
-
-![img.png](img/img.png)
+It is recommended to use with [OpenIPC](https://github.com/OpenIPC).
 
 ### Usage
-- 1. Download [Zadig](https://github.com/pbatard/libwdi/releases/download/v1.5.0/zadig-2.8.exe)
-- 2. Repair the libusb driver (you may need to enable [Options] -> [List All Devices] to show your adapter).
+1. Download [Zadig](https://zadig.akeo.ie/)
+2. Install the libusb driver for your adapter.
+   Go *Options* → *List All Devices*.
+   ![](tutorials/zadig1.jpg)
+   Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
+   ![](tutorials/zadig2.jpg)
 
-    ![img.png](img/img1.png)
+3. Select the adapter with the previously obtained USB ID.
+4. Select your drone channel.
+5. Select your WFB key.
+6. *Start* & Enjoy!
 
-- 3. Install [vcredist_x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe)
-- 4. Select your 8812au adapter.
-- 5. Select your WFB key.
-- 6. Select your drone channel.
-- 7. Enjoy!
-
-### Delay test
-
-![img.png](img/delay.png)
+### Latency Test
+![](tutorials/latency_test.jpg)
 
 ### Todo
 - OSD
@@ -38,5 +35,25 @@ It is recommended to use with [OpenIPC](https://github.com/OpenIPC) FPV
 - ONVIF/GB28181/SIP client
 
 ### How to build
-- Take a look at
-[GithubAction](https://github.com/openipc/fpv4win/blob/main/.github/workflows/msbuild.yml)
+1. Install vcpkg.
+   ```powershell
+   git clone https://github.com/microsoft/vcpkg.git
+   cd vcpkg; .\bootstrap-vcpkg.bat
+   ```
+   
+2. Install dependencies.
+   ```powershell
+   .\vcpkg integrate install
+   .\vcpkg install libusb libpcap libsodium ffmpeg qt5 vcpkg-tool-ninja
+   ```
+
+3. Add VCPKG_ROOT() to environment. (Change the value to your vcpkg path.)
+   ![](tutorials/vcpkg.jpg)
+
+4. Clone third-party library source.
+   ```powershell
+   git submodule init
+   git submodule update
+   ```
+
+5. Open as a CMake project and build.
