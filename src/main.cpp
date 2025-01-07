@@ -5,6 +5,7 @@
 #include "wifi/WFBReceiver.h"
 
 #include <glad/gl.h>
+#include <nodes/ui/menu_button.h>
 #include <servers/render_server.h>
 
 class MyRenderRect : public Flint::TextureRect {
@@ -52,6 +53,7 @@ public:
 };
 
 class MyControlPanel : public Flint::Panel {
+    std::shared_ptr<Flint::MenuButton> dongle_menu_button_;
     std::shared_ptr<Flint::Tree> dongle_menu_;
 
     std::string vidPid = "0bda:8812";
@@ -89,13 +91,19 @@ class MyControlPanel : public Flint::Panel {
         }
 
         {
-            dongle_menu_ = std::make_shared<Flint::Tree>();
-            dongle_menu_->container_sizing.expand_h = true;
-            dongle_menu_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
-            vbox_container->add_child(dongle_menu_);
-
-            update_dongle_list();
+            dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
+            dongle_menu_button_->set_text("Select a device");
+            vbox_container->add_child(dongle_menu_button_);
         }
+
+        // {
+        //     dongle_menu_ = std::make_shared<Flint::Tree>();
+        //     dongle_menu_->container_sizing.expand_h = true;
+        //     dongle_menu_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        //     vbox_container->add_child(dongle_menu_);
+        //
+        //     update_dongle_list();
+        // }
 
         {
             auto hbox_container = std::make_shared<Flint::HBoxContainer>();
