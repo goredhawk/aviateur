@@ -54,6 +54,8 @@ public:
 
 class MyControlPanel : public Flint::Panel {
     std::shared_ptr<Flint::MenuButton> dongle_menu_button_;
+    std::shared_ptr<Flint::MenuButton> channel_button_;
+    std::shared_ptr<Flint::MenuButton> channel_width_button_;
 
     std::string vidPid = "";
     int channel = 173;
@@ -118,11 +120,20 @@ class MyControlPanel : public Flint::Panel {
             label->set_text("Channel:");
             hbox_container->add_child(label);
 
-            auto channel_edit = std::make_shared<Flint::TextEdit>();
-            channel_edit->container_sizing.expand_h = true;
-            channel_edit->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
-            channel_edit->set_text("173");
-            hbox_container->add_child(channel_edit);
+            channel_button_ = std::make_shared<Flint::MenuButton>();
+            channel_button_->set_text(std::to_string(channel));
+            hbox_container->add_child(channel_button_);
+
+            {
+                auto channel_menu = channel_button_->get_popup_menu();
+
+                auto callback = [this](bool) { channel = std::stoi(channel_button_->get_selected_item_text()); };
+                channel_button_->connect_signal("item_selected", callback);
+
+                for (auto c : CHANNELS) {
+                    channel_menu.lock()->create_item(std::to_string(c));
+                }
+            }
         }
 
         {
@@ -133,11 +144,21 @@ class MyControlPanel : public Flint::Panel {
             label->set_text("Channel Width:");
             hbox_container->add_child(label);
 
-            auto channel_edit = std::make_shared<Flint::TextEdit>();
-            channel_edit->container_sizing.expand_h = true;
-            channel_edit->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
-            channel_edit->set_text("20");
-            hbox_container->add_child(channel_edit);
+            channel_width_button_ = std::make_shared<Flint::MenuButton>();
+            channel_width_button_->set_text(std::to_string(ChannelWidth_t(channelWidthMode)));
+            channel_width_button_->set_text(CHANNEL_WIDTHS[channelWidthMode]);
+            hbox_container->add_child(channel_width_button_);
+
+            {
+                auto channel_width_menu = channel_width_button_->get_popup_menu();
+
+                auto callback = [this](bool) { channelWidthMode = channel_button_->get_selected_item_index(); };
+                channel_width_button_->connect_signal("item_selected", callback);
+
+                for (auto width : CHANNEL_WIDTHS) {
+                    channel_width_menu.lock()->create_item(width);
+                }
+            }
         }
 
         {

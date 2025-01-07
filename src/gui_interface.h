@@ -20,6 +20,16 @@ using namespace toolkit;
 #define CONFIG_CHANNEL_KEY CONFIG "key"
 #define CONFIG_CHANNEL_CODEC CONFIG "codec"
 
+/// Channels.
+constexpr std::array CHANNELS {
+    1,  2,  3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  32,  36,  40,  44,  48,  52,  56,  60,  64,
+    68, 96, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165, 169, 173, 177,
+};
+
+constexpr std::array CHANNEL_WIDTHS {
+    "20", "40", "80", "160", "80_80", "5", "10", "MAX",
+};
+
 class GuiInterface {
 public:
     static GuiInterface &Instance() {
@@ -60,7 +70,7 @@ public:
         mINI::Instance().dumpFile(CONFIG_FILE);
 
         // Allocate port.
-        Instance().playerPort = Instance().GetFreePort();
+        Instance().playerPort = GuiInterface::GetFreePort();
         Instance().playerCodec = codec;
 
         return WFBReceiver::Instance().Start(vidPid, channel, channelWidthMode, keyPath);

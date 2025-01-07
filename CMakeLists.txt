@@ -5,7 +5,7 @@ if (WIN32)
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 endif ()
 
-project(fpv4win)
+project(aviateur)
 
 set(CMAKE_CXX_STANDARD 20)
 
