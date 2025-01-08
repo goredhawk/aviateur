@@ -3,18 +3,20 @@
 //
 
 #include "WFBReceiver.h"
-#include "RxFrame.h"
-#include "WFBProcessor.h"
-#include "WiFiDriver.h"
-#include "gui_interface.h"
-#include "logger.h"
+
+#include <spdlog/sinks/stdout_color_sinks-inl.h>
 
 #include <iomanip>
 #include <mutex>
 #include <set>
 #include <sstream>
 
+#include "../gui_interface.h"
 #include "Rtp.h"
+#include "RxFrame.h"
+#include "WFBProcessor.h"
+#include "WiFiDriver.h"
+#include "logger.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -47,7 +49,7 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
         }
     }
     std::sort(list.begin(), list.end(), [](std::string &a, std::string &b) {
-        static std::vector<std::string> specialStrings = { "0b05:17d2", "0bda:8812", "0bda:881a" };
+        static std::vector<std::string> specialStrings = {"0b05:17d2", "0bda:8812", "0bda:881a"};
         auto itA = std::find(specialStrings.begin(), specialStrings.end(), a);
         auto itB = std::find(specialStrings.begin(), specialStrings.end(), b);
         if (itA != specialStrings.end() && itB == specialStrings.end()) {
@@ -85,64 +87,85 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
     char c;
     iss >> std::hex >> wifiDeviceVid >> c >> wifiDevicePid;
 
-    auto logger = std::make_shared<Logger>(
-        [](const std::string &level, const std::string &msg) { GuiInterface::Instance().PutLog(level, msg); });
+    auto logger = std::make_shared<Logger>();
+
+    auto logCallback = [logger](LogLevel level, const std::string &msg) {
+        switch (level) {
+            case LogLevel::Info: {
+                logger->info(msg);
+            } break;
+            case LogLevel::Debug: {
+                logger->debug(msg);
+            } break;
+            case LogLevel::Warn: {
+                logger->warn(msg);
+            } break;
+            case LogLevel::Error: {
+                logger->error(msg);
+            } break;
+            default:;
+        }
+    };
+    GuiInterface::Instance().logCallbacks.emplace_back(logCallback);
 
     int rc = libusb_init(&ctx);
     if (rc < 0) {
-        logger->error("Failed to initialize libusb");
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to initialize libusb");
         return false;
     }
 
-    dev_handle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
-    if (dev_handle == nullptr) {
-        logger->error("Cannot find device {:04x}:{:04x}", wifiDeviceVid, wifiDevicePid);
+    devHandle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
+    if (devHandle == nullptr) {
+        GuiInterface::Instance().PutLog(LogLevel::Error,
+                                        "Cannot find device {:04x}:{:04x}",
+                                        wifiDeviceVid,
+                                        wifiDevicePid);
         libusb_exit(ctx);
         return false;
     }
 
     // Check if the kernel driver attached
-    if (libusb_kernel_driver_active(dev_handle, 0)) {
+    if (libusb_kernel_driver_active(devHandle, 0)) {
         // Detach driver
-        rc = libusb_detach_kernel_driver(dev_handle, 0);
+        rc = libusb_detach_kernel_driver(devHandle, 0);
     }
 
-    rc = libusb_claim_interface(dev_handle, 0);
+    rc = libusb_claim_interface(devHandle, 0);
     if (rc < 0) {
-        logger->error("Failed to claim interface");
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to claim interface");
         return false;
     }
 
     usbThread = std::make_shared<std::thread>([=]() {
-        WiFiDriver wifi_driver { logger };
+        WiFiDriver wifi_driver{logger};
         try {
-            rtlDevice = wifi_driver.CreateRtlDevice(dev_handle);
+            rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
             rtlDevice->Init(
                 [](const Packet &p) {
                     Instance().handle80211Frame(p);
                     GuiInterface::Instance().UpdateCount();
                 },
-                SelectedChannel {
+                SelectedChannel{
                     .Channel = channel,
                     .ChannelOffset = 0,
                     .ChannelWidth = static_cast<ChannelWidth_t>(channelWidthMode),
                 });
         } catch (const std::runtime_error &e) {
-            logger->error(e.what());
+            GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
         } catch (...) {
         }
 
-        auto rc1 = libusb_release_interface(dev_handle, 0);
+        auto rc1 = libusb_release_interface(devHandle, 0);
         if (rc1 < 0) {
-            logger->error("Failed to release interface");
+            GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to release interface");
         }
 
         logger->info("USB thread stopped");
 
-        libusb_close(dev_handle);
+        libusb_close(devHandle);
         libusb_exit(ctx);
 
-        dev_handle = nullptr;
+        devHandle = nullptr;
         ctx = nullptr;
 
         Stop();
@@ -165,8 +188,8 @@ void WFBReceiver::handle80211Frame(const Packet &packet) {
     GuiInterface::Instance().wfbFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
-    static int8_t rssi[4] = { 1, 1, 1, 1 };
-    static uint8_t antenna[4] = { 1, 1, 1, 1 };
+    static int8_t rssi[4] = {1, 1, 1, 1};
+    static uint8_t antenna[4] = {1, 1, 1, 1};
 
     static uint32_t link_id = 7669206; // sha1 hash of link_domain="default"
     static uint8_t video_radio_port = 0;
@@ -179,14 +202,18 @@ void WFBReceiver::handle80211Frame(const Packet &packet) {
 
     static std::mutex agg_mutex;
     static std::unique_ptr<Aggregator> video_aggregator = std::make_unique<Aggregator>(
-        keyPath.c_str(), epoch, video_channel_id_f,
+        keyPath.c_str(),
+        epoch,
+        video_channel_id_f,
         [](uint8_t *payload, uint16_t packet_size) { WFBReceiver::Instance().handleRtp(payload, packet_size); });
 
     std::lock_guard lock(agg_mutex);
     if (frame.MatchesChannelID(video_channel_id_be8)) {
-        video_aggregator->process_packet(
-            packet.Data.data() + sizeof(ieee80211_header), packet.Data.size() - sizeof(ieee80211_header) - 4, 0,
-            antenna, rssi);
+        video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                                         packet.Data.size() - sizeof(ieee80211_header) - 4,
+                                         0,
+                                         antenna,
+                                         rssi);
     }
 }
 
@@ -211,7 +238,7 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
         return;
     }
 
-    sockaddr_in serverAddr {};
+    sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(GuiInterface::Instance().playerPort);
     serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -227,14 +254,18 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
             } else {
                 GuiInterface::Instance().playerCodec = "H265";
             }
-            GuiInterface::Instance().PutLog("debug", "Check codec " + GuiInterface::Instance().playerCodec);
+            GuiInterface::Instance().PutLog(LogLevel::Debug, "Check codec " + GuiInterface::Instance().playerCodec);
         }
         GuiInterface::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
     }
 
     // Send video to player.
-    sendto(
-        sendFd, reinterpret_cast<const char *>(payload), packet_size, 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
+    sendto(sendFd,
+           reinterpret_cast<const char *>(payload),
+           packet_size,
+           0,
+           (sockaddr *)&serverAddr,
+           sizeof(serverAddr));
 }
 
 bool WFBReceiver::Stop() const {
@@ -250,7 +281,7 @@ bool WFBReceiver::Stop() const {
 WFBReceiver::WFBReceiver() {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        GuiInterface::Instance().PutLog("ERROR", "WSAStartup failed");
+        GuiInterface::Instance().PutLog(LogLevel::Error, "WSAStartup failed");
         return;
     }
     sendFd = socket(AF_INET, SOCK_DGRAM, 0);

@@ -29,7 +29,7 @@ public:
 
 protected:
     libusb_context *ctx {};
-    libusb_device_handle *dev_handle {};
+    libusb_device_handle *devHandle {};
     std::shared_ptr<std::thread> usbThread;
     std::unique_ptr<Rtl8812aDevice> rtlDevice;
     std::string keyPath;

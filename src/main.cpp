@@ -112,7 +112,6 @@ class MyControlPanel : public Flint::Panel {
 
             auto callback = [this](bool) { vidPid = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
-            Flint::Logger::debug("Selected device: " + vidPid, "fpv4win");
 
             update_dongle_list(*dongle_menu.lock());
         }

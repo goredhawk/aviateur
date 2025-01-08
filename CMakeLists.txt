@@ -24,19 +24,21 @@ if (CMAKE_BUILD_TYPE MATCHES "Debug")
 endif ()
 
 file(GLOB_RECURSE SRC_LIST
-        3rd/rtl8812au-monitor-pcap/*.c
-        3rd/rtl8812au-monitor-pcap/*.cpp
         src/*.cpp
         src/*.c
         src/*.h
 )
-list(FILTER SRC_LIST EXCLUDE REGEX ".*/3rd.*/src/main.cpp")
-
-include_directories(src 3rd/rtl8812au-monitor-pcap/src 3rd/rtl8812au-monitor-pcap/hal)
 
 file(COPY gs.key openipc-logo-white.svg DESTINATION ${CMAKE_BINARY_DIR})
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
+
+if (WIN32)
+    string(APPEND CMAKE_CXX_FLAGS " /utf-8")
+endif ()
+
+add_subdirectory(3rd/devourer)
+target_include_directories(${PROJECT_NAME} PRIVATE 3rd/devourer/src 3rd/devourer/hal)
 
 add_subdirectory(3rd/flint_gui)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/flint_gui/src")
@@ -48,11 +50,6 @@ target_link_libraries(${PROJECT_NAME}
         ${FFMPEG_LIBRARIES}
         PkgConfig::LIBUSB
         unofficial-sodium::sodium
-        flint_gui)
-
-if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(DEBUG_SUFFIX)
-    if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
-        set(DEBUG_SUFFIX "d")
-    endif ()
-endif ()
+        WiFiDriver
+        flint_gui
+)

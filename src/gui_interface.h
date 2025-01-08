@@ -1,12 +1,12 @@
 #pragma once
 
-#include "app.h"
-#include "wifi/WFBReceiver.h"
 #include <filesystem>
 #include <fstream>
 #include <future>
 #include <nlohmann/json.hpp>
-#include <util/mini.h>
+
+#include "util/mini.h"
+#include "wifi/WFBReceiver.h"
 
 #define CONFIG "config."
 #define CONFIG_FILE "config.ini"
@@ -17,14 +17,28 @@
 #define CONFIG_CHANNEL_CODEC CONFIG "codec"
 
 /// Channels.
-constexpr std::array CHANNELS {
+constexpr std::array CHANNELS{
     1,  2,  3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  32,  36,  40,  44,  48,  52,  56,  60,  64,
     68, 96, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165, 169, 173, 177,
 };
 
 /// Channel widths.
-constexpr std::array CHANNEL_WIDTHS {
-    "20", "40", "80", "160", "80_80", "5", "10", "MAX",
+constexpr std::array CHANNEL_WIDTHS{
+    "20",
+    "40",
+    "80",
+    "160",
+    "80_80",
+    "5",
+    "10",
+    "MAX",
+};
+
+enum class LogLevel {
+    Info,
+    Debug,
+    Warn,
+    Error,
 };
 
 class GuiInterface {
@@ -52,12 +66,15 @@ public:
         return config;
     }
 
-    static std::vector<std::string> GetDongleList() { return WFBReceiver::Instance().GetDongleList(); }
+    static std::vector<std::string> GetDongleList() {
+        return WFBReceiver::Instance().GetDongleList();
+    }
 
-    static bool Start(
-        const std::string &vidPid, int channel, int channelWidthMode, const std::string &keyPath,
-        const std::string &codec) {
-
+    static bool Start(const std::string &vidPid,
+                      int channel,
+                      int channelWidthMode,
+                      const std::string &keyPath,
+                      const std::string &codec) {
         // Save config.
         toolkit::mINI::Instance()[CONFIG_DEVICE] = vidPid;
         toolkit::mINI::Instance()[CONFIG_CHANNEL] = channel;
@@ -102,13 +119,19 @@ public:
         sdpFos.close();
 
         Instance().PutLog(
-            "DEBUG",
+            LogLevel::Debug,
             "Build SDP: Codec:" + codec + " PT:" + std::to_string(payloadType) + " Port:" + std::to_string(port));
     }
 
-    void PutLog(const std::string &level, const std::string &msg) { WhenLog(level, msg); }
+    template <typename... Args>
+    void PutLog(LogLevel level, format_string_t<Args...> fmt, Args &&...args) {
+        std::string txt = format(fmt, args...);
+        WhenLog(level, txt);
+    }
 
-    void NotifyWifiStop() { WhenWifiStopped(); }
+    void NotifyWifiStop() {
+        WhenWifiStopped();
+    }
 
     int NotifyRtpStream(int pt, uint16_t ssrc) {
         // Get free port.
@@ -125,13 +148,25 @@ public:
         WhenRtpPktCountUpdated(rtpPktCount_);
     }
 
-    long long GetWfbFrameCount() const { return wfbFrameCount_; }
-    long long GetRtpPktCount() const { return rtpPktCount_; }
-    long long GetWifiFrameCount() const { return wifiFrameCount_; }
+    long long GetWfbFrameCount() const {
+        return wfbFrameCount_;
+    }
+    long long GetRtpPktCount() const {
+        return rtpPktCount_;
+    }
+    long long GetWifiFrameCount() const {
+        return wifiFrameCount_;
+    }
 
-    int GetPlayerPort() const { return playerPort; }
-    std::string GetPlayerCodec() const { return playerCodec; }
-    static int GetFreePort() { return 52356; }
+    int GetPlayerPort() const {
+        return playerPort;
+    }
+    std::string GetPlayerCodec() const {
+        return playerCodec;
+    }
+    static int GetFreePort() {
+        return 52356;
+    }
 
     long long wfbFrameCount_ = 0;
     long long wifiFrameCount_ = 0;
@@ -149,12 +184,11 @@ public:
     std::vector<toolkit::AnyCallable<void>> rtpPktCountCallbacks;
     std::vector<toolkit::AnyCallable<void>> rtpStreamCallbacks;
 
-    void WhenLog(std::string level, std::string msg) {
+    void WhenLog(LogLevel level, std::string msg) {
         for (auto &callback : logCallbacks) {
             try {
-                callback.operator()<std::string, std::string>(std::move(level), std::move(msg));
+                callback.operator()<LogLevel, std::string>(std::move(level), std::move(msg));
             } catch (std::bad_any_cast &) {
-                Flint::Logger::error("Mismatched signal argument types!");
             }
         }
     }
@@ -164,7 +198,7 @@ public:
             try {
                 callback();
             } catch (std::bad_any_cast &) {
-                Instance().PutLog("ERROR", "Mismatched signal argument types!");
+                Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }
         }
     }
@@ -174,7 +208,7 @@ public:
             try {
                 callback.operator()<long long>(std::move(count));
             } catch (std::bad_any_cast &) {
-                Instance().PutLog("ERROR", "Mismatched signal argument types!");
+                Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }
         }
     }
@@ -184,7 +218,7 @@ public:
             try {
                 callback.operator()<long long>(std::move(count));
             } catch (std::bad_any_cast &) {
-                Instance().PutLog("ERROR", "Mismatched signal argument types!");
+                Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }
         }
     }
@@ -194,7 +228,7 @@ public:
             try {
                 callback.operator()<long long>(std::move(count));
             } catch (std::bad_any_cast &) {
-                Instance().PutLog("ERROR", "Mismatched signal argument types!");
+                Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }
         }
     }
@@ -204,7 +238,7 @@ public:
             try {
                 callback.operator()<std::string>(std::move(sdp));
             } catch (std::bad_any_cast &) {
-                Instance().PutLog("ERROR", "Mismatched signal argument types!");
+                Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }
         }
     }
