@@ -1,12 +1,12 @@
-﻿#include "app.h"
+﻿#include <glad/gl.h>
+#include <nodes/ui/menu_button.h>
+#include <servers/render_server.h>
+
+#include "app.h"
 #include "gui_interface.h"
 #include "player/RealTimePlayer.h"
 #include "resources/render_image.h"
 #include "wifi/WFBReceiver.h"
-
-#include <glad/gl.h>
-#include <nodes/ui/menu_button.h>
-#include <servers/render_server.h>
 
 class MyRenderRect : public Flint::TextureRect {
 public:
@@ -24,12 +24,14 @@ public:
         auto render_server = Flint::RenderServer::get_singleton();
         player_ = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
 
-        render_image_ = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I { 1920, 1080 });
+        render_image_ = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I{1920, 1080});
 
         set_stretch_mode(StretchMode::KeepAspectCentered);
     }
 
-    void custom_update(double delta) override { player_->update(delta); }
+    void custom_update(double delta) override {
+        player_->update(delta);
+    }
 
     void custom_draw() override {
         if (!playing_) {
@@ -220,7 +222,8 @@ class MyControlPanel : public Flint::Panel {
 };
 
 int main() {
-    Flint::App app({ 1280, 720 });
+    Flint::App app({1280, 720});
+    app.set_window_title("Aviateur - OpenIPC FPV Ground Station");
     Flint::Logger::set_level(Flint::Logger::Level::Silence);
 
     auto hbox_container = std::make_shared<Flint::HBoxContainer>();
@@ -229,13 +232,13 @@ int main() {
     app.get_tree_root()->add_child(hbox_container);
 
     auto render_rect = std::make_shared<MyRenderRect>();
-    render_rect->set_custom_minimum_size({ 640, 360 });
+    render_rect->set_custom_minimum_size({640, 360});
     render_rect->container_sizing.expand_h = true;
     render_rect->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
     hbox_container->add_child(render_rect);
 
     auto control_panel = std::make_shared<MyControlPanel>();
-    control_panel->set_custom_minimum_size({ 280, 0 });
+    control_panel->set_custom_minimum_size({280, 0});
     control_panel->container_sizing.expand_v = true;
     control_panel->container_sizing.flag_v = Flint::ContainerSizingFlag::Fill;
     hbox_container->add_child(control_panel);
