@@ -74,12 +74,12 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
     GuiInterface::Instance().UpdateCount();
 
     keyPath = kPath;
+
     if (usbThread) {
         return false;
     }
-    int rc;
 
-    // get vid pid
+    // Get vid pid
     std::istringstream iss(vidPid);
     unsigned int wifiDeviceVid, wifiDevicePid;
     char c;
@@ -88,10 +88,12 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
     auto logger = std::make_shared<Logger>(
         [](const std::string &level, const std::string &msg) { GuiInterface::Instance().PutLog(level, msg); });
 
-    rc = libusb_init(&ctx);
+    int rc = libusb_init(&ctx);
     if (rc < 0) {
+        logger->error("Failed to initialize libusb");
         return false;
     }
+
     dev_handle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
     if (dev_handle == nullptr) {
         logger->error("Cannot find device {:04x}:{:04x}", wifiDeviceVid, wifiDevicePid);
@@ -99,13 +101,15 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
         return false;
     }
 
-    /*Check if kernel driver attached*/
+    // Check if the kernel driver attached
     if (libusb_kernel_driver_active(dev_handle, 0)) {
-        rc = libusb_detach_kernel_driver(dev_handle, 0); // detach driver
+        // Detach driver
+        rc = libusb_detach_kernel_driver(dev_handle, 0);
     }
-    rc = libusb_claim_interface(dev_handle, 0);
 
+    rc = libusb_claim_interface(dev_handle, 0);
     if (rc < 0) {
+        logger->error("Failed to claim interface");
         return false;
     }
 
@@ -127,15 +131,20 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
             logger->error(e.what());
         } catch (...) {
         }
-        auto rc = libusb_release_interface(dev_handle, 0);
-        if (rc < 0) {
-            // error
+
+        auto rc1 = libusb_release_interface(dev_handle, 0);
+        if (rc1 < 0) {
+            logger->error("Failed to release interface");
         }
-        logger->info("==========stoped==========");
+
+        logger->info("USB thread stopped");
+
         libusb_close(dev_handle);
         libusb_exit(ctx);
+
         dev_handle = nullptr;
         ctx = nullptr;
+
         Stop();
         usbThread.reset();
     });
@@ -143,13 +152,18 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
 
     return true;
 }
+
 void WFBReceiver::handle80211Frame(const Packet &packet) {
     GuiInterface::Instance().wifiFrameCount_++;
+    GuiInterface::Instance().UpdateCount();
+
     RxFrame frame(packet.Data);
     if (!frame.IsValidWfbFrame()) {
         return;
     }
+
     GuiInterface::Instance().wfbFrameCount_++;
+    GuiInterface::Instance().UpdateCount();
 
     static int8_t rssi[4] = { 1, 1, 1, 1 };
     static uint8_t antenna[4] = { 1, 1, 1, 1 };
@@ -159,9 +173,9 @@ void WFBReceiver::handle80211Frame(const Packet &packet) {
     static uint64_t epoch = 0;
 
     static uint32_t video_channel_id_f = (link_id << 8) + video_radio_port;
-    static auto video_channel_id_be = htobe32(video_channel_id_f);
+    static uint32_t video_channel_id_be = htobe32(video_channel_id_f);
 
-    static uint8_t *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
+    static auto *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
 
     static std::mutex agg_mutex;
     static std::unique_ptr<Aggregator> video_aggregator = std::make_unique<Aggregator>(
@@ -180,6 +194,7 @@ static unsigned long long sendFd = INVALID_SOCKET;
 static volatile bool playing = false;
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
+
 inline bool isH264(const uint8_t *data) {
     auto h264NalType = GET_H264_NAL_UNIT_TYPE(data);
     return h264NalType == 24 || h264NalType == 28;
@@ -206,14 +221,13 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
     if (!playing) {
         playing = true;
         if (GuiInterface::Instance().playerCodec == "AUTO") {
-            // judge H264 or h265
+            // Check H264 or h265
             if (isH264(header->getPayloadData())) {
                 GuiInterface::Instance().playerCodec = "H264";
-                GuiInterface::Instance().PutLog("debug", "judge Codec " + GuiInterface::Instance().playerCodec);
             } else {
                 GuiInterface::Instance().playerCodec = "H265";
-                GuiInterface::Instance().PutLog("debug", "judge Codec " + GuiInterface::Instance().playerCodec);
             }
+            GuiInterface::Instance().PutLog("debug", "Check codec " + GuiInterface::Instance().playerCodec);
         }
         GuiInterface::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
     }
@@ -223,7 +237,7 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
         sendFd, reinterpret_cast<const char *>(payload), packet_size, 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
 }
 
-bool WFBReceiver::Stop() {
+bool WFBReceiver::Stop() const {
     playing = false;
     if (rtlDevice) {
         rtlDevice->should_stop = true;
@@ -236,7 +250,7 @@ bool WFBReceiver::Stop() {
 WFBReceiver::WFBReceiver() {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "WSAStartup failed." << std::endl;
+        GuiInterface::Instance().PutLog("ERROR", "WSAStartup failed");
         return;
     }
     sendFd = socket(AF_INET, SOCK_DGRAM, 0);

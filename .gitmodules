@@ -5,3 +5,6 @@
 	path = 3rd/flint_gui
 	url = https://github.com/floppyhammer/flint_gui.git
 	branch = openipc
+[submodule "3rd/json"]
+	path = 3rd/json
+	url = https://github.com/nlohmann/json.git

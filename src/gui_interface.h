@@ -69,8 +69,9 @@ public:
         mINI::Instance()[CONFIG_CHANNEL_CODEC] = codec;
         mINI::Instance().dumpFile(CONFIG_FILE);
 
-        // Allocate port.
-        Instance().playerPort = GuiInterface::GetFreePort();
+        // Set port.
+        Instance().playerPort = GetFreePort();
+
         Instance().playerCodec = codec;
 
         return WFBReceiver::Instance().Start(vidPid, channel, channelWidthMode, keyPath);

@@ -11,15 +11,18 @@
 #ifndef UTIL_UTIL_H_
 #define UTIL_UTIL_H_
 
+#include <any>
 #include <atomic>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <functional>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
 #if defined(_WIN32)
 #undef FD_SETSIZE
 // 修改默认64为1024路
@@ -279,6 +282,22 @@ inline std::string getEnv(const std::string &key) {
     auto value = *ekey ? getenv(ekey) : nullptr;
     return value ? value : "";
 }
+
+template <typename Ret>
+struct AnyCallable {
+    AnyCallable() = default;
+    template <typename F>
+    AnyCallable(F &&fun)
+        : AnyCallable(std::function(std::forward<F>(fun))) {}
+    template <typename... Args>
+    AnyCallable(std::function<Ret(Args...)> fun)
+        : m_any(fun) {}
+    template <typename... Args>
+    Ret operator()(Args &&...args) {
+        return std::invoke(std::any_cast<std::function<Ret(Args...)>>(m_any), std::forward<Args>(args)...);
+    }
+    std::any m_any;
+};
 
 } // namespace toolkit
 #endif /* UTIL_UTIL_H_ */

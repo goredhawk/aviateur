@@ -202,11 +202,11 @@ class MyControlPanel : public Flint::Panel {
             play_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
 
             auto callback1 = [this] {
-                if (this->play_button_->get_text() == "Start") {
-                    this->play_button_->set_text("Stop");
-                    GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
+                if (play_button_->get_text() == "Start") {
+                    play_button_->set_text("Stop");
+                    bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
                 } else {
-                    this->play_button_->set_text("Start");
+                    play_button_->set_text("Start");
                     GuiInterface::Stop();
                 }
             };

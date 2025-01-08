@@ -23,7 +23,7 @@ public:
 
     std::vector<std::string> GetDongleList();
     bool Start(const std::string &vidPid, uint8_t channel, int channelWidth, const std::string &keyPath);
-    bool Stop();
+    bool Stop() const;
     void handle80211Frame(const Packet &pkt);
     void handleRtp(uint8_t *payload, uint16_t packet_size);
 

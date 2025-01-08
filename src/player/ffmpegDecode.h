@@ -1,9 +1,4 @@
-﻿/*
-    It is FFmpeg decoder class. Sample for article from unick-soft.ru
-*/
-
-#ifndef __FFMPEG_DECODER__
-#define __FFMPEG_DECODER__
+﻿#pragma once
 
 #include "ffmpegInclude.h"
 #include <functional>
@@ -167,13 +162,11 @@ private:
     std::shared_ptr<AVFifo> audioFifoBuffer;
 
     // 硬件解码
-    enum AVHWDeviceType hwDecoderType;
+    AVHWDeviceType hwDecoderType;
     bool isHwDecoderEnable = false;
-    enum AVPixelFormat hwPixFmt;
+    AVPixelFormat hwPixFmt;
     AVBufferRef *hwDeviceCtx = nullptr;
     volatile bool dropCurrentVideoFrame = false;
     // Hardware frame
     std::shared_ptr<AVFrame> hwFrame;
 };
-
-#endif
