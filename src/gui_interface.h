@@ -1,16 +1,12 @@
-#ifndef SDP_HANDLER_H
-#define SDP_HANDLER_H
+#pragma once
 
 #include "app.h"
 #include "wifi/WFBReceiver.h"
-#include <common/any_callable.h>
 #include <filesystem>
 #include <fstream>
 #include <future>
 #include <nlohmann/json.hpp>
 #include <util/mini.h>
-
-using namespace toolkit;
 
 #define CONFIG "config."
 #define CONFIG_FILE "config.ini"
@@ -26,6 +22,7 @@ constexpr std::array CHANNELS {
     68, 96, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165, 169, 173, 177,
 };
 
+/// Channel widths.
 constexpr std::array CHANNEL_WIDTHS {
     "20", "40", "80", "160", "80_80", "5", "10", "MAX",
 };
@@ -40,7 +37,7 @@ public:
     explicit GuiInterface() {
         // Load config
         try {
-            mINI::Instance().parseFile(CONFIG_FILE);
+            toolkit::mINI::Instance().parseFile(CONFIG_FILE);
         } catch (...) {
             config_file_exists = false;
         }
@@ -49,7 +46,7 @@ public:
     // Get config.
     static nlohmann::json GetConfig() {
         nlohmann::json config;
-        for (const auto &item : mINI::Instance()) {
+        for (const auto &item : toolkit::mINI::Instance()) {
             config[std::string(item.first)] = std::string(item.second.c_str());
         }
         return config;
@@ -62,12 +59,12 @@ public:
         const std::string &codec) {
 
         // Save config.
-        mINI::Instance()[CONFIG_DEVICE] = vidPid;
-        mINI::Instance()[CONFIG_CHANNEL] = channel;
-        mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE] = channelWidthMode;
-        mINI::Instance()[CONFIG_CHANNEL_KEY] = keyPath;
-        mINI::Instance()[CONFIG_CHANNEL_CODEC] = codec;
-        mINI::Instance().dumpFile(CONFIG_FILE);
+        toolkit::mINI::Instance()[CONFIG_DEVICE] = vidPid;
+        toolkit::mINI::Instance()[CONFIG_CHANNEL] = channel;
+        toolkit::mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE] = channelWidthMode;
+        toolkit::mINI::Instance()[CONFIG_CHANNEL_KEY] = keyPath;
+        toolkit::mINI::Instance()[CONFIG_CHANNEL_CODEC] = codec;
+        toolkit::mINI::Instance().dumpFile(CONFIG_FILE);
 
         // Set port.
         Instance().playerPort = GetFreePort();
@@ -90,7 +87,7 @@ public:
                 std::filesystem::create_directory(dirPath);
             }
         } catch (const std::exception &e) {
-            std::cerr << e.what() << '\n';
+            std::cerr << e.what() << std::endl;
         }
 
         std::ofstream sdpFos(filePath);
@@ -105,9 +102,8 @@ public:
         sdpFos.close();
 
         Instance().PutLog(
-            "debug",
-            "Build Player SDP: Codec:" + codec + " PT:" + std::to_string(payloadType)
-                + " Port:" + std::to_string(port));
+            "DEBUG",
+            "Build SDP: Codec:" + codec + " PT:" + std::to_string(payloadType) + " Port:" + std::to_string(port));
     }
 
     void PutLog(const std::string &level, const std::string &msg) { WhenLog(level, msg); }
@@ -132,6 +128,7 @@ public:
     long long GetWfbFrameCount() const { return wfbFrameCount_; }
     long long GetRtpPktCount() const { return rtpPktCount_; }
     long long GetWifiFrameCount() const { return wifiFrameCount_; }
+
     int GetPlayerPort() const { return playerPort; }
     std::string GetPlayerCodec() const { return playerCodec; }
     static int GetFreePort() { return 52356; }
@@ -145,15 +142,15 @@ public:
     bool config_file_exists = true;
 
     // Signals.
-    std::vector<Flint::AnyCallable<void>> onLog;
-    std::vector<Flint::AnyCallable<void>> onWifiStop;
-    std::vector<Flint::AnyCallable<void>> onWifiFrameCount;
-    std::vector<Flint::AnyCallable<void>> onWfbFrameCount;
-    std::vector<Flint::AnyCallable<void>> onRtpPktCount;
-    std::vector<Flint::AnyCallable<void>> onRtpStream;
+    std::vector<toolkit::AnyCallable<void>> logCallbacks;
+    std::vector<toolkit::AnyCallable<void>> wifiStopCallbacks;
+    std::vector<toolkit::AnyCallable<void>> wifiFrameCountCallbacks;
+    std::vector<toolkit::AnyCallable<void>> wfbFrameCountCallbacks;
+    std::vector<toolkit::AnyCallable<void>> rtpPktCountCallbacks;
+    std::vector<toolkit::AnyCallable<void>> rtpStreamCallbacks;
 
     void WhenLog(std::string level, std::string msg) {
-        for (auto &callback : onLog) {
+        for (auto &callback : logCallbacks) {
             try {
                 callback.operator()<std::string, std::string>(std::move(level), std::move(msg));
             } catch (std::bad_any_cast &) {
@@ -163,54 +160,52 @@ public:
     }
 
     void WhenWifiStopped() {
-        for (auto &callback : onWifiStop) {
+        for (auto &callback : wifiStopCallbacks) {
             try {
                 callback();
             } catch (std::bad_any_cast &) {
-                Flint::Logger::error("Mismatched signal argument types!");
+                Instance().PutLog("ERROR", "Mismatched signal argument types!");
             }
         }
     }
 
     void WhenWifiFrameCountUpdated(long long count) {
-        for (auto &callback : onWifiFrameCount) {
+        for (auto &callback : wifiFrameCountCallbacks) {
             try {
                 callback.operator()<long long>(std::move(count));
             } catch (std::bad_any_cast &) {
-                Flint::Logger::error("Mismatched signal argument types!");
+                Instance().PutLog("ERROR", "Mismatched signal argument types!");
             }
         }
     }
 
     void WhenWfbFrameCountUpdated(long long count) {
-        for (auto &callback : onWfbFrameCount) {
+        for (auto &callback : wfbFrameCountCallbacks) {
             try {
                 callback.operator()<long long>(std::move(count));
             } catch (std::bad_any_cast &) {
-                Flint::Logger::error("Mismatched signal argument types!");
+                Instance().PutLog("ERROR", "Mismatched signal argument types!");
             }
         }
     }
 
     void WhenRtpPktCountUpdated(long long count) {
-        for (auto &callback : onRtpPktCount) {
+        for (auto &callback : rtpPktCountCallbacks) {
             try {
                 callback.operator()<long long>(std::move(count));
             } catch (std::bad_any_cast &) {
-                Flint::Logger::error("Mismatched signal argument types!");
+                Instance().PutLog("ERROR", "Mismatched signal argument types!");
             }
         }
     }
 
     void WhenRtpStream(std::string sdp) {
-        for (auto &callback : onRtpStream) {
+        for (auto &callback : rtpStreamCallbacks) {
             try {
                 callback.operator()<std::string>(std::move(sdp));
             } catch (std::bad_any_cast &) {
-                Flint::Logger::error("Mismatched signal argument types!");
+                Instance().PutLog("ERROR", "Mismatched signal argument types!");
             }
         }
     }
 };
-
-#endif // SDP_HANDLER_H

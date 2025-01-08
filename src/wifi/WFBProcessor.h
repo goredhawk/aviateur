@@ -2,8 +2,8 @@
 // Created by Talus on 2024/6/12.
 //
 
-#ifndef WFBPROCESSOR_H
-#define WFBPROCESSOR_H
+#ifndef WFB_PROCESSOR_H
+#define WFB_PROCESSOR_H
 
 #include "WFBDefine.h"
 #include <functional>
@@ -59,4 +59,4 @@ private:
     DataCB dcb;
 };
 
-#endif // WFBPROCESSOR_H
+#endif // WFB_PROCESSOR_H

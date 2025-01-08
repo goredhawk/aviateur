@@ -78,11 +78,11 @@ class MyControlPanel : public Flint::Panel {
 
     void custom_ready() override {
         if (GuiInterface::Instance().config_file_exists) {
-            vidPid = mINI::Instance()[CONFIG_DEVICE];
-            channel = mINI::Instance()[CONFIG_CHANNEL];
-            channelWidthMode = mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE];
-            keyPath = mINI::Instance()[CONFIG_CHANNEL_KEY];
-            codec = mINI::Instance()[CONFIG_CHANNEL_CODEC];
+            vidPid = toolkit::mINI::Instance()[CONFIG_DEVICE];
+            channel = toolkit::mINI::Instance()[CONFIG_CHANNEL];
+            channelWidthMode = toolkit::mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE];
+            keyPath = toolkit::mINI::Instance()[CONFIG_CHANNEL_KEY];
+            codec = toolkit::mINI::Instance()[CONFIG_CHANNEL_CODEC];
         }
 
         auto margin_container = std::make_shared<Flint::MarginContainer>();
@@ -245,10 +245,10 @@ int main() {
         render_rect_raw->playing_file_ = sdp_file;
         render_rect_raw->start_playing(sdp_file);
     };
-    GuiInterface::Instance().onRtpStream.emplace_back(onRtpStream);
+    GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
-    auto onWifiStop = [render_rect_raw]() { render_rect_raw->stop_playing(); };
-    GuiInterface::Instance().onWifiStop.emplace_back(onWifiStop);
+    auto onWifiStop = [render_rect_raw] { render_rect_raw->stop_playing(); };
+    GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);
 
     app.main_loop();
 
