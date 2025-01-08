@@ -47,7 +47,10 @@ public:
 
     void stop_playing() {
         playing_ = false;
-        player_->stop();
+        // Fix crash in WFBReceiver destructor.
+        if (player_) {
+            player_->stop();
+        }
         texture = logo_;
     }
 };
