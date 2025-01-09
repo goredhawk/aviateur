@@ -194,9 +194,9 @@ public:
         auto onBitrateUpdate = [bitrate_label](uint64_t bitrate) {
             std::string text = "Bitrate: ";
             if (bitrate > 1000 * 1000) {
-                text += std::format("{:.2f}", bitrate / 1000.0 / 1000.0) + " Mbps";
+                text += std::format("{:.1f}", bitrate / 1000.0 / 1000.0) + " Mbps";
             } else if (bitrate > 1000) {
-                text += std::format("{:.2f}", bitrate / 1000.0) + " Kbps";
+                text += std::format("{:.1f}", bitrate / 1000.0) + " Kbps";
             } else {
                 text += bitrate + " bps";
             }
@@ -273,15 +273,19 @@ class MyControlPanel : public Flint::Panel {
         margin_container->add_child(vbox_container);
 
         {
-            auto label = std::make_shared<Flint::Label>();
-            label->set_text("RTL8812AU VID:PID");
-            vbox_container->add_child(label);
-        }
+            auto hbox_container = std::make_shared<Flint::HBoxContainer>();
+            hbox_container->set_separation(8);
+            vbox_container->add_child(hbox_container);
 
-        {
+            auto label = std::make_shared<Flint::Label>();
+            label->set_text("Adapter ID:");
+            hbox_container->add_child(label);
+
             dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
             dongle_menu_button_->set_text(vidPid);
-            vbox_container->add_child(dongle_menu_button_);
+            dongle_menu_button_->container_sizing.expand_h = true;
+            dongle_menu_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            hbox_container->add_child(dongle_menu_button_);
 
             auto dongle_menu = dongle_menu_button_->get_popup_menu();
 
@@ -301,6 +305,8 @@ class MyControlPanel : public Flint::Panel {
 
             channel_button_ = std::make_shared<Flint::MenuButton>();
             channel_button_->set_text(std::to_string(channel));
+            channel_button_->container_sizing.expand_h = true;
+            channel_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
             hbox_container->add_child(channel_button_);
 
             {
@@ -324,7 +330,8 @@ class MyControlPanel : public Flint::Panel {
             hbox_container->add_child(label);
 
             channel_width_button_ = std::make_shared<Flint::MenuButton>();
-            channel_width_button_->set_text(std::to_string(ChannelWidth_t(channelWidthMode)));
+            channel_width_button_->container_sizing.expand_h = true;
+            channel_width_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
             channel_width_button_->set_text(CHANNEL_WIDTHS[channelWidthMode]);
             hbox_container->add_child(channel_width_button_);
 
@@ -341,12 +348,12 @@ class MyControlPanel : public Flint::Panel {
         }
 
         {
-            auto label = std::make_shared<Flint::Label>();
-            label->set_text("Key:");
-            vbox_container->add_child(label);
-
             auto hbox_container = std::make_shared<Flint::HBoxContainer>();
             vbox_container->add_child(hbox_container);
+
+            auto label = std::make_shared<Flint::Label>();
+            label->set_text("Key:");
+            hbox_container->add_child(label);
 
             auto text_edit = std::make_shared<Flint::TextEdit>();
             text_edit->set_editable(false);
@@ -414,7 +421,7 @@ int main() {
     Flint::Logger::set_level(Flint::Logger::Level::Silence);
 
     auto hbox_container = std::make_shared<Flint::HBoxContainer>();
-    hbox_container->set_separation(8);
+    hbox_container->set_separation(2);
     hbox_container->set_anchor_flag(Flint::AnchorFlag::FullRect);
     app.get_tree_root()->add_child(hbox_container);
 
