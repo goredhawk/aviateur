@@ -97,11 +97,12 @@ public:
     }
 
     static void BuildSdp(const std::string &filePath, const std::string &codec, int payloadType, int port) {
-        std::string dirPath = std::filesystem::absolute(filePath).string();
+        auto absolutePath = std::filesystem::absolute(filePath);
+        std::string dirPath = absolutePath.parent_path().string();
 
         try {
             if (!std::filesystem::exists(dirPath)) {
-                std::filesystem::create_directory(dirPath);
+                std::filesystem::create_directories(dirPath);
             }
         } catch (const std::exception &e) {
             std::cerr << e.what() << std::endl;

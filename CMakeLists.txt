@@ -18,11 +18,6 @@ find_package(unofficial-sodium CONFIG REQUIRED)
 pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
 include_directories(${FFMPEG_INCLUDE_DIRS})
 
-if (CMAKE_BUILD_TYPE MATCHES "Debug")
-    message("build debug")
-    add_definitions(-DDEBUG_MODE)
-endif ()
-
 file(GLOB_RECURSE SRC_LIST
         src/*.cpp
         src/*.c

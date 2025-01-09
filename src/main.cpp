@@ -110,7 +110,7 @@ class MyControlPanel : public Flint::Panel {
 
             auto dongle_menu = dongle_menu_button_->get_popup_menu();
 
-            auto callback = [this](bool) { vidPid = dongle_menu_button_->get_selected_item_text(); };
+            auto callback = [this](uint32_t) { vidPid = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
             update_dongle_list(*dongle_menu.lock());
@@ -131,7 +131,7 @@ class MyControlPanel : public Flint::Panel {
             {
                 auto channel_menu = channel_button_->get_popup_menu();
 
-                auto callback = [this](bool) { channel = std::stoi(channel_button_->get_selected_item_text()); };
+                auto callback = [this](uint32_t) { channel = std::stoi(channel_button_->get_selected_item_text()); };
                 channel_button_->connect_signal("item_selected", callback);
 
                 for (auto c : CHANNELS) {
@@ -156,7 +156,7 @@ class MyControlPanel : public Flint::Panel {
             {
                 auto channel_width_menu = channel_width_button_->get_popup_menu();
 
-                auto callback = [this](bool) { channelWidthMode = channel_button_->get_selected_item_index(); };
+                auto callback = [this](uint32_t) { channelWidthMode = channel_button_->get_selected_item_index(); };
                 channel_width_button_->connect_signal("item_selected", callback);
 
                 for (auto width : CHANNEL_WIDTHS) {
@@ -243,7 +243,7 @@ int main() {
     hbox_container->add_child(control_panel);
 
     auto render_rect_raw = render_rect.get();
-    auto onRtpStream = [render_rect_raw](const std::string &sdp_file) {
+    auto onRtpStream = [render_rect_raw](std::string sdp_file) {
         render_rect_raw->playing_file_ = sdp_file;
         render_rect_raw->start_playing(sdp_file);
     };
