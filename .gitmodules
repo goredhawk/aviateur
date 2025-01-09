@@ -1,6 +1,3 @@
-[submodule "3rd/rtl8812au-monitor-pcap"]
-	path = 3rd/rtl8812au-monitor-pcap
-	url = https://github.com/TalusL/https://github.com/floppyhammer/flint_gui.git.git
 [submodule "3rd/flint_gui"]
 	path = 3rd/flint_gui
 	url = https://github.com/floppyhammer/flint_gui.git
