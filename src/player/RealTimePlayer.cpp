@@ -296,6 +296,13 @@ void RealTimePlayer::disableAudio() {
     // SDL_CloseAudio();
 }
 
+bool RealTimePlayer::hasAudio() const {
+    if (!decoder) {
+        return false;
+    }
+    return decoder->HasAudio();
+}
+
 bool RealTimePlayer::startGifRecord() {
     if (playStop) {
         return false;

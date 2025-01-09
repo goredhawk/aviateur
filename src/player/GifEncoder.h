@@ -2,13 +2,14 @@
 // Created by liangzhuohua on 2022/4/22.
 //
 
-#ifndef CTRLCENTER_GIFENCODER_H
-#define CTRLCENTER_GIFENCODER_H
-#include "ffmpegInclude.h"
+#pragma once
+
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
+
+#include "ffmpegInclude.h"
 
 class GifEncoder {
 public:
@@ -20,9 +21,13 @@ public:
     // 关闭编码器
     void close();
     // 帧率
-    int getFrameRate() const { return _frameRate; }
+    int getFrameRate() const {
+        return _frameRate;
+    }
     // 上次编码时间
-    uint64_t getLastEncodeTime() const { return _lastEncodeTime; }
+    uint64_t getLastEncodeTime() const {
+        return _lastEncodeTime;
+    }
     // 是否已经打开
     bool isOpened();
 
@@ -44,5 +49,3 @@ protected:
     // 是否打开
     volatile bool _opened = false;
 };
-
-#endif // CTRLCENTER_GIFENCODER_H

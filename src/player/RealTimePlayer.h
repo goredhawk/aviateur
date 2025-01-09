@@ -66,7 +66,6 @@ public:
     friend class TItemRender;
 
 protected:
-    // ffmpeg解码器
     std::shared_ptr<FFmpegDecoder> decoder;
     // 播放地址
     std::string url;
@@ -93,13 +92,8 @@ protected:
     std::shared_ptr<Mp4Encoder> _mp4Encoder;
     // GIF录制器
     std::shared_ptr<GifEncoder> _gifEncoder;
-    // 是否有声音
-    bool hasAudio() {
-        if (!decoder) {
-            return false;
-        }
-        return decoder->HasAudio();
-    }
+
+    bool hasAudio() const;
 
 public:
     std::shared_ptr<YuvRenderer> m_yuv_renderer;

@@ -2,8 +2,8 @@
 // Created by liangzhuohua on 2022/3/1.
 //
 
-#ifndef CTRLCENTER_MP4ENCODER_H
-#define CTRLCENTER_MP4ENCODER_H
+#pragma once
+
 #include "ffmpegInclude.h"
 #include <memory>
 #include <string>
@@ -38,5 +38,3 @@ private:
     // 已经写入关键帧
     bool writtenKeyFrame = false;
 };
-
-#endif // CTRLCENTER_MP4ENCODER_H

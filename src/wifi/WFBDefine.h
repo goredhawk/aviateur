@@ -5,10 +5,6 @@
 #ifndef WFBDEFINE_H
 #define WFBDEFINE_H
 
-extern "C" {
-#include "fec.h"
-}
-
 #include <algorithm>
 #include <sodium.h>
 #include <sodium/crypto_box.h>

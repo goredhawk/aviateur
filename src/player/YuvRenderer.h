@@ -11,17 +11,6 @@
 #include <pathfinder/gpu/texture.h>
 #include <vector>
 
-// class YUVData {
-// public:
-//     QByteArray Y;
-//     QByteArray U;
-//     QByteArray V;
-//     int yLineSize;
-//     int uLineSize;
-//     int vLineSize;
-//     int height;
-// };
-
 class YuvRenderer {
 public:
     YuvRenderer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);

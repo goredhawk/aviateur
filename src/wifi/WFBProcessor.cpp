@@ -11,23 +11,9 @@
 #include <string>
 
 Aggregator::Aggregator(const std::string &keypair, uint64_t epoch, uint32_t channel_id, const DataCB &cb)
-    : fec_p(NULL)
-    , fec_k(-1)
-    , fec_n(-1)
-    , seq(0)
-    , rx_ring_front(0)
-    , rx_ring_alloc(0)
-    , last_known_block((uint64_t)-1)
-    , epoch(epoch)
-    , channel_id(channel_id)
-    , count_p_all(0)
-    , count_p_dec_err(0)
-    , count_p_dec_ok(0)
-    , count_p_fec_recovered(0)
-    , count_p_lost(0)
-    , count_p_bad(0)
-    , count_p_override(0)
-    , dcb(cb) {
+    : fec_p(NULL), fec_k(-1), fec_n(-1), seq(0), rx_ring_front(0), rx_ring_alloc(0), last_known_block((uint64_t)-1),
+      epoch(epoch), channel_id(channel_id), count_p_all(0), count_p_dec_err(0), count_p_dec_ok(0),
+      count_p_fec_recovered(0), count_p_lost(0), count_p_bad(0), count_p_override(0), dcb(cb) {
     memset(session_key, '\0', sizeof(session_key));
 
     FILE *fp;
@@ -52,7 +38,6 @@ Aggregator::~Aggregator() {
 }
 
 void Aggregator::init_fec(int k, int n) {
-
     fec_k = k;
     fec_n = n;
     fec_p = fec_new(fec_k, fec_n);
@@ -75,8 +60,7 @@ void Aggregator::init_fec(int k, int n) {
     }
 }
 
-void Aggregator::deinit_fec(void) {
-
+void Aggregator::deinit_fec() {
     for (int ring_idx = 0; ring_idx < RX_RING_SIZE; ring_idx++) {
         delete rx_ring[ring_idx].fragment_map;
         for (int i = 0; i < fec_n; i++) {
@@ -91,7 +75,7 @@ void Aggregator::deinit_fec(void) {
     fec_n = -1;
 }
 
-int Aggregator::rx_ring_push(void) {
+int Aggregator::rx_ring_push() {
     if (rx_ring_alloc < RX_RING_SIZE) {
         int idx = modN(rx_ring_front + rx_ring_alloc, RX_RING_SIZE);
         rx_ring_alloc += 1;
@@ -128,8 +112,7 @@ int Aggregator::rx_ring_push(void) {
 int Aggregator::get_block_ring_idx(uint64_t block_idx) {
     // check if block is already in the ring
     for (int i = rx_ring_front, c = rx_ring_alloc; c > 0; i = modN(i + 1, RX_RING_SIZE), c--) {
-        if (rx_ring[i].block_idx == block_idx)
-            return i;
+        if (rx_ring[i].block_idx == block_idx) return i;
     }
 
     // check if block is already known and not in the ring then it is already processed
@@ -137,8 +120,8 @@ int Aggregator::get_block_ring_idx(uint64_t block_idx) {
         return -1;
     }
 
-    int new_blocks
-        = (int)std::min(last_known_block != (uint64_t)-1 ? block_idx - last_known_block : 1, (uint64_t)RX_RING_SIZE);
+    int new_blocks =
+        (int)std::min(last_known_block != (uint64_t)-1 ? block_idx - last_known_block : 1, (uint64_t)RX_RING_SIZE);
     assert(new_blocks > 0);
 
     last_known_block = block_idx;
@@ -154,13 +137,15 @@ int Aggregator::get_block_ring_idx(uint64_t block_idx) {
     return ring_idx;
 }
 
-void Aggregator::process_packet(
-    const uint8_t *buf, size_t size, uint8_t wlan_idx, const uint8_t *antenna, const int8_t *rssi) {
+void Aggregator::process_packet(const uint8_t *buf,
+                                size_t size,
+                                uint8_t wlan_idx,
+                                const uint8_t *antenna,
+                                const int8_t *rssi) {
     wsession_data_t new_session_data;
     count_p_all += 1;
 
-    if (size == 0)
-        return;
+    if (size == 0) return;
 
     if (size > MAX_FORWARDER_PACKET_SIZE) {
         fprintf(stderr, "Long packet (fec payload)\n");
@@ -169,95 +154,103 @@ void Aggregator::process_packet(
     }
 
     switch (buf[0]) {
-    case WFB_PACKET_DATA:
-        if (size < sizeof(wblock_hdr_t) + sizeof(wpacket_hdr_t)) {
-            fprintf(stderr, "Short packet (fec header)\n");
-            count_p_bad += 1;
-            return;
-        }
-        break;
+        case WFB_PACKET_DATA:
+            if (size < sizeof(wblock_hdr_t) + sizeof(wpacket_hdr_t)) {
+                fprintf(stderr, "Short packet (fec header)\n");
+                count_p_bad += 1;
+                return;
+            }
+            break;
 
-    case WFB_PACKET_KEY:
-        if (size != sizeof(wsession_hdr_t) + sizeof(wsession_data_t) + crypto_box_MACBYTES) {
-            fprintf(stderr, "Invalid session key packet\n");
-            count_p_bad += 1;
-            return;
-        }
-
-        if (crypto_box_open_easy(
-                (uint8_t *)&new_session_data, buf + sizeof(wsession_hdr_t),
-                sizeof(wsession_data_t) + crypto_box_MACBYTES, ((wsession_hdr_t *)buf)->session_nonce, tx_publickey,
-                rx_secretkey)
-            != 0) {
-            fprintf(stderr, "Unable to decrypt session key\n");
-            count_p_dec_err += 1;
-            return;
-        }
-
-        if (be64toh(new_session_data.epoch) < epoch) {
-            fprintf(
-                stderr, "Session epoch doesn't match: %" PRIu64 " < %" PRIu64 "\n", be64toh(new_session_data.epoch),
-                epoch);
-            count_p_dec_err += 1;
-            return;
-        }
-
-        if (be32toh(new_session_data.channel_id) != channel_id) {
-            fprintf(
-                stderr, "Session channel_id doesn't match: %d != %d\n", be32toh(new_session_data.channel_id),
-                channel_id);
-            count_p_dec_err += 1;
-            return;
-        }
-
-        if (new_session_data.fec_type != WFB_FEC_VDM_RS) {
-            fprintf(stderr, "Unsupported FEC codec type: %d\n", new_session_data.fec_type);
-            count_p_dec_err += 1;
-            return;
-        }
-
-        if (new_session_data.n < 1) {
-            fprintf(stderr, "Invalid FEC N: %d\n", new_session_data.n);
-            count_p_dec_err += 1;
-            return;
-        }
-
-        if (new_session_data.k < 1 || new_session_data.k > new_session_data.n) {
-            fprintf(stderr, "Invalid FEC K: %d\n", new_session_data.k);
-            count_p_dec_err += 1;
-            return;
-        }
-
-        count_p_dec_ok += 1;
-
-        if (memcmp(session_key, new_session_data.session_key, sizeof(session_key)) != 0) {
-            epoch = be64toh(new_session_data.epoch);
-            memcpy(session_key, new_session_data.session_key, sizeof(session_key));
-
-            if (fec_p != NULL) {
-                deinit_fec();
+        case WFB_PACKET_KEY:
+            if (size != sizeof(wsession_hdr_t) + sizeof(wsession_data_t) + crypto_box_MACBYTES) {
+                fprintf(stderr, "Invalid session key packet\n");
+                count_p_bad += 1;
+                return;
             }
 
-            init_fec(new_session_data.k, new_session_data.n);
+            if (crypto_box_open_easy((uint8_t *)&new_session_data,
+                                     buf + sizeof(wsession_hdr_t),
+                                     sizeof(wsession_data_t) + crypto_box_MACBYTES,
+                                     ((wsession_hdr_t *)buf)->session_nonce,
+                                     tx_publickey,
+                                     rx_secretkey) != 0) {
+                fprintf(stderr, "Unable to decrypt session key\n");
+                count_p_dec_err += 1;
+                return;
+            }
 
-            fflush(stdout);
-        }
-        return;
+            if (be64toh(new_session_data.epoch) < epoch) {
+                fprintf(stderr,
+                        "Session epoch doesn't match: %" PRIu64 " < %" PRIu64 "\n",
+                        be64toh(new_session_data.epoch),
+                        epoch);
+                count_p_dec_err += 1;
+                return;
+            }
 
-    default:
-        fprintf(stderr, "Unknown packet type 0x%x\n", buf[0]);
-        count_p_bad += 1;
-        return;
+            if (be32toh(new_session_data.channel_id) != channel_id) {
+                fprintf(stderr,
+                        "Session channel_id doesn't match: %d != %d\n",
+                        be32toh(new_session_data.channel_id),
+                        channel_id);
+                count_p_dec_err += 1;
+                return;
+            }
+
+            if (new_session_data.fec_type != WFB_FEC_VDM_RS) {
+                fprintf(stderr, "Unsupported FEC codec type: %d\n", new_session_data.fec_type);
+                count_p_dec_err += 1;
+                return;
+            }
+
+            if (new_session_data.n < 1) {
+                fprintf(stderr, "Invalid FEC N: %d\n", new_session_data.n);
+                count_p_dec_err += 1;
+                return;
+            }
+
+            if (new_session_data.k < 1 || new_session_data.k > new_session_data.n) {
+                fprintf(stderr, "Invalid FEC K: %d\n", new_session_data.k);
+                count_p_dec_err += 1;
+                return;
+            }
+
+            count_p_dec_ok += 1;
+
+            if (memcmp(session_key, new_session_data.session_key, sizeof(session_key)) != 0) {
+                epoch = be64toh(new_session_data.epoch);
+                memcpy(session_key, new_session_data.session_key, sizeof(session_key));
+
+                if (fec_p != NULL) {
+                    deinit_fec();
+                }
+
+                init_fec(new_session_data.k, new_session_data.n);
+
+                fflush(stdout);
+            }
+            return;
+
+        default:
+            fprintf(stderr, "Unknown packet type 0x%x\n", buf[0]);
+            count_p_bad += 1;
+            return;
     }
 
     uint8_t decrypted[MAX_FEC_PAYLOAD];
     long long unsigned int decrypted_len;
     wblock_hdr_t *block_hdr = (wblock_hdr_t *)buf;
 
-    if (crypto_aead_chacha20poly1305_decrypt(
-            decrypted, &decrypted_len, NULL, buf + sizeof(wblock_hdr_t), size - sizeof(wblock_hdr_t), buf,
-            sizeof(wblock_hdr_t), (uint8_t *)(&(block_hdr->data_nonce)), session_key)
-        != 0) {
+    if (crypto_aead_chacha20poly1305_decrypt(decrypted,
+                                             &decrypted_len,
+                                             NULL,
+                                             buf + sizeof(wblock_hdr_t),
+                                             size - sizeof(wblock_hdr_t),
+                                             buf,
+                                             sizeof(wblock_hdr_t),
+                                             (uint8_t *)(&(block_hdr->data_nonce)),
+                                             session_key) != 0) {
         fprintf(stderr, "Unable to decrypt packet #0x%" PRIx64 "\n", be64toh(block_hdr->data_nonce));
         count_p_dec_err += 1;
         return;
@@ -286,14 +279,12 @@ void Aggregator::process_packet(
     int ring_idx = get_block_ring_idx(block_idx);
 
     // ignore already processed blocks
-    if (ring_idx < 0)
-        return;
+    if (ring_idx < 0) return;
 
     rx_ring_item_t *p = &rx_ring[ring_idx];
 
     // ignore already processed fragments
-    if (p->fragment_map[fragment_idx])
-        return;
+    if (p->fragment_map[fragment_idx]) return;
 
     memset(p->fragments[fragment_idx], '\0', MAX_FEC_PAYLOAD);
     memcpy(p->fragments[fragment_idx], decrypted, decrypted_len);

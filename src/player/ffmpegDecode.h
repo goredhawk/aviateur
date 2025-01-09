@@ -13,12 +13,8 @@ class FFmpegDecoder {
     friend class RealTimePlayer;
 
 public:
-    FFmpegDecoder()
-        : pImgConvertCtx(nullptr), audioBaseTime(0.0), videoBaseTime(0.0), videoFramePerSecond(0.0), isOpen(false),
-          audioStreamIndex(-1), videoStreamIndex(-1), pAudioCodecCtx(nullptr), pVideoCodecCtx(nullptr),
-          pFormatCtx(nullptr) {}
+    FFmpegDecoder() = default;
 
-public:
     virtual ~FFmpegDecoder() {
         FFmpegDecoder::CloseInput();
     }
@@ -117,23 +113,23 @@ private:
 
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 
-    // FFmpeg 解封装上下文
+    // ffmpeg 解封装上下文
     AVFormatContext *pFormatCtx = nullptr;
 
-    // FFmpeg 视频编码上下文
+    // ffmpeg 视频编码上下文
     AVCodecContext *pVideoCodecCtx = nullptr;
 
-    // FFmpeg音频编码上下文
+    // ffmpeg音频编码上下文
     AVCodecContext *pAudioCodecCtx = nullptr;
 
-    // FFmpeg 音频样本格式转换
+    // ffmpeg 音频样本格式转换
     std::shared_ptr<SwrContext> swrCtx;
 
     // 视频轨道顺序
-    int videoStreamIndex = 0;
+    int videoStreamIndex = -1;
 
     // 音轨顺序
-    int audioStreamIndex = 0;
+    int audioStreamIndex = -1;
 
     // 输入源是否成功打开
     volatile bool isOpen = false;
@@ -141,14 +137,14 @@ private:
     // Video 帧率
     double videoFramePerSecond = 0;
 
-    // FFmpeg 视频时间基
+    // ffmpeg 视频时间基
     double videoBaseTime = 0;
 
-    // FFmpeg 音频时间基
+    // ffmpeg 音频时间基
     double audioBaseTime = 0;
 
-    // FFmpeg 视频格式转换
-    struct SwsContext *pImgConvertCtx = nullptr;
+    // ffmpeg 视频格式转换
+    SwsContext *pImgConvertCtx = nullptr;
 
     // 解码器全局释放锁
     std::mutex _releaseLock;
