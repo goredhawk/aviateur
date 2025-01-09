@@ -184,6 +184,7 @@ public:
     std::vector<toolkit::AnyCallable<void>> wfbFrameCountCallbacks;
     std::vector<toolkit::AnyCallable<void>> rtpPktCountCallbacks;
     std::vector<toolkit::AnyCallable<void>> rtpStreamCallbacks;
+    std::vector<toolkit::AnyCallable<void>> bitrateUpdateCallbacks;
 
     void WhenLog(LogLevel level, std::string msg) {
         for (auto &callback : logCallbacks) {
@@ -238,6 +239,16 @@ public:
         for (auto &callback : rtpStreamCallbacks) {
             try {
                 callback.operator()<std::string>(std::move(sdp));
+            } catch (std::bad_any_cast &) {
+                Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
+            }
+        }
+    }
+
+    void WhenBitrateUpdate(uint64_t bitrate) {
+        for (auto &callback : bitrateUpdateCallbacks) {
+            try {
+                callback.operator()<uint64_t>(std::move(bitrate));
             } catch (std::bad_any_cast &) {
                 Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }

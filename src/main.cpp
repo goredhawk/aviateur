@@ -233,8 +233,29 @@ int main() {
     auto render_rect = std::make_shared<MyRenderRect>();
     render_rect->set_custom_minimum_size({640, 360});
     render_rect->container_sizing.expand_h = true;
+    render_rect->container_sizing.expand_v = true;
     render_rect->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+    render_rect->container_sizing.flag_v = Flint::ContainerSizingFlag::Fill;
     hbox_container->add_child(render_rect);
+
+    auto bitrate_label = std::make_shared<Flint::Label>();
+    bitrate_label->set_text("Bitrate: 0 Kbps");
+    bitrate_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+    bitrate_label->set_anchor_flag(Flint::AnchorFlag::BottomLeft);
+    render_rect->add_child(bitrate_label);
+
+    auto onBitrateUpdate = [bitrate_label](uint64_t bitrate) {
+        std::string text = "Bitrate: ";
+        if (bitrate > 1000 * 1000) {
+            text += std::format("{:.2f}", bitrate / 1000.0 / 1000.0) + " Mbps";
+        } else if (bitrate > 1000) {
+            text += std::format("{:.2f}", bitrate / 1000.0) + " Kbps";
+        } else {
+            text += bitrate + " bps";
+        }
+        bitrate_label->set_text(text);
+    };
+    GuiInterface::Instance().bitrateUpdateCallbacks.emplace_back(onBitrateUpdate);
 
     auto control_panel = std::make_shared<MyControlPanel>();
     control_panel->set_custom_minimum_size({280, 0});

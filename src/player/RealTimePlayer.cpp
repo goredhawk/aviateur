@@ -1,7 +1,10 @@
 ﻿#include "RealTimePlayer.h"
-#include "JpegEncoder.h"
+
 #include <future>
 #include <sstream>
+
+#include "../gui_interface.h"
+#include "JpegEncoder.h"
 
 // GIF默认帧率
 #define DEFAULT_GIF_FRAMERATE 10
@@ -67,7 +70,7 @@ void RealTimePlayer::play(const std::string &playUrl) {
 
     url = playUrl;
 
-    analysisThread = std::thread([this]() {
+    analysisThread = std::thread([this] {
         auto decoder_ = std::make_shared<FFmpegDecoder>();
 
         // 打开并分析输入
@@ -122,7 +125,7 @@ void RealTimePlayer::play(const std::string &playUrl) {
         }
 
         // 码率计算回调
-        // decoder->onBitrate = [this](uint64_t bitrate) { emit onBitrate(static_cast<long>(bitrate)); };
+        decoder->onBitrate = [this](uint64_t bitrate) { GuiInterface::Instance().WhenBitrateUpdate(bitrate); };
     });
 
     // Start analysis thread.
@@ -236,7 +239,7 @@ std::string RealTimePlayer::stopRecord() {
     }
     _mp4Encoder->stop();
     decoder->_gotPktCallback = nullptr;
-    return { _mp4Encoder->_saveFilePath.c_str() };
+    return {_mp4Encoder->_saveFilePath.c_str()};
 }
 
 int RealTimePlayer::getVideoWidth() {
@@ -308,8 +311,8 @@ bool RealTimePlayer::startGifRecord() {
     }
     // 创建gif编码器
     _gifEncoder = std::make_shared<GifEncoder>();
-    if (!_gifEncoder->open(
-            decoder->width, decoder->height, decoder->GetVideoFrameFormat(), DEFAULT_GIF_FRAMERATE, ss.str())) {
+    if (!_gifEncoder
+             ->open(decoder->width, decoder->height, decoder->GetVideoFrameFormat(), DEFAULT_GIF_FRAMERATE, ss.str())) {
         return false;
     }
     // 设置获得解码帧回调
@@ -321,9 +324,9 @@ bool RealTimePlayer::startGifRecord() {
             return;
         }
         // 根据GIF帧率跳帧
-        uint64_t now
-            = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-                  .count();
+        uint64_t now =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+                .count();
         if (_gifEncoder->getLastEncodeTime() + 1000 / _gifEncoder->getFrameRate() > now) {
             return;
         }

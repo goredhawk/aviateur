@@ -1,4 +1,5 @@
 ﻿#include "ffmpegDecode.h"
+
 #include <iostream>
 #include <vector>
 
@@ -33,7 +34,8 @@ bool FFmpegDecoder::OpenInput(std::string &inputFile) {
 
     pFormatCtx->interrupt_callback.callback = [](void *timestamp) -> int {
         auto now = std::chrono::steady_clock::now();
-        std::chrono::duration<double, std::chrono::seconds::period> duration = now - *(std::chrono::time_point<std::chrono::steady_clock> *)timestamp;
+        std::chrono::duration<double, std::chrono::seconds::period> duration =
+            now - *(std::chrono::time_point<std::chrono::steady_clock> *)timestamp;
         return duration.count() > timeout;
     };
     pFormatCtx->interrupt_callback.opaque = &startTime;
@@ -134,9 +136,12 @@ std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
                 // 计算码率定时器
                 bitrate = bytesSecond * 8 * 1000 / (now - lastCountBitrateTime);
                 bytesSecond = 0;
+
+                // Bitrate callback
                 if (onBitrate) {
                     onBitrate(bitrate);
                 }
+
                 lastCountBitrateTime = now;
             }
         }
@@ -209,8 +214,8 @@ bool FFmpegDecoder::OpenVideo() {
                             isHwDecoderEnable = false;
                             break;
                         }
-                        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX
-                            && config->device_type == hwDecoderType) {
+                        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
+                            config->device_type == hwDecoderType) {
                             hwPixFmt = config->pix_fmt;
                             break;
                         }
@@ -370,10 +375,15 @@ int FFmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t 
                 // Convert frame to AV_SAMPLE_FMT_S16 if needed
                 if (!swrCtx) {
                     SwrContext *ptr = nullptr;
-                    swr_alloc_set_opts2(
-                        &ptr, &pAudioCodecCtx->ch_layout, AV_SAMPLE_FMT_S16, pAudioCodecCtx->sample_rate,
-                        &pAudioCodecCtx->ch_layout, static_cast<AVSampleFormat>(audioFrame->format),
-                        pAudioCodecCtx->sample_rate, 0, nullptr);
+                    swr_alloc_set_opts2(&ptr,
+                                        &pAudioCodecCtx->ch_layout,
+                                        AV_SAMPLE_FMT_S16,
+                                        pAudioCodecCtx->sample_rate,
+                                        &pAudioCodecCtx->ch_layout,
+                                        static_cast<AVSampleFormat>(audioFrame->format),
+                                        pAudioCodecCtx->sample_rate,
+                                        0,
+                                        nullptr);
 
                     auto ret = swr_init(ptr);
                     if (ret < 0) {
@@ -386,15 +396,20 @@ int FFmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t 
                 }
 
                 // Convert audio frame to S16 format
-                int samples = swr_convert(
-                    swrCtx.get(), &pDest, audioFrame->nb_samples, (const uint8_t **)audioFrame->data,
-                    audioFrame->nb_samples);
-                sizeToDecode
-                    = samples * pAudioCodecCtx->ch_layout.nb_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
+                int samples = swr_convert(swrCtx.get(),
+                                          &pDest,
+                                          audioFrame->nb_samples,
+                                          (const uint8_t **)audioFrame->data,
+                                          audioFrame->nb_samples);
+                sizeToDecode =
+                    samples * pAudioCodecCtx->ch_layout.nb_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
             } else {
                 // Copy S16 audio data directly
-                sizeToDecode = av_samples_get_buffer_size(
-                    nullptr, pAudioCodecCtx->ch_layout.nb_channels, audioFrame->nb_samples, AV_SAMPLE_FMT_S16, 1);
+                sizeToDecode = av_samples_get_buffer_size(nullptr,
+                                                          pAudioCodecCtx->ch_layout.nb_channels,
+                                                          audioFrame->nb_samples,
+                                                          AV_SAMPLE_FMT_S16,
+                                                          1);
                 memcpy(pDest, audioFrame->data[0], sizeToDecode);
             }
         }

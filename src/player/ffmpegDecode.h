@@ -1,10 +1,11 @@
 ﻿#pragma once
 
-#include "ffmpegInclude.h"
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
+
+#include "ffmpegInclude.h"
 
 class QQuickRealTimePlayer;
 
@@ -13,21 +14,14 @@ class FFmpegDecoder {
 
 public:
     FFmpegDecoder()
-        : pImgConvertCtx(nullptr)
-        , audioBaseTime(0.0)
-        , videoBaseTime(0.0)
-        , videoFramePerSecond(0.0)
-        , isOpen(false)
-        , audioStreamIndex(-1)
-        , videoStreamIndex(-1)
-        , pAudioCodecCtx(nullptr)
-        , pVideoCodecCtx(nullptr)
-        , pFormatCtx(nullptr) {
-        ;
-    }
+        : pImgConvertCtx(nullptr), audioBaseTime(0.0), videoBaseTime(0.0), videoFramePerSecond(0.0), isOpen(false),
+          audioStreamIndex(-1), videoStreamIndex(-1), pAudioCodecCtx(nullptr), pVideoCodecCtx(nullptr),
+          pFormatCtx(nullptr) {}
 
 public:
-    virtual ~FFmpegDecoder() { FFmpegDecoder::CloseInput(); }
+    virtual ~FFmpegDecoder() {
+        FFmpegDecoder::CloseInput();
+    }
 
     // 打开输入
     virtual bool OpenInput(std::string &inputFile);
@@ -39,30 +33,46 @@ public:
     virtual std::shared_ptr<AVFrame> GetNextFrame();
 
     // 获取宽度
-    int GetWidth() const { return width; }
+    int GetWidth() const {
+        return width;
+    }
 
     // 获取高度
-    int GetHeight() const { return height; }
+    int GetHeight() const {
+        return height;
+    }
 
     // 获取FPS
-    double GetFps() const { return videoFramePerSecond; }
+    double GetFps() const {
+        return videoFramePerSecond;
+    }
 
     // 输入流是否存在音频
-    bool HasAudio() const { return hasAudioStream; }
+    bool HasAudio() const {
+        return hasAudioStream;
+    }
 
     // 输入流是否存在视频
-    bool HasVideo() const { return hasVideoStream; }
+    bool HasVideo() const {
+        return hasVideoStream;
+    }
 
     // 读音频fifo
     size_t ReadAudioBuff(uint8_t *aSample, size_t aSize);
     // 清空音频fifo
     void ClearAudioBuff();
     // 音频采样率
-    int GetAudioSampleRate() const { return pAudioCodecCtx->sample_rate; }
+    int GetAudioSampleRate() const {
+        return pAudioCodecCtx->sample_rate;
+    }
     // 音频声道数
-    int GetAudioChannelCount() const { return pAudioCodecCtx->ch_layout.nb_channels; }
+    int GetAudioChannelCount() const {
+        return pAudioCodecCtx->ch_layout.nb_channels;
+    }
     // 音频样本格式
-    AVSampleFormat GetAudioSampleFormat() const { return AV_SAMPLE_FMT_S16; }
+    AVSampleFormat GetAudioSampleFormat() const {
+        return AV_SAMPLE_FMT_S16;
+    }
     // 视频帧格式
     AVPixelFormat GetVideoFrameFormat() const {
         if (isHwDecoderEnable) {
@@ -71,7 +81,9 @@ public:
         return pVideoCodecCtx->pix_fmt;
     }
     // 获取音频frame大小
-    int GetAudioFrameSamples() { return pAudioCodecCtx->sample_rate * 2 / 25; }
+    int GetAudioFrameSamples() {
+        return pAudioCodecCtx->sample_rate * 2 / 25;
+    }
 
 private:
     // 打开视频流
@@ -142,15 +154,19 @@ private:
     std::mutex _releaseLock;
 
     // 是否存在视频流
-    bool hasVideoStream {};
+    bool hasVideoStream{};
     // 是否存在音频流
-    bool hasAudioStream {};
+    bool hasAudioStream{};
 
     // 视频宽度
-    int width {};
+    int width{};
 
     // 视频高度
-    int height {};
+    int height{};
+
+    void emitOnBitrate(uint64_t pBitrate) {
+        onBitrate(pBitrate);
+    }
 
     volatile uint64_t bytesSecond = 0;
     uint64_t bitrate = 0;
