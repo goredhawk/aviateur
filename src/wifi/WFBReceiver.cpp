@@ -4,8 +4,6 @@
 
 #include "WFBReceiver.h"
 
-#include <spdlog/sinks/stdout_color_sinks-inl.h>
-
 #include <iomanip>
 #include <mutex>
 #include <set>
@@ -23,13 +21,13 @@
 std::vector<std::string> WFBReceiver::GetDongleList() {
     std::vector<std::string> list;
 
-    libusb_context *findctx;
+    libusb_context *find_ctx;
     // Initialize libusb
-    libusb_init(&findctx);
+    libusb_init(&find_ctx);
 
     // Get list of USB devices
     libusb_device **devs;
-    ssize_t count = libusb_get_device_list(findctx, &devs);
+    ssize_t count = libusb_get_device_list(find_ctx, &devs);
     if (count < 0) {
         return list;
     }
@@ -37,7 +35,7 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
     // Iterate over devices
     for (ssize_t i = 0; i < count; ++i) {
         libusb_device *dev = devs[i];
-        libusb_device_descriptor desc;
+        libusb_device_descriptor desc{};
         if (libusb_get_device_descriptor(dev, &desc) == 0) {
             // Check if the device is using libusb driver
             if (desc.bDeviceClass == LIBUSB_CLASS_PER_INTERFACE) {
@@ -65,7 +63,8 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
     libusb_free_device_list(devs, 1);
 
     // Deinitialize libusb
-    libusb_exit(findctx);
+    libusb_exit(find_ctx);
+
     return list;
 }
 

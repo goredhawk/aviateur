@@ -2,8 +2,8 @@
 // Created by Talus on 2024/6/12.
 //
 
-#ifndef WFBDEFINE_H
-#define WFBDEFINE_H
+#ifndef WFB_DEFINE_H
+#define WFB_DEFINE_H
 
 #include <algorithm>
 #include <sodium.h>
@@ -206,4 +206,4 @@ typedef struct {
 #define SESSION_KEY_ANNOUNCE_MSEC 1000
 #define RX_ANT_MAX 4
 
-#endif // WFBDEFINE_H
+#endif // WFB_DEFINE_H

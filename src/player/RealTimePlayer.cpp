@@ -199,57 +199,68 @@ bool RealTimePlayer::startRecord() {
     if (playStop && !_lastFrame) {
         return false;
     }
-    // std::string dirPath = QFileInfo("mp4/l").absolutePath();
-    // QDir dir(dirPath);
-    // if (!dir.exists()) {
-    //     dir.mkpath(dirPath);
-    // }
-    // // 保存路径
-    // stringstream ss;
-    // ss << "mp4/";
-    // ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-    //           .count()
-    //    << ".mp4";
-    // // 创建MP4编码器
-    // _mp4Encoder = make_shared<Mp4Encoder>(ss.str());
-    //
-    // // 添加音频流
-    // if (decoder->HasAudio()) {
-    //     _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex]);
-    // }
-    // // 添加视频流
-    // if (decoder->HasVideo()) {
-    //     _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex]);
-    // }
-    // if (!_mp4Encoder->start()) {
-    //     return false;
-    // }
-    // // 设置获得NALU回调
-    // decoder->_gotPktCallback = [this](const std::shared_ptr<AVPacket> &packet) {
-    //     // 输入编码器
-    //     _mp4Encoder->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
-    // };
-    // // 启动编码器
-    // return true;
+
+    auto absolutePath = std::filesystem::absolute("recording");
+    std::string dirPath = absolutePath.parent_path().string();
+
+    try {
+        if (!std::filesystem::exists(dirPath)) {
+            std::filesystem::create_directories(dirPath);
+        }
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+    std::stringstream video_file_path;
+    video_file_path << "recording/";
+    video_file_path << std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count()
+                    << ".mp4";
+
+    _mp4Encoder = std::make_shared<Mp4Encoder>(video_file_path.str());
+
+    // Audio track not handled for now.
+    if (decoder->HasAudio()) {
+        _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex]);
+    }
+
+    // Add video track.
+    if (decoder->HasVideo()) {
+        _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex]);
+    }
+
+    if (!_mp4Encoder->start()) {
+        return false;
+    }
+
+    // 设置获得NALU回调
+    decoder->_gotPktCallback = [this](const std::shared_ptr<AVPacket> &packet) {
+        // 输入编码器
+        _mp4Encoder->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
+    };
+
+    return true;
 }
 
-std::string RealTimePlayer::stopRecord() {
+std::string RealTimePlayer::stopRecord() const {
     if (!_mp4Encoder) {
         return {};
     }
     _mp4Encoder->stop();
     decoder->_gotPktCallback = nullptr;
-    return {_mp4Encoder->_saveFilePath.c_str()};
+
+    return _mp4Encoder->_saveFilePath;
 }
 
-int RealTimePlayer::getVideoWidth() {
+int RealTimePlayer::getVideoWidth() const {
     if (!decoder) {
         return 0;
     }
     return decoder->width;
 }
 
-int RealTimePlayer::getVideoHeight() {
+int RealTimePlayer::getVideoHeight() const {
     if (!decoder) {
         return 0;
     }
@@ -300,28 +311,37 @@ bool RealTimePlayer::hasAudio() const {
     if (!decoder) {
         return false;
     }
-    return decoder->HasAudio();
+    // No audio for now.
+    // return decoder->HasAudio();
+    return false;
 }
 
 bool RealTimePlayer::startGifRecord() {
     if (playStop) {
         return false;
     }
-    // 保存路径
-    std::stringstream ss;
-    // ss << QStandardPaths::writableLocation(QStandardPaths::DesktopLocation).toStdString() << "/";
-    // ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-    //           .count()
-    //    << ".gif";
+
     if (!(decoder && decoder->HasVideo())) {
         return false;
     }
-    // 创建gif编码器
+
+    std::stringstream gif_file_path;
+    gif_file_path << "recording/";
+    gif_file_path << std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::system_clock::now().time_since_epoch())
+                         .count()
+                  << ".gif";
+
     _gifEncoder = std::make_shared<GifEncoder>();
-    if (!_gifEncoder
-             ->open(decoder->width, decoder->height, decoder->GetVideoFrameFormat(), DEFAULT_GIF_FRAMERATE, ss.str())) {
+
+    if (!_gifEncoder->open(decoder->width,
+                           decoder->height,
+                           decoder->GetVideoFrameFormat(),
+                           DEFAULT_GIF_FRAMERATE,
+                           gif_file_path.str())) {
         return false;
     }
+
     // 设置获得解码帧回调
     decoder->_gotFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
         if (!_gifEncoder) {
@@ -344,7 +364,7 @@ bool RealTimePlayer::startGifRecord() {
     return true;
 }
 
-void RealTimePlayer::stopGifRecord() {
+void RealTimePlayer::stopGifRecord() const {
     decoder->_gotFrameCallback = nullptr;
     if (!_gifEncoder) {
         return;

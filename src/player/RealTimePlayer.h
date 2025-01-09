@@ -35,14 +35,14 @@ public:
     std::string captureJpeg();
     // 录像
     bool startRecord();
-    std::string stopRecord();
+    std::string stopRecord() const;
     // 录制GIF
     bool startGifRecord();
-    void stopGifRecord();
+    void stopGifRecord() const;
     // 获取视频宽度
-    int getVideoWidth();
+    int getVideoWidth() const;
     // 获取视频高度
-    int getVideoHeight();
+    int getVideoHeight() const;
 
     // Signals
     // 播放已经停止

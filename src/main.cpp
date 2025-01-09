@@ -8,6 +8,36 @@
 #include "resources/render_image.h"
 #include "wifi/WFBReceiver.h"
 
+class TipLabel : public Flint::Label {
+public:
+    float alpha = 0;
+    float display_time = 2;
+    float fade_time = 0.1;
+
+    std::shared_ptr<Flint::Timer> display_timer;
+    std::shared_ptr<Flint::Timer> fade_timer;
+
+    void custom_ready() override {
+        display_timer = std::make_shared<Flint::Timer>();
+        fade_timer = std::make_shared<Flint::Timer>();
+
+        add_child(display_timer);
+        add_child(fade_timer);
+
+        auto callback = [this] { this->fade_timer->start_timer(fade_time); };
+        display_timer->connect_signal("timeout", callback);
+
+        auto callback2 = [this] { set_visibility(false); };
+        fade_timer->connect_signal("timeout", callback2);
+    }
+
+    void show_tip(std::string tip) {
+        set_text(tip);
+        set_visibility(true);
+        display_timer->start_timer(display_time);
+    }
+};
+
 class MyRenderRect : public Flint::TextureRect {
 public:
     std::shared_ptr<RealTimePlayer> player_;
@@ -16,6 +46,10 @@ public:
 
     std::shared_ptr<Flint::VectorImage> logo_;
     std::shared_ptr<Flint::RenderImage> render_image_;
+
+    std::shared_ptr<TipLabel> tip_label_;
+
+    bool is_recording = false;
 
     void custom_ready() override {
         logo_ = std::make_shared<Flint::VectorImage>("openipc-logo-white.svg");
@@ -27,6 +61,86 @@ public:
         render_image_ = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I{1920, 1080});
 
         set_stretch_mode(StretchMode::KeepAspectCentered);
+
+        tip_label_ = std::make_shared<TipLabel>();
+        tip_label_->set_anchor_flag(Flint::AnchorFlag::Center);
+        tip_label_->set_visibility(false);
+        tip_label_->set_text_style(Flint::TextStyle{Flint::ColorU::red()});
+        add_child(tip_label_);
+
+        auto hud_panel = std::make_shared<Flint::Panel>();
+        hud_panel->set_size({0, 48});
+        Flint::StyleBox box;
+        box.bg_color = Flint::ColorU(27, 27, 27, 27);
+        box.border_width = 0;
+        hud_panel->set_theme_panel(box);
+        add_child(hud_panel);
+        hud_panel->set_anchor_flag(Flint::AnchorFlag::BottomWide);
+        // hud_panel->set_visibility(false);
+
+        auto bitrate_label = std::make_shared<Flint::Label>();
+        bitrate_label->set_text("Bitrate: 0 Kbps");
+        bitrate_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+        bitrate_label->set_anchor_flag(Flint::AnchorFlag::CenterLeft);
+        hud_panel->add_child(bitrate_label);
+
+        auto record_button = std::make_shared<Flint::Button>();
+        hud_panel->add_child(record_button);
+        record_button->set_text("Record");
+        record_button->set_toggle_mode(true);
+        record_button->set_anchor_flag(Flint::AnchorFlag::CenterRight);
+        auto record_callback = [record_button, this]() {
+            if (!is_recording) {
+                is_recording = player_->startRecord();
+
+                if (is_recording) {
+                    record_button->set_text("Stop");
+                } else {
+                    tip_label_->show_tip("Recording failed!");
+                }
+                //     if(recordTimer.started){
+                //         recordTimer.start();
+
+                // if(!recordTimer.started){
+                //     recordTimer.started = player.startRecord();
+                //     if(recordTimer.started){
+                //         recordTimer.start();
+                //     }else{
+                //         tips.showPop('Record failed! ',3000);
+                //     }
+                // }else{
+                //     recordTimer.started = false;
+                //     let f = player.stopRecord();
+                //     if(f!==''){
+                //         tips.showPop('Saved '+f,3000);
+                //     }else{
+                //         tips.showPop('Record failed! ',3000);
+                //     }
+                //     recordTimer.stop();
+                // }
+            } else {
+                auto file_path = player_->stopRecord();
+                // Show tip
+                record_button->set_text("Record");
+            }
+        };
+        record_button->connect_signal("pressed", record_callback);
+
+        auto record_timer_label = std::make_shared<Flint::Label>();
+        record_timer_label->set_text("Record");
+
+        auto onBitrateUpdate = [bitrate_label](uint64_t bitrate) {
+            std::string text = "Bitrate: ";
+            if (bitrate > 1000 * 1000) {
+                text += std::format("{:.2f}", bitrate / 1000.0 / 1000.0) + " Mbps";
+            } else if (bitrate > 1000) {
+                text += std::format("{:.2f}", bitrate / 1000.0) + " Kbps";
+            } else {
+                text += bitrate + " bps";
+            }
+            bitrate_label->set_text(text);
+        };
+        GuiInterface::Instance().bitrateUpdateCallbacks.emplace_back(onBitrateUpdate);
     }
 
     void custom_update(double delta) override {
@@ -92,10 +206,18 @@ class MyControlPanel : public Flint::Panel {
         margin_container->set_anchor_flag(Flint::AnchorFlag::FullRect);
         add_child(margin_container);
 
+        auto vbox_container0 = std::make_shared<Flint::VBoxContainer>();
+        vbox_container0->set_separation(8);
+        margin_container->add_child(vbox_container0);
+
+        auto collapse_panel = std::make_shared<Flint::CollapseContainer>();
+        collapse_panel->set_title("Adapter Control");
+        collapse_panel->set_color(Flint::ColorU::red());
+        vbox_container0->add_child(collapse_panel);
+
         auto vbox_container = std::make_shared<Flint::VBoxContainer>();
         vbox_container->set_separation(8);
-
-        margin_container->add_child(vbox_container);
+        collapse_panel->add_child(vbox_container);
 
         {
             auto label = std::make_shared<Flint::Label>();
@@ -217,6 +339,11 @@ class MyControlPanel : public Flint::Panel {
             play_button_->connect_signal("pressed", callback1);
             vbox_container->add_child(play_button_);
         }
+
+        auto collapse_panel2 = std::make_shared<Flint::CollapseContainer>();
+        collapse_panel2->set_title("Player Control");
+        // collapse_panel2->set_color(Flint::ColorU::green());
+        vbox_container0->add_child(collapse_panel2);
     }
 };
 
@@ -238,25 +365,6 @@ int main() {
     render_rect->container_sizing.flag_v = Flint::ContainerSizingFlag::Fill;
     hbox_container->add_child(render_rect);
 
-    auto bitrate_label = std::make_shared<Flint::Label>();
-    bitrate_label->set_text("Bitrate: 0 Kbps");
-    bitrate_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
-    bitrate_label->set_anchor_flag(Flint::AnchorFlag::BottomLeft);
-    render_rect->add_child(bitrate_label);
-
-    auto onBitrateUpdate = [bitrate_label](uint64_t bitrate) {
-        std::string text = "Bitrate: ";
-        if (bitrate > 1000 * 1000) {
-            text += std::format("{:.2f}", bitrate / 1000.0 / 1000.0) + " Mbps";
-        } else if (bitrate > 1000) {
-            text += std::format("{:.2f}", bitrate / 1000.0) + " Kbps";
-        } else {
-            text += bitrate + " bps";
-        }
-        bitrate_label->set_text(text);
-    };
-    GuiInterface::Instance().bitrateUpdateCallbacks.emplace_back(onBitrateUpdate);
-
     auto control_panel = std::make_shared<MyControlPanel>();
     control_panel->set_custom_minimum_size({280, 0});
     control_panel->container_sizing.expand_v = true;
@@ -272,6 +380,8 @@ int main() {
 
     auto onWifiStop = [render_rect_raw] { render_rect_raw->stop_playing(); };
     GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);
+
+    auto prompt_popup = std::make_shared<Flint::Panel>();
 
     app.main_loop();
 
