@@ -364,10 +364,11 @@ bool RealTimePlayer::startGifRecord() {
     return true;
 }
 
-void RealTimePlayer::stopGifRecord() const {
+std::string RealTimePlayer::stopGifRecord() const {
     decoder->_gotFrameCallback = nullptr;
     if (!_gifEncoder) {
-        return;
+        return "";
     }
     _gifEncoder->close();
+    return _gifEncoder->_saveFilePath;
 }

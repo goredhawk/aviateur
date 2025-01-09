@@ -19,7 +19,7 @@ public:
     // 编码帧
     bool encodeFrame(const std::shared_ptr<AVFrame> &frame);
     // 关闭编码器
-    void close();
+    std::string close();
     // 帧率
     int getFrameRate() const {
         return _frameRate;
@@ -30,6 +30,8 @@ public:
     }
     // 是否已经打开
     bool isOpened();
+
+    std::string _saveFilePath;
 
 protected:
     std::mutex _encodeMtx;

@@ -52,6 +52,16 @@ public:
     bool is_recording = false;
 
     void custom_ready() override {
+        auto collapse_panel2 = std::make_shared<Flint::CollapseContainer>();
+        collapse_panel2->set_title("Player Control");
+        collapse_panel2->set_collapse(true);
+        collapse_panel2->set_color(Flint::ColorU(84, 138, 247));
+        collapse_panel2->set_anchor_flag(Flint::AnchorFlag::TopRight);
+        add_child(collapse_panel2);
+
+        auto vbox = std::make_shared<Flint::VBoxContainer>();
+        collapse_panel2->add_child(vbox);
+
         logo_ = std::make_shared<Flint::VectorImage>("openipc-logo-white.svg");
         texture = logo_;
 
@@ -84,14 +94,23 @@ public:
         bitrate_label->set_anchor_flag(Flint::AnchorFlag::CenterLeft);
         hud_panel->add_child(bitrate_label);
 
+        auto recording_label = std::make_shared<Flint::Label>();
+        recording_label->set_text("Not recording");
+        recording_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+        recording_label->set_anchor_flag(Flint::AnchorFlag::CenterRight);
+        hud_panel->add_child(recording_label);
+
+        auto capture_button = std::make_shared<Flint::Button>();
+        vbox->add_child(capture_button);
+        capture_button->set_text("Capture Frame");
+
         auto record_button = std::make_shared<Flint::Button>();
-        hud_panel->add_child(record_button);
-        record_button->set_text("Record");
+        vbox->add_child(record_button);
+        record_button->set_text("Record MP4");
         record_button->set_toggle_mode(true);
-        record_button->set_anchor_flag(Flint::AnchorFlag::CenterRight);
         auto record_callback = [record_button, this]() {
             if (!is_recording) {
-                is_recording = player_->startRecord();
+                is_recording = player_->startGifRecord();
 
                 if (is_recording) {
                     record_button->set_text("Stop");
@@ -119,12 +138,55 @@ public:
                 //     recordTimer.stop();
                 // }
             } else {
-                auto file_path = player_->stopRecord();
+                auto file_path = player_->stopGifRecord();
                 // Show tip
                 record_button->set_text("Record");
             }
         };
         record_button->connect_signal("pressed", record_callback);
+
+        {
+            auto record_gif_button = std::make_shared<Flint::Button>();
+            vbox->add_child(record_gif_button);
+            record_gif_button->set_text("Record GIF");
+            record_gif_button->set_toggle_mode(true);
+            auto record_gif_callback = [record_gif_button, this]() {
+                if (!is_recording) {
+                    is_recording = player_->startRecord();
+
+                    if (is_recording) {
+                        record_gif_button->set_text("Stop");
+                    } else {
+                        tip_label_->show_tip("Recording failed!");
+                    }
+                    //     if(recordTimer.started){
+                    //         recordTimer.start();
+
+                    // if(!recordTimer.started){
+                    //     recordTimer.started = player.startRecord();
+                    //     if(recordTimer.started){
+                    //         recordTimer.start();
+                    //     }else{
+                    //         tips.showPop('Record failed! ',3000);
+                    //     }
+                    // }else{
+                    //     recordTimer.started = false;
+                    //     let f = player.stopRecord();
+                    //     if(f!==''){
+                    //         tips.showPop('Saved '+f,3000);
+                    //     }else{
+                    //         tips.showPop('Record failed! ',3000);
+                    //     }
+                    //     recordTimer.stop();
+                    // }
+                } else {
+                    auto file_path = player_->stopRecord();
+                    // Show tip
+                    record_gif_button->set_text("Record GIF");
+                }
+            };
+            record_button->connect_signal("pressed", record_callback);
+        }
 
         auto record_timer_label = std::make_shared<Flint::Label>();
         record_timer_label->set_text("Record");
@@ -206,18 +268,9 @@ class MyControlPanel : public Flint::Panel {
         margin_container->set_anchor_flag(Flint::AnchorFlag::FullRect);
         add_child(margin_container);
 
-        auto vbox_container0 = std::make_shared<Flint::VBoxContainer>();
-        vbox_container0->set_separation(8);
-        margin_container->add_child(vbox_container0);
-
-        auto collapse_panel = std::make_shared<Flint::CollapseContainer>();
-        collapse_panel->set_title("Adapter Control");
-        collapse_panel->set_color(Flint::ColorU::red());
-        vbox_container0->add_child(collapse_panel);
-
         auto vbox_container = std::make_shared<Flint::VBoxContainer>();
         vbox_container->set_separation(8);
-        collapse_panel->add_child(vbox_container);
+        margin_container->add_child(vbox_container);
 
         {
             auto label = std::make_shared<Flint::Label>();
@@ -324,14 +377,27 @@ class MyControlPanel : public Flint::Panel {
         {
             play_button_ = std::make_shared<Flint::Button>();
             play_button_->set_text("Start");
+            auto green = Flint::ColorU(78, 135, 82);
+            play_button_->theme_normal.bg_color = green;
+            play_button_->theme_hovered.bg_color = green;
+            play_button_->theme_pressed.bg_color = green;
+
             play_button_->container_sizing.expand_h = true;
             play_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
 
             auto callback1 = [this] {
                 if (play_button_->get_text() == "Start") {
+                    auto red = Flint::ColorU(201, 79, 79);
+                    play_button_->theme_normal.bg_color = red;
+                    play_button_->theme_hovered.bg_color = red;
+                    play_button_->theme_pressed.bg_color = red;
                     play_button_->set_text("Stop");
                     bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
                 } else {
+                    auto green = Flint::ColorU(78, 135, 82);
+                    play_button_->theme_normal.bg_color = green;
+                    play_button_->theme_hovered.bg_color = green;
+                    play_button_->theme_pressed.bg_color = green;
                     play_button_->set_text("Start");
                     GuiInterface::Stop();
                 }
@@ -339,11 +405,6 @@ class MyControlPanel : public Flint::Panel {
             play_button_->connect_signal("pressed", callback1);
             vbox_container->add_child(play_button_);
         }
-
-        auto collapse_panel2 = std::make_shared<Flint::CollapseContainer>();
-        collapse_panel2->set_title("Player Control");
-        // collapse_panel2->set_color(Flint::ColorU::green());
-        vbox_container0->add_child(collapse_panel2);
     }
 };
 

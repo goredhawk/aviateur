@@ -55,6 +55,9 @@ bool GifEncoder::open(int width, int height, AVPixelFormat pixelFormat, int fram
         return false;
     }
     _opened = true;
+
+    _saveFilePath = outputPath;
+
     return true;
 }
 
@@ -112,10 +115,10 @@ bool GifEncoder::encodeFrame(const std::shared_ptr<AVFrame> &frame) {
     return true;
 }
 
-void GifEncoder::close() {
+std::string GifEncoder::close() {
     std::lock_guard lck(_encodeMtx);
     if (!_opened) {
-        return;
+        return "";
     }
     if (_formatCtx) {
         // 写文件尾
@@ -128,6 +131,8 @@ void GifEncoder::close() {
     // 关闭文件
     avio_close(_formatCtx->pb);
     _opened = false;
+
+    return _saveFilePath;
 }
 
 GifEncoder::~GifEncoder() {

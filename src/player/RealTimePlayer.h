@@ -33,12 +33,15 @@ public:
     void setMuted(bool muted = false);
     // 截图
     std::string captureJpeg();
-    // 录像
+
+    // Record MP4
     bool startRecord();
     std::string stopRecord() const;
-    // 录制GIF
+
+    // Record GIF
     bool startGifRecord();
-    void stopGifRecord() const;
+    std::string stopGifRecord() const;
+
     // 获取视频宽度
     int getVideoWidth() const;
     // 获取视频高度
