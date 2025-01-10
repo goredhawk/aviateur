@@ -35,7 +35,7 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 2. Install dependencies.
    ```powershell
    .\vcpkg integrate install
-   .\vcpkg install libusb ffmpeg vcpkg-tool-ninja
+   .\vcpkg install libusb ffmpeg libsodium vcpkg-tool-ninja
    ```
 
 3. Add VCPKG_ROOT() to environment. (Change the value to your vcpkg path.)
