@@ -12,6 +12,11 @@
 RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
     m_yuv_renderer = std::make_shared<YuvRenderer>(device, queue);
     m_yuv_renderer->init();
+
+    connectionLostCallbacks.push_back([this] {
+        stop();
+        play(url);
+    });
 }
 
 void RealTimePlayer::update(float delta) {
@@ -76,8 +81,7 @@ void RealTimePlayer::play(const std::string &playUrl) {
         // 打开并分析输入
         bool ok = decoder_->OpenInput(url);
         if (!ok) {
-            abort();
-            // emit onError("视频加载出错", -2);
+            emitError("Loading URL failed", -2);
             return;
         }
         decoder = decoder_;
@@ -100,14 +104,15 @@ void RealTimePlayer::play(const std::string &playUrl) {
                         videoFrameQueue.push(frame);
                     }
                 } catch (const std::exception &e) {
-                    // emit onError(e.what(), -2);
-                    // Error, stop.
+                    // Decoding stopped.
+
+                    emitError(e.what(), -2);
+
+                    emitConnectionLost();
+
                     break;
                 }
             }
-            playStop = true;
-            // 解码已经停止，触发信号
-            // emit onPlayStopped();
         });
 
         // Start decode thread.
@@ -265,6 +270,28 @@ int RealTimePlayer::getVideoHeight() const {
         return 0;
     }
     return decoder->height;
+}
+
+void RealTimePlayer::emitConnectionLost() {
+    for (auto& callback : connectionLostCallbacks) {
+        try {
+            callback();
+        } catch (std::bad_any_cast&) {
+            abort();
+        }
+    }
+}
+
+void RealTimePlayer::emitError(std::string msg, int errorCode) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "{%s}. Error code: {%d}", msg.c_str(), errorCode);
+
+        for (auto& callback : errorCallbacks) {
+            try {
+                callback.operator()<std::string, int>(std::move(msg), std::move(errorCode));
+            } catch (std::bad_any_cast&) {
+                abort();
+            }
+        }
 }
 
 bool RealTimePlayer::enableAudio() {

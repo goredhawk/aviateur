@@ -48,11 +48,13 @@ public:
     int getVideoHeight() const;
 
     // Signals
-    // 播放已经停止
-    toolkit::AnyCallable<void> onPlayStopped;
-    // 出错
-    // void onError(std::string msg, int code);
-    toolkit::AnyCallable<void> onError;
+
+    std::vector<toolkit::AnyCallable<void>> connectionLostCallbacks;
+    void emitConnectionLost();
+
+    std::vector<toolkit::AnyCallable<void>> errorCallbacks;
+    void emitError(std::string msg, int errorCode);
+
     // 获取录音音量
     // void gotRecordVol(double vol);
     toolkit::AnyCallable<void> gotRecordVol;

@@ -104,9 +104,10 @@ void freeSwrCtx(SwrContext *s) {
 }
 
 std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
-    // 加锁，避免在此方法执行过程中解码器释放，导致崩溃
     std::lock_guard lck(_releaseLock);
+
     std::shared_ptr<AVFrame> res;
+
     if (videoStreamIndex == -1 && audioStreamIndex == -1) {
         return res;
     }
@@ -114,19 +115,19 @@ std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
         return res;
     }
 
-    // 读输入流
     while (true) {
         if (!pFormatCtx) {
-            throw std::runtime_error("分配解析器出错");
+            throw std::runtime_error("AVFormatContext is null");
         }
         std::shared_ptr<AVPacket> packet = std::shared_ptr<AVPacket>(av_packet_alloc(), &freePkt);
         int ret = av_read_frame(pFormatCtx, packet.get());
         if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw std::runtime_error("解析视频出错 " + std::string(errStr));
+            throw std::runtime_error("av_read_frame failed: " + std::string(errStr));
         }
-        // 计算码率
+
+        // Calculate bitrate
         {
             bytesSecond += packet->size;
             uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -145,6 +146,8 @@ std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
                 lastCountBitrateTime = now;
             }
         }
+
+        // Handle video
         if (packet->stream_index == videoStreamIndex) {
             // 回调nalu
             if (_gotPktCallback) {
@@ -162,7 +165,10 @@ std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
                 _gotFrameCallback(pVideoYuv);
             }
             break;
-        } else if (packet->stream_index == audioStreamIndex) {
+        }
+
+        // Handle audio
+        if (packet->stream_index == audioStreamIndex) {
             // 回调nalu
             if (_gotPktCallback) {
                 _gotPktCallback(packet);
@@ -186,7 +192,7 @@ std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
     return res;
 }
 
-bool FFmpegDecoder::hwDecoderInit(AVCodecContext *ctx, const enum AVHWDeviceType type) {
+bool FFmpegDecoder::hwDecoderInit(AVCodecContext *ctx, const AVHWDeviceType type) {
     if (av_hwdevice_ctx_create(&hwDeviceCtx, type, nullptr, nullptr, 0) < 0) {
         return false;
     }
@@ -259,7 +265,7 @@ bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame>
         if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw std::runtime_error("发送视频包出错 " + std::string(errStr));
+            throw std::runtime_error("avcodec_send_packet failed: " + std::string(errStr));
         }
 
         if (isHwDecoderEnable) {
@@ -279,7 +285,7 @@ bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame>
         } else if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw std::runtime_error("解码视频出错 " + std::string(errStr));
+            throw std::runtime_error("avcodec_receive_frame failed: " + std::string(errStr));
         } else {
             // Successfully decoded a frame
             res = true;
@@ -297,7 +303,7 @@ bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame>
             if (ret < 0) {
                 char errStr[AV_ERROR_MAX_STRING_SIZE];
                 av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-                throw std::runtime_error("Decode video frame error. " + std::string(errStr));
+                throw std::runtime_error("av_hwframe_transfer_data failed: " + std::string(errStr));
             }
         }
     }
@@ -365,7 +371,6 @@ int FFmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t 
         AVFrame *audioFrame = av_frame_alloc();
         if (!audioFrame) {
             throw std::runtime_error("Failed to allocate audio frame");
-            return 0;
         }
 
         int packetDecodedSize = avcodec_receive_frame(pAudioCodecCtx, audioFrame);
@@ -389,8 +394,7 @@ int FFmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t 
                     if (ret < 0) {
                         char errStr[AV_ERROR_MAX_STRING_SIZE];
                         av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-                        throw std::runtime_error("解码音频出错 " + std::string(errStr));
-                        return 0;
+                        throw std::runtime_error("Decoding audio  failed: " + std::string(errStr));
                     }
                     swrCtx = std::shared_ptr<SwrContext>(ptr, &freeSwrCtx);
                 }
@@ -452,6 +456,7 @@ size_t FFmpegDecoder::ReadAudioBuff(uint8_t *aSample, size_t aSize) {
     av_fifo_read(audioFifoBuffer.get(), aSample, aSize);
     return aSize;
 }
+
 void FFmpegDecoder::ClearAudioBuff() {
     std::lock_guard lck(abBuffMtx);
     av_fifo_reset2(audioFifoBuffer.get());

@@ -15,97 +15,80 @@ class FFmpegDecoder {
 public:
     FFmpegDecoder() = default;
 
-    virtual ~FFmpegDecoder() {
-        FFmpegDecoder::CloseInput();
+    ~FFmpegDecoder() {
+        CloseInput();
     }
 
-    // 打开输入
-    virtual bool OpenInput(std::string &inputFile);
+    bool OpenInput(std::string &inputFile);
 
-    // 关闭输入并释放资源
-    virtual bool CloseInput();
+    bool CloseInput();
 
-    // 获取下一帧
-    virtual std::shared_ptr<AVFrame> GetNextFrame();
+    std::shared_ptr<AVFrame> GetNextFrame();
 
-    // 获取宽度
     int GetWidth() const {
         return width;
     }
 
-    // 获取高度
     int GetHeight() const {
         return height;
     }
 
-    // 获取FPS
     double GetFps() const {
         return videoFramePerSecond;
     }
 
-    // 输入流是否存在音频
     bool HasAudio() const {
         return hasAudioStream;
     }
 
-    // 输入流是否存在视频
     bool HasVideo() const {
         return hasVideoStream;
     }
 
-    // 读音频fifo
     size_t ReadAudioBuff(uint8_t *aSample, size_t aSize);
-    // 清空音频fifo
+
     void ClearAudioBuff();
-    // 音频采样率
+
     int GetAudioSampleRate() const {
         return pAudioCodecCtx->sample_rate;
     }
-    // 音频声道数
+
     int GetAudioChannelCount() const {
         return pAudioCodecCtx->ch_layout.nb_channels;
     }
-    // 音频样本格式
+
     AVSampleFormat GetAudioSampleFormat() const {
         return AV_SAMPLE_FMT_S16;
     }
-    // 视频帧格式
+
     AVPixelFormat GetVideoFrameFormat() const {
         if (isHwDecoderEnable) {
             return AV_PIX_FMT_NV12;
         }
         return pVideoCodecCtx->pix_fmt;
     }
-    // 获取音频frame大小
-    int GetAudioFrameSamples() {
+
+    int GetAudioFrameSamples() const {
         return pAudioCodecCtx->sample_rate * 2 / 25;
     }
 
 private:
-    // 打开视频流
     bool OpenVideo();
 
-    // 打开音频流
     bool OpenAudio();
 
-    // 关闭视频流
     void CloseVideo();
 
-    // 关闭音频流
     void CloseAudio();
 
-    // 解码音频帧
     int DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
 
-    // 解码视频祯
     bool DecodeVideo(const AVPacket *avpkt, std::shared_ptr<AVFrame> &pOutFrame);
 
-    // 向音频fifo写入数据
     void writeAudioBuff(uint8_t *aSample, size_t aSize);
 
-    // 获取到NALU回调
     std::function<void(const std::shared_ptr<AVPacket> &packet)> _gotPktCallback = nullptr;
-    // 获取到已经解码图像回调
+
     std::function<void(const std::shared_ptr<AVFrame> &frame)> _gotFrameCallback = nullptr;
 
     // 初始化硬件解码器

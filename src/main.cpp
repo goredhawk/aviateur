@@ -8,6 +8,8 @@
 #include "resources/render_image.h"
 #include "wifi/WFBReceiver.h"
 
+constexpr auto DEFAULT_KEY_NAME = "gs.key";
+
 class TipLabel : public Flint::Label {
 public:
     float alpha = 0;
@@ -51,16 +53,24 @@ public:
 
     bool is_recording = false;
 
+    std::shared_ptr<Flint::CollapseContainer> collapse_panel_;
+
+    std::shared_ptr<Flint::Panel> hud_panel_;
+
+    // Record when the signal had been lost.
+    std::chrono::time_point<std::chrono::steady_clock> signal_lost_time_;
+
     void custom_ready() override {
-        auto collapse_panel2 = std::make_shared<Flint::CollapseContainer>();
-        collapse_panel2->set_title("Player Control");
-        collapse_panel2->set_collapse(true);
-        collapse_panel2->set_color(Flint::ColorU(84, 138, 247));
-        collapse_panel2->set_anchor_flag(Flint::AnchorFlag::TopRight);
-        add_child(collapse_panel2);
+        collapse_panel_ = std::make_shared<Flint::CollapseContainer>();
+        collapse_panel_->set_title("Player Control");
+        collapse_panel_->set_collapse(true);
+        collapse_panel_->set_color(Flint::ColorU(84, 138, 247));
+        collapse_panel_->set_anchor_flag(Flint::AnchorFlag::TopRight);
+        collapse_panel_->set_visibility(false);
+        add_child(collapse_panel_);
 
         auto vbox = std::make_shared<Flint::VBoxContainer>();
-        collapse_panel2->add_child(vbox);
+        collapse_panel_->add_child(vbox);
 
         logo_ = std::make_shared<Flint::VectorImage>("openipc-logo-white.svg");
         texture = logo_;
@@ -78,27 +88,27 @@ public:
         tip_label_->set_text_style(Flint::TextStyle{Flint::ColorU::red()});
         add_child(tip_label_);
 
-        auto hud_panel = std::make_shared<Flint::Panel>();
-        hud_panel->set_size({0, 48});
+        hud_panel_ = std::make_shared<Flint::Panel>();
+        add_child(hud_panel_);
+        hud_panel_->set_size({0, 48});
         Flint::StyleBox box;
         box.bg_color = Flint::ColorU(27, 27, 27, 27);
         box.border_width = 0;
-        hud_panel->set_theme_panel(box);
-        add_child(hud_panel);
-        hud_panel->set_anchor_flag(Flint::AnchorFlag::BottomWide);
-        // hud_panel->set_visibility(false);
+        hud_panel_->set_theme_panel(box);
+        hud_panel_->set_anchor_flag(Flint::AnchorFlag::BottomWide);
+        hud_panel_->set_visibility(false);
 
         auto bitrate_label = std::make_shared<Flint::Label>();
+        hud_panel_->add_child(bitrate_label);
         bitrate_label->set_text("Bitrate: 0 Kbps");
         bitrate_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
         bitrate_label->set_anchor_flag(Flint::AnchorFlag::CenterLeft);
-        hud_panel->add_child(bitrate_label);
 
         auto recording_label = std::make_shared<Flint::Label>();
+        hud_panel_->add_child(recording_label);
         recording_label->set_text("Not recording");
         recording_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
         recording_label->set_anchor_flag(Flint::AnchorFlag::CenterRight);
-        hud_panel->add_child(recording_label);
 
         auto capture_button = std::make_shared<Flint::Button>();
         vbox->add_child(capture_button);
@@ -108,12 +118,14 @@ public:
         vbox->add_child(record_button);
         record_button->set_text("Record MP4");
         record_button->set_toggle_mode(true);
-        auto record_callback = [record_button, this]() {
+
+        auto record_button_raw = record_button.get();
+        auto record_callback = [record_button_raw, this] {
             if (!is_recording) {
                 is_recording = player_->startGifRecord();
 
                 if (is_recording) {
-                    record_button->set_text("Stop");
+                    record_button_raw->set_text("Stop");
                 } else {
                     tip_label_->show_tip("Recording failed!");
                 }
@@ -140,7 +152,7 @@ public:
             } else {
                 auto file_path = player_->stopGifRecord();
                 // Show tip
-                record_button->set_text("Record");
+                record_button_raw->set_text("Record");
             }
         };
         record_button->connect_signal("pressed", record_callback);
@@ -217,12 +229,17 @@ public:
         player_->m_yuv_renderer->render(render_image->get_texture());
     }
 
+    // When connected.
     void start_playing(std::string url) {
         playing_ = true;
         player_->play(url);
         texture = render_image_;
+
+        collapse_panel_->set_visibility(true);
+        hud_panel_->set_visibility(true);
     }
 
+    // When disconnected.
     void stop_playing() {
         playing_ = false;
         // Fix crash in WFBReceiver destructor.
@@ -230,6 +247,9 @@ public:
             player_->stop();
         }
         texture = logo_;
+
+        collapse_panel_->set_visibility(false);
+        hud_panel_->set_visibility(false);
     }
 };
 
@@ -241,16 +261,24 @@ class MyControlPanel : public Flint::Panel {
     std::string vidPid = "";
     int channel = 173;
     int channelWidthMode = 0;
-    std::string keyPath = "gs.key";
+    std::string keyPath = DEFAULT_KEY_NAME;
     std::string codec = "AUTO";
 
     std::shared_ptr<Flint::Button> play_button_;
 
-    void update_dongle_list(Flint::PopupMenu &menu) const {
+    void update_dongle_list(Flint::PopupMenu &menu)  {
         auto dongles = GuiInterface::GetDongleList();
 
+        bool previous_device_exists = false;
         for (auto dongle : dongles) {
+            if (vidPid == dongle) {
+                previous_device_exists = true;
+            }
             menu.create_item(dongle);
+        }
+
+        if (!previous_device_exists) {
+            vidPid = "";
         }
     }
 
@@ -357,13 +385,14 @@ class MyControlPanel : public Flint::Panel {
 
             auto text_edit = std::make_shared<Flint::TextEdit>();
             text_edit->set_editable(false);
-            text_edit->set_text("gs.key");
+            text_edit->set_text(DEFAULT_KEY_NAME);
             text_edit->container_sizing.expand_h = true;
             text_edit->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
             hbox_container->add_child(text_edit);
 
             auto file_dialog = std::make_shared<Flint::FileDialog>();
             add_child(file_dialog);
+            file_dialog->set_default_path(std::filesystem::absolute(DEFAULT_KEY_NAME).string());
 
             auto select_button = std::make_shared<Flint::Button>();
             select_button->set_text("Open");
