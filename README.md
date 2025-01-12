@@ -22,6 +22,7 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 
 ### Todo
 - Video stabilization using optical flow
+- i18n
 - Linux client
 - Android client
 
