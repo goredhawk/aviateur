@@ -530,7 +530,6 @@ public:
 int main() {
     Flint::App app({1280, 720});
     app.set_window_title("Aviateur - OpenIPC FPV Ground Station");
-    // Flint::Logger::set_level(Flint::Logger::Level::Silence);
 
     auto hbox_container = std::make_shared<Flint::HBoxContainer>();
     hbox_container->set_separation(2);
@@ -560,7 +559,7 @@ int main() {
     auto control_panel_raw = control_panel.get();
     auto onWifiStop = [render_rect_raw, control_panel_raw] {
         render_rect_raw->stop_playing();
-        render_rect_raw->show_red_tip("Wi-Fi stopped");
+        render_rect_raw->show_red_tip("Wi-Fi stopped!");
         control_panel_raw->update_start_button_looking(true);
     };
     GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);

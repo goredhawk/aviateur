@@ -6,7 +6,9 @@ if (WIN32)
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 endif ()
 
-project(aviateur)
+project(aviateur
+        VERSION 0.1
+        LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
