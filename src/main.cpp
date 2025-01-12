@@ -504,7 +504,6 @@ int main() {
     app.get_tree_root()->add_child(hbox_container);
 
     auto render_rect = std::make_shared<MyRenderRect>();
-    render_rect->set_custom_minimum_size({640, 360});
     render_rect->container_sizing.expand_h = true;
     render_rect->container_sizing.expand_v = true;
     render_rect->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
