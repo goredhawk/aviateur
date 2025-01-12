@@ -26,20 +26,18 @@ public:
         style_box.corner_radius = 8;
         theme_background = style_box;
 
+        set_text_style(Flint::TextStyle{Flint::ColorU(201, 79, 79)});
+
         display_timer = std::make_shared<Flint::Timer>();
         fade_timer = std::make_shared<Flint::Timer>();
 
         add_child(display_timer);
         add_child(fade_timer);
 
-        auto callback = [this] {
-            fade_timer->start_timer(fade_time);
-        };
+        auto callback = [this] { fade_timer->start_timer(fade_time); };
         display_timer->connect_signal("timeout", callback);
 
-        auto callback2 = [this] {
-            set_visibility(false);
-        };
+        auto callback2 = [this] { set_visibility(false); };
         fade_timer->connect_signal("timeout", callback2);
     }
 
@@ -50,6 +48,12 @@ public:
     }
 
     void show_tip(std::string tip) {
+        if (!display_timer->is_stopped()) {
+            display_timer->stop();
+        }
+        if (!fade_timer->is_stopped()) {
+            fade_timer->stop();
+        }
         set_text(tip);
         set_visibility(true);
         alpha = 1;
@@ -219,6 +223,19 @@ public:
                 }
             };
             record_button->connect_signal("pressed", record_callback);
+        }
+
+        {
+            auto video_stabilization_button = std::make_shared<Flint::CheckButton>();
+            video_stabilization_button->set_text("Video Stabilization");
+            vbox->add_child(video_stabilization_button);
+
+            auto callback = [this](bool toggled) {
+                if (toggled) {
+                    show_tip("Video stabilization is not supported yet!");
+                }
+            };
+            video_stabilization_button->connect_signal("toggled", callback);
         }
 
         auto record_timer_label = std::make_shared<Flint::Label>();

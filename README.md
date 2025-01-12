@@ -21,7 +21,7 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 ![](tutorials/latency_test.jpg)
 
 ### Todo
-- Video stabilization
+- Video stabilization using optical flow
 - Linux client
 - Android client
 

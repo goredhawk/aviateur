@@ -113,6 +113,8 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
         return false;
     }
 
+    libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_WARNING);
+
     devHandle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
     if (devHandle == nullptr) {
         GuiInterface::Instance().PutLog(LogLevel::Error,
