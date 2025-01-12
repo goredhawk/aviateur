@@ -267,14 +267,12 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
            sizeof(serverAddr));
 }
 
-bool WFBReceiver::Stop() const {
+void WFBReceiver::Stop() const {
     playing = false;
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
     GuiInterface::Instance().NotifyWifiStop();
-
-    return true;
 }
 
 WFBReceiver::WFBReceiver() {

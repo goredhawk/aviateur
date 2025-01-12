@@ -33,21 +33,25 @@ void RealTimePlayer::update(float delta) {
 }
 
 std::shared_ptr<AVFrame> RealTimePlayer::getFrame(bool &got) {
+    // Got a frame?
     got = false;
 
     std::lock_guard lck(mtx);
-    // 帧缓冲区已被清空,跳过渲染
+
+    // No frame in the queue
     if (videoFrameQueue.empty()) {
         return {};
     }
-    // 从帧缓冲区取出帧
+
+    // Get a frame from the queue
     std::shared_ptr<AVFrame> frame = videoFrameQueue.front();
     got = true;
-    // 缓冲区出队被渲染的帧
+
+    // Remove the frame from the queue.
     videoFrameQueue.pop();
 
-    // 缓冲，追帧机制
     _lastFrame = frame;
+
     return frame;
 }
 
@@ -185,19 +189,28 @@ std::string RealTimePlayer::captureJpeg() {
     if (!_lastFrame) {
         return "";
     }
-    // std::string dirPath = QFileInfo("jpg/l").absolutePath();
-    // QDir dir(dirPath);
-    // if (!dir.exists()) {
-    //     dir.mkpath(dirPath);
-    // }
-    // stringstream ss;
-    // ss << "jpg/";
-    // ss << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-    //           .count()
-    //    << ".jpg";
-    // auto ok = JpegEncoder::encodeJpeg(ss.str(), _lastFrame);
-    // // 截图
-    // return ok ? std::string(ss.str().c_str()) : "";
+
+    auto absolutePath = std::filesystem::absolute("capture");
+    std::string dirPath = absolutePath.parent_path().string();
+
+    try {
+        if (!std::filesystem::exists(dirPath)) {
+            std::filesystem::create_directories(dirPath);
+        }
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+    std::stringstream filePath;
+    filePath << "capture/";
+    filePath << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch())
+                    .count()
+             << ".jpg";
+
+    auto ok = JpegEncoder::encodeJpeg(filePath.str(), _lastFrame);
+
+    return ok ? std::string(filePath.str()) : "";
 }
 
 bool RealTimePlayer::startRecord() {
@@ -273,25 +286,25 @@ int RealTimePlayer::getVideoHeight() const {
 }
 
 void RealTimePlayer::emitConnectionLost() {
-    for (auto& callback : connectionLostCallbacks) {
+    for (auto &callback : connectionLostCallbacks) {
         try {
             callback();
-        } catch (std::bad_any_cast&) {
+        } catch (std::bad_any_cast &) {
             abort();
         }
     }
 }
 
 void RealTimePlayer::emitError(std::string msg, int errorCode) {
-        GuiInterface::Instance().PutLog(LogLevel::Error, "{%s}. Error code: {%d}", msg.c_str(), errorCode);
+    GuiInterface::Instance().PutLog(LogLevel::Error, "{%s}. Error code: {%d}", msg.c_str(), errorCode);
 
-        for (auto& callback : errorCallbacks) {
-            try {
-                callback.operator()<std::string, int>(std::move(msg), std::move(errorCode));
-            } catch (std::bad_any_cast&) {
-                abort();
-            }
+    for (auto &callback : errorCallbacks) {
+        try {
+            callback.operator()<std::string, int>(std::move(msg), std::move(errorCode));
+        } catch (std::bad_any_cast &) {
+            abort();
         }
+    }
 }
 
 bool RealTimePlayer::enableAudio() {

@@ -55,28 +55,25 @@ public:
     std::vector<toolkit::AnyCallable<void>> errorCallbacks;
     void emitError(std::string msg, int errorCode);
 
-    // 获取录音音量
     // void gotRecordVol(double vol);
-    toolkit::AnyCallable<void> gotRecordVol;
-    // 获得码率
+    toolkit::AnyCallable<void> gotRecordVolume;
+
     // void onBitrate(long bitrate);
-    toolkit::AnyCallable<void> onBitrate;
-    // 静音
+    toolkit::AnyCallable<void> onBitrateUpdate;
+
     // void onMutedChanged(bool muted);
     toolkit::AnyCallable<void> onMutedChanged;
-    // 是否有音频
+
     // void onHasAudio(bool has);
     toolkit::AnyCallable<void> onHasAudio;
 
-    friend class TItemRender;
-
 protected:
     std::shared_ptr<FFmpegDecoder> decoder;
-    // 播放地址
+    // Play file URL
     std::string url;
-    // 播放标记位
+
     volatile bool playStop = true;
-    // 静音标记位
+
     volatile bool isMuted = true;
     // 帧队列
     std::queue<std::shared_ptr<AVFrame>> videoFrameQueue;

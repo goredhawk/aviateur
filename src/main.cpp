@@ -12,30 +12,47 @@ constexpr auto DEFAULT_KEY_NAME = "gs.key";
 
 class TipLabel : public Flint::Label {
 public:
-    float alpha = 0;
-    float display_time = 2;
-    float fade_time = 0.1;
+    float display_time = 1;
+    float fade_time = 0.5;
 
     std::shared_ptr<Flint::Timer> display_timer;
     std::shared_ptr<Flint::Timer> fade_timer;
 
     void custom_ready() override {
+        set_font_size(48);
+
+        auto style_box = Flint::StyleBox();
+        style_box.bg_color = Flint::ColorU(50, 50, 50, 100);
+        style_box.corner_radius = 8;
+        theme_background = style_box;
+
         display_timer = std::make_shared<Flint::Timer>();
         fade_timer = std::make_shared<Flint::Timer>();
 
         add_child(display_timer);
         add_child(fade_timer);
 
-        auto callback = [this] { this->fade_timer->start_timer(fade_time); };
+        auto callback = [this] {
+            fade_timer->start_timer(fade_time);
+        };
         display_timer->connect_signal("timeout", callback);
 
-        auto callback2 = [this] { set_visibility(false); };
+        auto callback2 = [this] {
+            set_visibility(false);
+        };
         fade_timer->connect_signal("timeout", callback2);
+    }
+
+    void custom_update(double dt) override {
+        if (!fade_timer->is_stopped()) {
+            alpha = fade_timer->get_remaining_time() / fade_time;
+        }
     }
 
     void show_tip(std::string tip) {
         set_text(tip);
         set_visibility(true);
+        alpha = 1;
         display_timer->start_timer(display_time);
     }
 };
@@ -59,6 +76,10 @@ public:
 
     // Record when the signal had been lost.
     std::chrono::time_point<std::chrono::steady_clock> signal_lost_time_;
+
+    void show_tip(std::string tip) {
+        tip_label_->show_tip(tip);
+    }
 
     void custom_ready() override {
         collapse_panel_ = std::make_shared<Flint::CollapseContainer>();
@@ -254,6 +275,7 @@ public:
 };
 
 class MyControlPanel : public Flint::Panel {
+public:
     std::shared_ptr<Flint::MenuButton> dongle_menu_button_;
     std::shared_ptr<Flint::MenuButton> channel_button_;
     std::shared_ptr<Flint::MenuButton> channel_width_button_;
@@ -266,7 +288,7 @@ class MyControlPanel : public Flint::Panel {
 
     std::shared_ptr<Flint::Button> play_button_;
 
-    void update_dongle_list(Flint::PopupMenu &menu)  {
+    void update_dongle_list(Flint::PopupMenu &menu) {
         auto dongles = GuiInterface::GetDongleList();
 
         bool previous_device_exists = false;
@@ -279,6 +301,22 @@ class MyControlPanel : public Flint::Panel {
 
         if (!previous_device_exists) {
             vidPid = "";
+        }
+    }
+
+    void update_start_button_looking(bool start_status) {
+        if (!start_status) {
+            auto red = Flint::ColorU(201, 79, 79);
+            play_button_->theme_normal.bg_color = red;
+            play_button_->theme_hovered.bg_color = red;
+            play_button_->theme_pressed.bg_color = red;
+            play_button_->set_text("Stop");
+        } else {
+            auto green = Flint::ColorU(78, 135, 82);
+            play_button_->theme_normal.bg_color = green;
+            play_button_->theme_hovered.bg_color = green;
+            play_button_->theme_pressed.bg_color = green;
+            play_button_->set_text("Start");
         }
     }
 
@@ -422,19 +460,13 @@ class MyControlPanel : public Flint::Panel {
             play_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
 
             auto callback1 = [this] {
-                if (play_button_->get_text() == "Start") {
-                    auto red = Flint::ColorU(201, 79, 79);
-                    play_button_->theme_normal.bg_color = red;
-                    play_button_->theme_hovered.bg_color = red;
-                    play_button_->theme_pressed.bg_color = red;
-                    play_button_->set_text("Stop");
+                bool start = play_button_->get_text() == "Start";
+
+                update_start_button_looking(!start);
+
+                if (start) {
                     bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
                 } else {
-                    auto green = Flint::ColorU(78, 135, 82);
-                    play_button_->theme_normal.bg_color = green;
-                    play_button_->theme_hovered.bg_color = green;
-                    play_button_->theme_pressed.bg_color = green;
-                    play_button_->set_text("Start");
                     GuiInterface::Stop();
                 }
             };
@@ -447,7 +479,7 @@ class MyControlPanel : public Flint::Panel {
 int main() {
     Flint::App app({1280, 720});
     app.set_window_title("Aviateur - OpenIPC FPV Ground Station");
-    Flint::Logger::set_level(Flint::Logger::Level::Silence);
+    // Flint::Logger::set_level(Flint::Logger::Level::Silence);
 
     auto hbox_container = std::make_shared<Flint::HBoxContainer>();
     hbox_container->set_separation(2);
@@ -475,7 +507,12 @@ int main() {
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
-    auto onWifiStop = [render_rect_raw] { render_rect_raw->stop_playing(); };
+    auto control_panel_raw = control_panel.get();
+    auto onWifiStop = [render_rect_raw, control_panel_raw] {
+        render_rect_raw->stop_playing();
+        render_rect_raw->show_tip("Wi-Fi stopped");
+        control_panel_raw->update_start_button_looking(true);
+    };
     GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);
 
     auto prompt_popup = std::make_shared<Flint::Panel>();
