@@ -21,9 +21,9 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 ![](tutorials/latency_test.jpg)
 
 ### Todo
+- Video stabilization
 - Linux client
 - Android client
-- Hardware acceleration decoding
 
 ### How to build
 1. Install vcpkg.
@@ -43,6 +43,7 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 
 4. Clone third-party library source.
    ```powershell
+   cd aviateur
    git submodule init
    git submodule update
    ```
