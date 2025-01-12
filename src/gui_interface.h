@@ -92,7 +92,7 @@ public:
     }
 
     static bool Stop() {
-        std::future f = std::async([]() { WFBReceiver::Instance().Stop(); });
+        WFBReceiver::Instance().Stop();
         return true;
     }
 

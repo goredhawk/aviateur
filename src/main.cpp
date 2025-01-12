@@ -513,13 +513,13 @@ public:
             auto callback1 = [this] {
                 bool start = play_button_->get_text() == "Start";
 
-                update_start_button_looking(!start);
-
                 if (start) {
                     bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
                 } else {
                     GuiInterface::Stop();
                 }
+
+                update_start_button_looking(!start);
             };
             play_button_->connect_signal("pressed", callback1);
             vbox_container->add_child(play_button_);
