@@ -10,7 +10,7 @@
 
 #define CONFIG "config."
 #define CONFIG_FILE "config.ini"
-#define CONFIG_DEVICE CONFIG "0000:0000"
+#define CONFIG_DEVICE CONFIG "pidVid"
 #define CONFIG_CHANNEL CONFIG "channel"
 #define CONFIG_CHANNEL_WIDTH_MODE CONFIG "channelWidth"
 #define CONFIG_CHANNEL_KEY CONFIG "key"
