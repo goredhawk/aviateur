@@ -208,6 +208,9 @@ std::string RealTimePlayer::captureJpeg() {
                     .count()
              << ".jpg";
 
+    std::ofstream outfile (filePath.str());
+    outfile.close();
+
     auto ok = JpegEncoder::encodeJpeg(filePath.str(), _lastFrame);
 
     return ok ? std::string(filePath.str()) : "";
@@ -219,11 +222,10 @@ bool RealTimePlayer::startRecord() {
     }
 
     auto absolutePath = std::filesystem::absolute("recording");
-    std::string dirPath = absolutePath.parent_path().string();
 
     try {
-        if (!std::filesystem::exists(dirPath)) {
-            std::filesystem::create_directories(dirPath);
+        if (!std::filesystem::exists(absolutePath)) {
+            std::filesystem::create_directories(absolutePath);
         }
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -235,6 +237,9 @@ bool RealTimePlayer::startRecord() {
                            std::chrono::system_clock::now().time_since_epoch())
                            .count()
                     << ".mp4";
+
+    std::ofstream outfile (video_file_path.str());
+    outfile.close();
 
     _mp4Encoder = std::make_shared<Mp4Encoder>(video_file_path.str());
 

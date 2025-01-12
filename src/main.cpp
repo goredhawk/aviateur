@@ -74,14 +74,26 @@ public:
 
     bool is_recording = false;
 
+    std::chrono::time_point<std::chrono::steady_clock> record_start_time;
+
     std::shared_ptr<Flint::CollapseContainer> collapse_panel_;
 
     std::shared_ptr<Flint::Panel> hud_panel_;
 
+    std::shared_ptr<Flint::Label> record_status_label_;
+
     // Record when the signal had been lost.
     std::chrono::time_point<std::chrono::steady_clock> signal_lost_time_;
 
-    void show_tip(std::string tip) {
+    void show_red_tip(std::string tip) {
+        auto red = Flint::ColorU(201, 79, 79);
+        tip_label_->set_text_style(Flint::TextStyle{red});
+        tip_label_->show_tip(tip);
+    }
+
+    void show_green_tip(std::string tip) {
+        auto green = Flint::ColorU(78, 135, 82);
+        tip_label_->set_text_style(Flint::TextStyle{green});
         tip_label_->show_tip(tip);
     }
 
@@ -129,101 +141,103 @@ public:
         bitrate_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
         bitrate_label->set_anchor_flag(Flint::AnchorFlag::CenterLeft);
 
-        auto recording_label = std::make_shared<Flint::Label>();
-        hud_panel_->add_child(recording_label);
-        recording_label->set_text("Not recording");
-        recording_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
-        recording_label->set_anchor_flag(Flint::AnchorFlag::CenterRight);
+        record_status_label_ = std::make_shared<Flint::Label>();
+        hud_panel_->add_child(record_status_label_);
+        record_status_label_->set_text("Not recording");
+        record_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+        record_status_label_->set_anchor_flag(Flint::AnchorFlag::CenterRight);
 
         auto capture_button = std::make_shared<Flint::Button>();
         vbox->add_child(capture_button);
         capture_button->set_text("Capture Frame");
+        auto capture_button_raw = capture_button.get();
+        auto capture_callback = [capture_button_raw, this] {
+            auto output_file = player_->captureJpeg();
+            if (output_file.empty()) {
+                show_red_tip("Failed to capture frame!");
+            } else {
+                show_green_tip("Frame saved to: " + output_file);
+            }
+        };
+        capture_button->connect_signal("pressed", capture_callback);
 
         auto record_button = std::make_shared<Flint::Button>();
         vbox->add_child(record_button);
         record_button->set_text("Record MP4");
-        record_button->set_toggle_mode(true);
 
         auto record_button_raw = record_button.get();
         auto record_callback = [record_button_raw, this] {
             if (!is_recording) {
-                is_recording = player_->startGifRecord();
+                is_recording = player_->startRecord();
 
                 if (is_recording) {
-                    record_button_raw->set_text("Stop");
-                } else {
-                    tip_label_->show_tip("Recording failed!");
-                }
-                //     if(recordTimer.started){
-                //         recordTimer.start();
+                    record_button_raw->set_text("Stop Recording");
 
-                // if(!recordTimer.started){
-                //     recordTimer.started = player.startRecord();
-                //     if(recordTimer.started){
-                //         recordTimer.start();
-                //     }else{
-                //         tips.showPop('Record failed! ',3000);
-                //     }
-                // }else{
-                //     recordTimer.started = false;
-                //     let f = player.stopRecord();
-                //     if(f!==''){
-                //         tips.showPop('Saved '+f,3000);
-                //     }else{
-                //         tips.showPop('Record failed! ',3000);
-                //     }
-                //     recordTimer.stop();
-                // }
+                    record_start_time = std::chrono::steady_clock::now();
+
+                    record_status_label_->set_text("Recording 00:00");
+                } else {
+                    record_status_label_->set_text("Not recording");
+                    show_red_tip("Recording failed!");
+                }
             } else {
-                auto file_path = player_->stopGifRecord();
-                // Show tip
-                record_button_raw->set_text("Record");
+                is_recording = false;
+
+                auto output_file = player_->stopRecord();
+
+                record_button_raw->set_text("Record MP4");
+
+                if (output_file.empty()) {
+                    show_red_tip("Failed to save the record file!");
+                } else {
+                    show_green_tip("Video saved to: " + output_file);
+                }
             }
         };
         record_button->connect_signal("pressed", record_callback);
 
-        {
-            auto record_gif_button = std::make_shared<Flint::Button>();
-            vbox->add_child(record_gif_button);
-            record_gif_button->set_text("Record GIF");
-            record_gif_button->set_toggle_mode(true);
-            auto record_gif_callback = [record_gif_button, this]() {
-                if (!is_recording) {
-                    is_recording = player_->startRecord();
-
-                    if (is_recording) {
-                        record_gif_button->set_text("Stop");
-                    } else {
-                        tip_label_->show_tip("Recording failed!");
-                    }
-                    //     if(recordTimer.started){
-                    //         recordTimer.start();
-
-                    // if(!recordTimer.started){
-                    //     recordTimer.started = player.startRecord();
-                    //     if(recordTimer.started){
-                    //         recordTimer.start();
-                    //     }else{
-                    //         tips.showPop('Record failed! ',3000);
-                    //     }
-                    // }else{
-                    //     recordTimer.started = false;
-                    //     let f = player.stopRecord();
-                    //     if(f!==''){
-                    //         tips.showPop('Saved '+f,3000);
-                    //     }else{
-                    //         tips.showPop('Record failed! ',3000);
-                    //     }
-                    //     recordTimer.stop();
-                    // }
-                } else {
-                    auto file_path = player_->stopRecord();
-                    // Show tip
-                    record_gif_button->set_text("Record GIF");
-                }
-            };
-            record_button->connect_signal("pressed", record_callback);
-        }
+        // {
+        //     auto record_gif_button = std::make_shared<Flint::Button>();
+        //     vbox->add_child(record_gif_button);
+        //     record_gif_button->set_text("Record GIF");
+        //     record_gif_button->set_toggle_mode(true);
+        //     auto record_gif_callback = [record_gif_button, this]() {
+        //         if (!is_recording) {
+        //             is_recording = player_->startRecord();
+        //
+        //             if (is_recording) {
+        //                 record_gif_button->set_text("Stop");
+        //             } else {
+        //                 tip_label_->show_tip("Recording failed!");
+        //             }
+        //             //     if(recordTimer.started){
+        //             //         recordTimer.start();
+        //
+        //             // if(!recordTimer.started){
+        //             //     recordTimer.started = player.startRecord();
+        //             //     if(recordTimer.started){
+        //             //         recordTimer.start();
+        //             //     }else{
+        //             //         tips.showPop('Record failed! ',3000);
+        //             //     }
+        //             // }else{
+        //             //     recordTimer.started = false;
+        //             //     let f = player.stopRecord();
+        //             //     if(f!==''){
+        //             //         tips.showPop('Saved '+f,3000);
+        //             //     }else{
+        //             //         tips.showPop('Record failed! ',3000);
+        //             //     }
+        //             //     recordTimer.stop();
+        //             // }
+        //         } else {
+        //             auto file_path = player_->stopRecord();
+        //             // Show tip
+        //             record_gif_button->set_text("Record GIF");
+        //         }
+        //     };
+        //     record_button->connect_signal("pressed", record_callback);
+        // }
 
         {
             auto video_stabilization_button = std::make_shared<Flint::CheckButton>();
@@ -232,7 +246,7 @@ public:
 
             auto callback = [this](bool toggled) {
                 if (toggled) {
-                    show_tip("Video stabilization is not supported yet!");
+                    show_red_tip("Video stabilization is not supported yet!");
                 }
             };
             video_stabilization_button->connect_signal("toggled", callback);
@@ -257,6 +271,26 @@ public:
 
     void custom_update(double delta) override {
         player_->update(delta);
+
+        if (is_recording) {
+            std::chrono::duration<double, std::chrono::seconds::period> duration =
+                std::chrono::steady_clock::now() - record_start_time;
+
+            int total_seconds = duration.count();
+            int hours = total_seconds / 3600;
+            int minutes = (total_seconds % 3600) / 60;
+            int seconds = total_seconds % 60;
+
+            std::ostringstream ss;
+            ss << "Recording ";
+            if (hours > 0) {
+                ss << hours << ":";
+            }
+            ss << std::setw(2) << std::setfill('0') << minutes << ":";
+            ss << std::setw(2) << std::setfill('0') << seconds;
+
+            record_status_label_->set_text(ss.str());
+        }
     }
 
     void custom_draw() override {
@@ -526,7 +560,7 @@ int main() {
     auto control_panel_raw = control_panel.get();
     auto onWifiStop = [render_rect_raw, control_panel_raw] {
         render_rect_raw->stop_playing();
-        render_rect_raw->show_tip("Wi-Fi stopped");
+        render_rect_raw->show_red_tip("Wi-Fi stopped");
         control_panel_raw->update_start_button_looking(true);
     };
     GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);
