@@ -17,10 +17,10 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 5. Select your WFB key.
 6. *Start* & Enjoy!
 
-### Latency Test
+### Latency test
 ![](tutorials/latency_test.jpg)
 
-### Todo
+### TODOs
 - Video stabilization using optical flow
 - i18n
 - Linux client
@@ -50,3 +50,12 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
    ```
 
 5. Open as a CMake project and build.
+
+### Common build issues
+
+```
+CMake Error at C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.29/Modules/FindPackageHandleStandardArgs.cmake:230 (message): ...
+```
+
+This is because the pre-installed vcpkg from Visual Studio installer overrides the PKG_ROOT environment variable.
+To fix this, find `set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")` in CMakeLists.txt, replace `$ENV{VCPKG_ROOT}` with the vcpkg you cloned previously.

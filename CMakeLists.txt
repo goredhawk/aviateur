@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # This should go before project declaration.
 if (WIN32)
-    message("[aviateur] Make sure " "<$ENV{VCPKG_ROOT}>" " is the vcpkg dir in which you have installed the dependency libs.")
+    message("[aviateur] <${VCPKG_ROOT}> should be the vcpkg dir in which you have installed the dependency libs.")
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 endif ()
 
