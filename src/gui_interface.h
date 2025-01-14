@@ -75,6 +75,9 @@ public:
                       int channelWidthMode,
                       const std::string &keyPath,
                       const std::string &codec) {
+        // For clearing obsolete entries.
+        toolkit::mINI::Instance().clear();
+
         // Save config.
         toolkit::mINI::Instance()[CONFIG_DEVICE] = vidPid;
         toolkit::mINI::Instance()[CONFIG_CHANNEL] = channel;

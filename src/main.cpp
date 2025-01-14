@@ -421,7 +421,6 @@ public:
             hbox_container->add_child(label);
 
             channel_button_ = std::make_shared<Flint::MenuButton>();
-            channel_button_->set_text(std::to_string(channel));
             channel_button_->container_sizing.expand_h = true;
             channel_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
             hbox_container->add_child(channel_button_);
@@ -432,9 +431,15 @@ public:
                 auto callback = [this](uint32_t) { channel = std::stoi(channel_button_->get_selected_item_text()); };
                 channel_button_->connect_signal("item_selected", callback);
 
+                uint32_t selected = 0;
                 for (auto c : CHANNELS) {
                     channel_menu.lock()->create_item(std::to_string(c));
+                    if (std::to_string(channel) == std::to_string(c)) {
+                        selected = channel_menu.lock()->get_item_count() - 1;
+                    }
                 }
+
+                channel_button_->select_item(selected);
             }
         }
 
@@ -449,18 +454,28 @@ public:
             channel_width_button_ = std::make_shared<Flint::MenuButton>();
             channel_width_button_->container_sizing.expand_h = true;
             channel_width_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
-            channel_width_button_->set_text(CHANNEL_WIDTHS[channelWidthMode]);
             hbox_container->add_child(channel_width_button_);
 
             {
                 auto channel_width_menu = channel_width_button_->get_popup_menu();
 
-                auto callback = [this](uint32_t) { channelWidthMode = channel_button_->get_selected_item_index(); };
+                auto callback = [this](uint32_t) {
+                    auto selected = channel_width_button_->get_selected_item_index();
+                    if (selected.has_value()) {
+                        channelWidthMode = selected.value();
+                    }
+                };
                 channel_width_button_->connect_signal("item_selected", callback);
 
+                uint32_t selected = 0;
                 for (auto width : CHANNEL_WIDTHS) {
                     channel_width_menu.lock()->create_item(width);
+                    int current_index = channel_width_menu.lock()->get_item_count() - 1;
+                    if (channelWidthMode == current_index) {
+                        selected = current_index;
+                    }
                 }
+                channel_width_button_->select_item(selected);
             }
         }
 
@@ -529,7 +544,11 @@ public:
 
 int main() {
     Flint::App app({1280, 720});
+    Flint::Logger::set_module_level("Flint", Flint::Logger::Level::Debug);
     app.set_window_title("Aviateur - OpenIPC FPV Ground Station");
+
+    // Redirect standard ouput to a file
+    freopen("last_run_log.txt", "w", stdout);
 
     auto hbox_container = std::make_shared<Flint::HBoxContainer>();
     hbox_container->set_separation(2);
