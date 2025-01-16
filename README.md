@@ -2,6 +2,8 @@
 
 Cross-platform OpenIPC FPV ground station. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]).
 
+![](tutorials/interface.jpg)
+
 Supports RTL8812AU Wi-Fi adapter only (for now).
 
 ### Usage
@@ -59,3 +61,7 @@ CMake Error at C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/I
 
 This is because the pre-installed vcpkg from Visual Studio installer overrides the PKG_ROOT environment variable.
 To fix this, find `set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")` in CMakeLists.txt, replace `$ENV{VCPKG_ROOT}` with the vcpkg you cloned previously.
+
+### Common run issues
+
+If the application crashes at startup, try installing [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
