@@ -3,15 +3,35 @@
 #include <iostream>
 #include <vector>
 
+#include "src/gui_interface.h"
+
 #define MAX_AUDIO_PACKET (2 * 1024 * 1024)
 
 bool FFmpegDecoder::OpenInput(std::string &inputFile) {
+    av_log_set_level(AV_LOG_ERROR);
+
     CloseInput();
 
-    if (!isHwDecoderEnable) {
-        hwDecoderType = av_hwdevice_find_type_by_name("d3d11va");
-        if (hwDecoderType != AV_HWDEVICE_TYPE_NONE) {
-            isHwDecoderEnable = true;
+    // Check if any hardware decoder exists.
+    if (hwDecoderEnabled) {
+        AVHWDeviceType decoderType = AV_HWDEVICE_TYPE_NONE;
+        std::vector<AVHWDeviceType> supportedHWDevices;
+        do {
+            decoderType = av_hwdevice_iterate_types(decoderType);
+
+            if (decoderType != AV_HWDEVICE_TYPE_NONE) {
+                auto decoderName = std::string(av_hwdevice_get_type_name(decoderType));
+                GuiInterface::Instance().PutLog(LogLevel::Info, "Found hardware decoder: " + decoderName);
+                supportedHWDevices.push_back(decoderType);
+            }
+        } while (decoderType != AV_HWDEVICE_TYPE_NONE);
+
+        if (!supportedHWDevices.empty()) {
+            hwDecoderType = supportedHWDevices.front();
+            GuiInterface::Instance().PutLog(
+                LogLevel::Info,
+                "Using hardware decoder: " + std::string(av_hwdevice_get_type_name(hwDecoderType)));
+            hwDecoderEnabled = true;
         }
     }
 
@@ -58,11 +78,11 @@ bool FFmpegDecoder::OpenInput(std::string &inputFile) {
     hasVideoStream = OpenVideo();
     hasAudioStream = OpenAudio();
 
-    isOpen = true;
+    sourceIsOpened = true;
 
     // 转换时间基
     if (videoStreamIndex != -1) {
-        videoFramePerSecond = av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate);
+        videoFps = av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate);
         videoBaseTime = av_q2d(pFormatCtx->streams[videoStreamIndex]->time_base);
     }
     if (audioStreamIndex != -1) {
@@ -78,7 +98,7 @@ bool FFmpegDecoder::OpenInput(std::string &inputFile) {
 }
 
 bool FFmpegDecoder::CloseInput() {
-    isOpen = false;
+    sourceIsOpened = false;
 
     std::lock_guard lck(_releaseLock);
 
@@ -111,7 +131,8 @@ std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
     if (videoStreamIndex == -1 && audioStreamIndex == -1) {
         return res;
     }
-    if (!isOpen) {
+
+    if (!sourceIsOpened) {
         return res;
     }
 
@@ -192,7 +213,7 @@ std::shared_ptr<AVFrame> FFmpegDecoder::GetNextFrame() {
     return res;
 }
 
-bool FFmpegDecoder::hwDecoderInit(AVCodecContext *ctx, const AVHWDeviceType type) {
+bool FFmpegDecoder::initHwDecoder(AVCodecContext *ctx, const AVHWDeviceType type) {
     if (av_hwdevice_ctx_create(&hwDeviceCtx, type, nullptr, nullptr, 0) < 0) {
         return false;
     }
@@ -207,40 +228,53 @@ bool FFmpegDecoder::OpenVideo() {
     if (pFormatCtx) {
         videoStreamIndex = -1;
 
-        for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++) {
+        for (uint32_t i = 0; i < pFormatCtx->nb_streams; i++) {
             if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 videoStreamIndex = i;
                 const AVCodec *codec = avcodec_find_decoder(pFormatCtx->streams[i]->codecpar->codec_id);
 
-                // 如果有存在视频，检测硬件解码器
-                if (codec && isHwDecoderEnable) {
+                if (!codec) {
+                    continue;
+                }
+
+                if (hwDecoderEnabled) {
                     for (int configIndex = 0;; configIndex++) {
                         const AVCodecHWConfig *config = avcodec_get_hw_config(codec, configIndex);
                         if (!config) {
-                            isHwDecoderEnable = false;
+                            hwDecoderEnabled = false;
+                            GuiInterface::Instance().PutLog(LogLevel::Error,
+                                                            "AVCodecHWConfig is null, disabling hardware decoder");
                             break;
                         }
+
                         if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
                             config->device_type == hwDecoderType) {
                             hwPixFmt = config->pix_fmt;
+
+                            std::ostringstream oss;
+                            oss << "Hardware acceleration pixel format: " << hwPixFmt;
+                            GuiInterface::Instance().PutLog(LogLevel::Info, oss.str());
+
                             break;
                         }
                     }
                 }
 
-                if (codec) {
-                    pVideoCodecCtx = avcodec_alloc_context3(codec);
-                    if (pVideoCodecCtx) {
-                        if (isHwDecoderEnable) {
-                            isHwDecoderEnable = hwDecoderInit(pVideoCodecCtx, hwDecoderType);
-                        }
+                pVideoCodecCtx = avcodec_alloc_context3(codec);
+                if (pVideoCodecCtx) {
+                    if (hwDecoderEnabled) {
+                        hwDecoderEnabled = initHwDecoder(pVideoCodecCtx, hwDecoderType);
 
-                        if (avcodec_parameters_to_context(pVideoCodecCtx, pFormatCtx->streams[i]->codecpar) >= 0) {
-                            res = !(avcodec_open2(pVideoCodecCtx, codec, nullptr) < 0);
-                            if (res) {
-                                width = pVideoCodecCtx->width;
-                                height = pVideoCodecCtx->height;
-                            }
+                        if (!hwDecoderEnabled) {
+                            GuiInterface::Instance().PutLog(LogLevel::Error, "hwDecoderInit failed");
+                        }
+                    }
+
+                    if (avcodec_parameters_to_context(pVideoCodecCtx, pFormatCtx->streams[i]->codecpar) >= 0) {
+                        res = !(avcodec_open2(pVideoCodecCtx, codec, nullptr) < 0);
+                        if (res) {
+                            width = pVideoCodecCtx->width;
+                            height = pVideoCodecCtx->height;
                         }
                     }
                 }
@@ -268,7 +302,7 @@ bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame>
             throw std::runtime_error("avcodec_send_packet failed: " + std::string(errStr));
         }
 
-        if (isHwDecoderEnable) {
+        if (hwDecoderEnabled) {
             // Initialize the hardware frame.
             if (!hwFrame) {
                 hwFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
@@ -291,7 +325,7 @@ bool FFmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame>
             res = true;
         }
 
-        if (isHwDecoderEnable) {
+        if (hwDecoderEnabled) {
             if (dropCurrentVideoFrame) {
                 pOutFrame.reset();
                 return false;

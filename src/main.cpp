@@ -550,6 +550,27 @@ int main() {
     // Redirect standard ouput to a file
     freopen("last_run_log.txt", "w", stdout);
 
+    Flint::Logger::set_module_level("Aviateur", Flint::Logger::Level::Info);
+
+    auto logCallback = [](LogLevel level, std::string msg) {
+        switch (level) {
+            case LogLevel::Info: {
+                Flint::Logger::info(msg, "Aviateur");
+            } break;
+            case LogLevel::Debug: {
+                Flint::Logger::debug(msg, "Aviateur");
+            } break;
+            case LogLevel::Warn: {
+                Flint::Logger::warn(msg, "Aviateur");
+            } break;
+            case LogLevel::Error: {
+                Flint::Logger::error(msg, "Aviateur");
+            } break;
+            default:;
+        }
+    };
+    GuiInterface::Instance().logCallbacks.emplace_back(logCallback);
+
     auto hbox_container = std::make_shared<Flint::HBoxContainer>();
     hbox_container->set_separation(2);
     hbox_container->set_anchor_flag(Flint::AnchorFlag::FullRect);

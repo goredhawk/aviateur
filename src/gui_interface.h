@@ -128,28 +128,29 @@ public:
     }
 
     template <typename... Args>
-    void PutLog(LogLevel level, format_string_t<Args...> fmt, Args &&...args) {
-        std::string txt = format(fmt, args...);
-        WhenLog(level, txt);
+    void PutLog(LogLevel level, const std::string_view message, Args... format_items) {
+        std::string str = std::vformat(message, std::make_format_args(format_items...));
+        EmitLog(level, str);
     }
 
     void NotifyWifiStop() {
-        WhenWifiStopped();
+        EmitWifiStopped();
     }
 
     int NotifyRtpStream(int pt, uint16_t ssrc) {
         // Get free port.
         std::string sdpFile = "sdp/sdp.sdp";
         BuildSdp(sdpFile, playerCodec, pt, playerPort);
-        // Emit signal.
-        WhenRtpStream(sdpFile);
+
+        EmitRtpStream(sdpFile);
+
         return Instance().playerPort;
     }
 
     void UpdateCount() {
-        WhenWifiFrameCountUpdated(wifiFrameCount_);
-        WhenWfbFrameCountUpdated(wfbFrameCount_);
-        WhenRtpPktCountUpdated(rtpPktCount_);
+        EmitWifiFrameCountUpdated(wifiFrameCount_);
+        EmitWfbFrameCountUpdated(wfbFrameCount_);
+        EmitRtpPktCountUpdated(rtpPktCount_);
     }
 
     long long GetWfbFrameCount() const {
@@ -189,7 +190,7 @@ public:
     std::vector<toolkit::AnyCallable<void>> rtpStreamCallbacks;
     std::vector<toolkit::AnyCallable<void>> bitrateUpdateCallbacks;
 
-    void WhenLog(LogLevel level, std::string msg) {
+    void EmitLog(LogLevel level, std::string msg) {
         for (auto &callback : logCallbacks) {
             try {
                 callback.operator()<LogLevel, std::string>(std::move(level), std::move(msg));
@@ -198,7 +199,7 @@ public:
         }
     }
 
-    void WhenWifiStopped() {
+    void EmitWifiStopped() {
         for (auto &callback : wifiStopCallbacks) {
             try {
                 callback();
@@ -208,7 +209,7 @@ public:
         }
     }
 
-    void WhenWifiFrameCountUpdated(long long count) {
+    void EmitWifiFrameCountUpdated(long long count) {
         for (auto &callback : wifiFrameCountCallbacks) {
             try {
                 callback.operator()<long long>(std::move(count));
@@ -218,7 +219,7 @@ public:
         }
     }
 
-    void WhenWfbFrameCountUpdated(long long count) {
+    void EmitWfbFrameCountUpdated(long long count) {
         for (auto &callback : wfbFrameCountCallbacks) {
             try {
                 callback.operator()<long long>(std::move(count));
@@ -228,7 +229,7 @@ public:
         }
     }
 
-    void WhenRtpPktCountUpdated(long long count) {
+    void EmitRtpPktCountUpdated(long long count) {
         for (auto &callback : rtpPktCountCallbacks) {
             try {
                 callback.operator()<long long>(std::move(count));
@@ -238,7 +239,7 @@ public:
         }
     }
 
-    void WhenRtpStream(std::string sdp) {
+    void EmitRtpStream(std::string sdp) {
         for (auto &callback : rtpStreamCallbacks) {
             try {
                 callback.operator()<std::string>(std::move(sdp));
@@ -248,7 +249,7 @@ public:
         }
     }
 
-    void WhenBitrateUpdate(uint64_t bitrate) {
+    void EmitBitrateUpdate(uint64_t bitrate) {
         for (auto &callback : bitrateUpdateCallbacks) {
             try {
                 callback.operator()<uint64_t>(std::move(bitrate));

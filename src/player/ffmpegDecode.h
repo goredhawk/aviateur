@@ -34,7 +34,7 @@ public:
     }
 
     double GetFps() const {
-        return videoFramePerSecond;
+        return videoFps;
     }
 
     bool HasAudio() const {
@@ -62,7 +62,7 @@ public:
     }
 
     AVPixelFormat GetVideoFrameFormat() const {
-        if (isHwDecoderEnable) {
+        if (hwDecoderEnabled) {
             return AV_PIX_FMT_NV12;
         }
         return pVideoCodecCtx->pix_fmt;
@@ -91,56 +91,41 @@ private:
 
     std::function<void(const std::shared_ptr<AVFrame> &frame)> _gotFrameCallback = nullptr;
 
-    // 初始化硬件解码器
-    bool hwDecoderInit(AVCodecContext *ctx, enum AVHWDeviceType type);
+    bool initHwDecoder(AVCodecContext *ctx, enum AVHWDeviceType type);
 
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 
-    // ffmpeg 解封装上下文
     AVFormatContext *pFormatCtx = nullptr;
 
-    // ffmpeg 视频编码上下文
     AVCodecContext *pVideoCodecCtx = nullptr;
 
-    // ffmpeg音频编码上下文
     AVCodecContext *pAudioCodecCtx = nullptr;
 
     // ffmpeg 音频样本格式转换
     std::shared_ptr<SwrContext> swrCtx;
 
-    // 视频轨道顺序
     int videoStreamIndex = -1;
 
-    // 音轨顺序
     int audioStreamIndex = -1;
 
-    // 输入源是否成功打开
-    volatile bool isOpen = false;
+    volatile bool sourceIsOpened = false;
 
-    // Video 帧率
-    double videoFramePerSecond = 0;
+    double videoFps= 0;
 
-    // ffmpeg 视频时间基
     double videoBaseTime = 0;
 
-    // ffmpeg 音频时间基
     double audioBaseTime = 0;
 
-    // ffmpeg 视频格式转换
     SwsContext *pImgConvertCtx = nullptr;
 
-    // 解码器全局释放锁
     std::mutex _releaseLock;
 
-    // 是否存在视频流
     bool hasVideoStream{};
-    // 是否存在音频流
+
     bool hasAudioStream{};
 
-    // 视频宽度
     int width{};
 
-    // 视频高度
     int height{};
 
     void emitOnBitrate(uint64_t pBitrate) {
@@ -152,16 +137,15 @@ private:
     uint64_t lastCountBitrateTime = 0;
     std::function<void(uint64_t bitrate)> onBitrate;
 
-    // 音频队列
+    // Audio buffer
     std::mutex abBuffMtx;
     std::shared_ptr<AVFifo> audioFifoBuffer;
 
-    // 硬件解码
+    // Hardware decoding
     AVHWDeviceType hwDecoderType;
-    bool isHwDecoderEnable = false;
+    bool hwDecoderEnabled = true;
     AVPixelFormat hwPixFmt;
     AVBufferRef *hwDeviceCtx = nullptr;
     volatile bool dropCurrentVideoFrame = false;
-    // Hardware frame
     std::shared_ptr<AVFrame> hwFrame;
 };

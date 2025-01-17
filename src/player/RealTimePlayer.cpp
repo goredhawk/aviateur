@@ -134,7 +134,7 @@ void RealTimePlayer::play(const std::string &playUrl) {
         }
 
         // 码率计算回调
-        decoder->onBitrate = [this](uint64_t bitrate) { GuiInterface::Instance().WhenBitrateUpdate(bitrate); };
+        decoder->onBitrate = [this](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
     });
 
     // Start analysis thread.
@@ -208,7 +208,7 @@ std::string RealTimePlayer::captureJpeg() {
                     .count()
              << ".jpg";
 
-    std::ofstream outfile (filePath.str());
+    std::ofstream outfile(filePath.str());
     outfile.close();
 
     auto ok = JpegEncoder::encodeJpeg(filePath.str(), _lastFrame);
@@ -238,7 +238,7 @@ bool RealTimePlayer::startRecord() {
                            .count()
                     << ".mp4";
 
-    std::ofstream outfile (video_file_path.str());
+    std::ofstream outfile(video_file_path.str());
     outfile.close();
 
     _mp4Encoder = std::make_shared<Mp4Encoder>(video_file_path.str());
@@ -301,7 +301,7 @@ void RealTimePlayer::emitConnectionLost() {
 }
 
 void RealTimePlayer::emitError(std::string msg, int errorCode) {
-    GuiInterface::Instance().PutLog(LogLevel::Error, "{%s}. Error code: {%d}", msg.c_str(), errorCode);
+    GuiInterface::Instance().PutLog(LogLevel::Error, msg + " (error code: " + std::to_string(errorCode) + ")");
 
     for (auto &callback : errorCallbacks) {
         try {
