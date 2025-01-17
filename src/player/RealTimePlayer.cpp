@@ -89,6 +89,7 @@ void RealTimePlayer::play(const std::string &playUrl) {
             return;
         }
         decoder = decoder_;
+        hwEnabled = decoder->hwDecoderEnabled;
 
         decodeThread = std::thread([this]() {
             while (!playStop) {
@@ -191,11 +192,10 @@ std::string RealTimePlayer::captureJpeg() {
     }
 
     auto absolutePath = std::filesystem::absolute("capture");
-    std::string dirPath = absolutePath.parent_path().string();
 
     try {
-        if (!std::filesystem::exists(dirPath)) {
-            std::filesystem::create_directories(dirPath);
+        if (!std::filesystem::exists(absolutePath)) {
+            std::filesystem::create_directories(absolutePath);
         }
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -231,17 +231,17 @@ bool RealTimePlayer::startRecord() {
         std::cerr << e.what() << std::endl;
     }
 
-    std::stringstream video_file_path;
-    video_file_path << "recording/";
-    video_file_path << std::chrono::duration_cast<std::chrono::milliseconds>(
-                           std::chrono::system_clock::now().time_since_epoch())
-                           .count()
-                    << ".mp4";
+    std::stringstream filePath;
+    filePath << "recording/";
+    filePath << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch())
+                    .count()
+             << ".mp4";
 
-    std::ofstream outfile(video_file_path.str());
+    std::ofstream outfile(filePath.str());
     outfile.close();
 
-    _mp4Encoder = std::make_shared<Mp4Encoder>(video_file_path.str());
+    _mp4Encoder = std::make_shared<Mp4Encoder>(filePath.str());
 
     // Audio track not handled for now.
     if (decoder->HasAudio()) {
@@ -288,6 +288,10 @@ int RealTimePlayer::getVideoHeight() const {
         return 0;
     }
     return decoder->height;
+}
+
+bool RealTimePlayer::isHardwareAccelerated() const {
+    return hwEnabled;
 }
 
 void RealTimePlayer::emitConnectionLost() {

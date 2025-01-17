@@ -47,6 +47,8 @@ public:
     // 获取视频高度
     int getVideoHeight() const;
 
+    bool isHardwareAccelerated() const;
+
     // Signals
 
     std::vector<toolkit::AnyCallable<void>> connectionLostCallbacks;
@@ -96,6 +98,8 @@ protected:
     std::shared_ptr<GifEncoder> _gifEncoder;
 
     bool hasAudio() const;
+
+    bool hwEnabled = false;
 
 public:
     std::shared_ptr<YuvRenderer> m_yuv_renderer;

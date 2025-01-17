@@ -82,6 +82,8 @@ public:
 
     std::shared_ptr<Flint::Label> record_status_label_;
 
+    std::shared_ptr<Flint::Label> hw_status_label_;
+
     // Record when the signal had been lost.
     std::chrono::time_point<std::chrono::steady_clock> signal_lost_time_;
 
@@ -147,6 +149,11 @@ public:
         record_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
         record_status_label_->set_anchor_flag(Flint::AnchorFlag::CenterRight);
 
+        hw_status_label_ = std::make_shared<Flint::Label>();
+        hud_panel_->add_child(hw_status_label_);
+        hw_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+        hw_status_label_->set_anchor_flag(Flint::AnchorFlag::Center);
+
         auto capture_button = std::make_shared<Flint::Button>();
         vbox->add_child(capture_button);
         capture_button->set_text("Capture Frame");
@@ -186,6 +193,7 @@ public:
                 auto output_file = player_->stopRecord();
 
                 record_button_raw->set_text("Record MP4");
+                record_status_label_->set_text("Not Recording");
 
                 if (output_file.empty()) {
                     show_red_tip("Failed to save the record file!");
@@ -271,6 +279,9 @@ public:
 
     void custom_update(double delta) override {
         player_->update(delta);
+
+        hw_status_label_->set_text("Hardware Acceleration: " +
+                                   std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
 
         if (is_recording) {
             std::chrono::duration<double, std::chrono::seconds::period> duration =
