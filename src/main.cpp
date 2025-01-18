@@ -10,6 +10,8 @@
 
 constexpr auto DEFAULT_KEY_NAME = "gs.key";
 
+static Flint::App *app;
+
 class TipLabel : public Flint::Label {
 public:
     float display_time = 1;
@@ -554,12 +556,13 @@ public:
 };
 
 int main() {
-    Flint::App app({1280, 720});
-    Flint::Logger::set_module_level("Flint", Flint::Logger::Level::Debug);
-    app.set_window_title("Aviateur - OpenIPC FPV Ground Station");
+    app = new Flint::App({1280, 720});
+    // Flint::Logger::set_default_level(Flint::Logger::Level::Info);
+    Flint::Logger::set_module_level("Flint", Flint::Logger::Level::Info);
+    app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
 
-    // Redirect standard ouput to a file
-    freopen("last_run_log.txt", "w", stdout);
+    // Redirect standard output to a file
+    // freopen("last_run_log.txt", "w", stdout);
 
     Flint::Logger::set_module_level("Aviateur", Flint::Logger::Level::Info);
 
@@ -585,7 +588,7 @@ int main() {
     auto hbox_container = std::make_shared<Flint::HBoxContainer>();
     hbox_container->set_separation(2);
     hbox_container->set_anchor_flag(Flint::AnchorFlag::FullRect);
-    app.get_tree_root()->add_child(hbox_container);
+    app->get_tree_root()->add_child(hbox_container);
 
     auto render_rect = std::make_shared<MyRenderRect>();
     render_rect->container_sizing.expand_h = true;
@@ -615,9 +618,23 @@ int main() {
     };
     GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);
 
-    auto prompt_popup = std::make_shared<Flint::Panel>();
+    {
+        auto fullscreen_button = std::make_shared<Flint::CheckButton>();
+        render_rect->add_child(fullscreen_button);
+        fullscreen_button->set_anchor_flag(Flint::AnchorFlag::TopLeft);
 
-    app.main_loop();
+        fullscreen_button->set_text("Fullscreen");
+
+        auto callback = [control_panel_raw](bool toggled) {
+            app->set_fullscreen(toggled);
+            control_panel_raw->set_visibility(!toggled);
+        };
+        fullscreen_button->connect_signal("toggled", callback);
+    }
+
+    app->main_loop();
+
+    delete app;
 
     return EXIT_SUCCESS;
 }
