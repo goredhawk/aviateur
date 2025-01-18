@@ -562,7 +562,7 @@ int main() {
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
 
     // Redirect standard output to a file
-    // freopen("last_run_log.txt", "w", stdout);
+    freopen("last_run_log.txt", "w", stdout);
 
     Flint::Logger::set_module_level("Aviateur", Flint::Logger::Level::Info);
 
