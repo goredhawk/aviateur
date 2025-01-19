@@ -69,6 +69,8 @@ public:
     std::string playing_file_;
     bool playing_ = false;
 
+    bool force_software_decoding = false;
+
     std::shared_ptr<Flint::VectorImage> logo_;
     std::shared_ptr<Flint::RenderImage> render_image_;
 
@@ -262,6 +264,19 @@ public:
             video_stabilization_button->connect_signal("toggled", callback);
         }
 
+        {
+            auto button = std::make_shared<Flint::CheckButton>();
+            button->set_text("Force Software Decoder");
+            vbox->add_child(button);
+
+            auto callback = [this](bool toggled) {
+                force_software_decoding = toggled;
+                player_->stop();
+                player_->play(playing_file_, force_software_decoding);
+            };
+            button->connect_signal("toggled", callback);
+        }
+
         auto record_timer_label = std::make_shared<Flint::Label>();
         record_timer_label->set_text("Record");
 
@@ -317,7 +332,7 @@ public:
     // When connected.
     void start_playing(std::string url) {
         playing_ = true;
-        player_->play(url);
+        player_->play(url, force_software_decoding);
         texture = render_image_;
 
         collapse_panel_->set_visibility(true);

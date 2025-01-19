@@ -19,7 +19,7 @@ public:
         CloseInput();
     }
 
-    bool OpenInput(std::string &inputFile);
+    bool OpenInput(std::string &inputFile, bool forceSoftwareDecoding);
 
     bool CloseInput();
 
@@ -110,7 +110,7 @@ private:
 
     volatile bool sourceIsOpened = false;
 
-    double videoFps= 0;
+    double videoFps = 0;
 
     double videoBaseTime = 0;
 
@@ -143,7 +143,8 @@ private:
 
     // Hardware decoding
     AVHWDeviceType hwDecoderType;
-    bool hwDecoderEnabled = true;
+    // If a hardware decoder is being used.
+    bool hwDecoderEnabled = false;
     AVPixelFormat hwPixFmt;
     AVBufferRef *hwDeviceCtx = nullptr;
     volatile bool dropCurrentVideoFrame = false;

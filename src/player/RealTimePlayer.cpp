@@ -15,7 +15,7 @@ RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::
 
     connectionLostCallbacks.push_back([this] {
         stop();
-        play(url);
+        play(url, forceSoftwareDecoding_);
     });
 }
 
@@ -70,7 +70,7 @@ void RealTimePlayer::onVideoInfoReady(int width, int height, int format) {
     }
 }
 
-void RealTimePlayer::play(const std::string &playUrl) {
+void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding) {
     playStop = false;
 
     if (analysisThread.joinable()) {
@@ -79,11 +79,11 @@ void RealTimePlayer::play(const std::string &playUrl) {
 
     url = playUrl;
 
-    analysisThread = std::thread([this] {
+    analysisThread = std::thread([this, forceSoftwareDecoding] {
         auto decoder_ = std::make_shared<FFmpegDecoder>();
 
         // 打开并分析输入
-        bool ok = decoder_->OpenInput(url);
+        bool ok = decoder_->OpenInput(url, forceSoftwareDecoding);
         if (!ok) {
             emitError("Loading URL failed", -2);
             return;
@@ -288,6 +288,10 @@ int RealTimePlayer::getVideoHeight() const {
         return 0;
     }
     return decoder->height;
+}
+
+void RealTimePlayer::forceSoftwareDecoding(bool force) {
+    forceSoftwareDecoding_ = force;
 }
 
 bool RealTimePlayer::isHardwareAccelerated() const {

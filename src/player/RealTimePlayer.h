@@ -26,7 +26,7 @@ public:
     int videoFormat() const { return m_videoFormat; }
     bool getMuted() const { return isMuted; }
     // 播放
-    void play(const std::string &playUrl);
+    void play(const std::string &playUrl, bool forceSoftwareDecoding);
     // 停止
     void stop();
     // 静音
@@ -46,6 +46,8 @@ public:
     int getVideoWidth() const;
     // 获取视频高度
     int getVideoHeight() const;
+
+    void forceSoftwareDecoding(bool force) ;
 
     bool isHardwareAccelerated() const;
 
@@ -99,6 +101,7 @@ protected:
 
     bool hasAudio() const;
 
+    bool forceSoftwareDecoding_ = false;
     bool hwEnabled = false;
 
 public:

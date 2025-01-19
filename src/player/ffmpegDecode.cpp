@@ -7,13 +7,15 @@
 
 #define MAX_AUDIO_PACKET (2 * 1024 * 1024)
 
-bool FFmpegDecoder::OpenInput(std::string &inputFile) {
+bool FFmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding) {
     av_log_set_level(AV_LOG_ERROR);
 
     CloseInput();
 
+    hwDecoderEnabled = false;
+
     // Check if any hardware decoder exists.
-    if (hwDecoderEnabled) {
+    if (!forceSoftwareDecoding) {
         AVHWDeviceType decoderType = AV_HWDEVICE_TYPE_NONE;
         std::vector<AVHWDeviceType> supportedHWDevices;
         do {
