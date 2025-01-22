@@ -82,11 +82,15 @@ public:
 
     std::shared_ptr<Flint::CollapseContainer> collapse_panel_;
 
-    std::shared_ptr<Flint::Panel> hud_panel_;
+    std::shared_ptr<Flint::HBoxContainer> hud_container_;
 
     std::shared_ptr<Flint::Label> record_status_label_;
 
     std::shared_ptr<Flint::Label> hw_status_label_;
+
+    std::shared_ptr<Flint::Label> video_fps_label_;
+
+    std::shared_ptr<Flint::Label> display_fps_label_;
 
     // Record when the signal had been lost.
     std::chrono::time_point<std::chrono::steady_clock> signal_lost_time_;
@@ -131,38 +135,59 @@ public:
         tip_label_->set_text_style(Flint::TextStyle{Flint::ColorU::red()});
         add_child(tip_label_);
 
-        hud_panel_ = std::make_shared<Flint::Panel>();
-        add_child(hud_panel_);
-        hud_panel_->set_size({0, 48});
+        hud_container_ = std::make_shared<Flint::HBoxContainer>();
+        add_child(hud_container_);
+        hud_container_->set_size({0, 48});
         Flint::StyleBox box;
         box.bg_color = Flint::ColorU(27, 27, 27, 27);
         box.border_width = 0;
-        hud_panel_->set_theme_panel(box);
-        hud_panel_->set_anchor_flag(Flint::AnchorFlag::BottomWide);
-        hud_panel_->set_visibility(false);
+        box.corner_radius = 0;
+        hud_container_->set_theme_bg(box);
+        hud_container_->set_anchor_flag(Flint::AnchorFlag::BottomWide);
+        hud_container_->set_visibility(false);
+        hud_container_->set_separation(16);
 
         auto bitrate_label = std::make_shared<Flint::Label>();
-        hud_panel_->add_child(bitrate_label);
+        hud_container_->add_child(bitrate_label);
         bitrate_label->set_text("Bitrate: 0 Kbps");
         bitrate_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
-        bitrate_label->set_anchor_flag(Flint::AnchorFlag::CenterLeft);
 
-        record_status_label_ = std::make_shared<Flint::Label>();
-        hud_panel_->add_child(record_status_label_);
-        record_status_label_->set_text("Not recording");
-        record_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
-        record_status_label_->set_anchor_flag(Flint::AnchorFlag::CenterRight);
+        {
+            video_fps_label_ = std::make_shared<Flint::Label>();
+            hud_container_->add_child(video_fps_label_);
+            video_fps_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+            video_fps_label_->set_text("Video FPS: ");
+
+            auto onFpsUpdate = [this](float fps) {
+                std::string text = "Video FPS: " + std::to_string(int(round(fps)));
+
+                video_fps_label_->set_text(text);
+            };
+            GuiInterface::Instance().decoderReadyCallbacks.emplace_back(onFpsUpdate);
+        }
+
+        {
+            display_fps_label_ = std::make_shared<Flint::Label>();
+            hud_container_->add_child(display_fps_label_);
+            display_fps_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+            display_fps_label_->set_text("Display FPS: ");
+        }
 
         hw_status_label_ = std::make_shared<Flint::Label>();
-        hud_panel_->add_child(hw_status_label_);
+        hud_container_->add_child(hw_status_label_);
         hw_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
-        hw_status_label_->set_anchor_flag(Flint::AnchorFlag::Center);
+
+        record_status_label_ = std::make_shared<Flint::Label>();
+        hud_container_->add_child(record_status_label_);
+        record_status_label_->container_sizing.expand_h = true;
+        record_status_label_->container_sizing.flag_h = Flint::ContainerSizingFlag::ShrinkEnd;
+        record_status_label_->set_text("Not recording");
+        record_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
 
         auto capture_button = std::make_shared<Flint::Button>();
         vbox->add_child(capture_button);
         capture_button->set_text("Capture Frame");
-        auto capture_button_raw = capture_button.get();
-        auto capture_callback = [capture_button_raw, this] {
+        auto capture_callback = [this] {
             auto output_file = player_->captureJpeg();
             if (output_file.empty()) {
                 show_red_tip("Failed to capture frame!");
@@ -297,8 +322,9 @@ public:
     void custom_update(double delta) override {
         player_->update(delta);
 
-        hw_status_label_->set_text("Hardware Acceleration: " +
-                                   std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
+        hw_status_label_->set_text("Hw Acc: " + std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
+
+        display_fps_label_->set_text("Display FPS: " + std::to_string(Flint::Engine::get_singleton()->get_fps_int()));
 
         if (is_recording) {
             std::chrono::duration<double, std::chrono::seconds::period> duration =
@@ -336,7 +362,7 @@ public:
         texture = render_image_;
 
         collapse_panel_->set_visibility(true);
-        hud_panel_->set_visibility(true);
+        hud_container_->set_visibility(true);
     }
 
     // When disconnected.
@@ -349,7 +375,7 @@ public:
         texture = logo_;
 
         collapse_panel_->set_visibility(false);
-        hud_panel_->set_visibility(false);
+        hud_container_->set_visibility(false);
     }
 };
 

@@ -84,9 +84,12 @@ bool FFmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     // 转换时间基
     if (videoStreamIndex != -1) {
-        videoFps = av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate);
+        videoFps = static_cast<float>(av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate));
         videoBaseTime = av_q2d(pFormatCtx->streams[videoStreamIndex]->time_base);
+
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Video FPS: {}", videoFps);
     }
+
     if (audioStreamIndex != -1) {
         audioBaseTime = av_q2d(pFormatCtx->streams[audioStreamIndex]->time_base);
     }
@@ -96,6 +99,7 @@ bool FFmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         audioFifoBuffer = std::shared_ptr<AVFifo>(
             av_fifo_alloc2(0, GetAudioFrameSamples() * GetAudioChannelCount() * 10, AV_FIFO_FLAG_AUTO_GROW));
     }
+
     return true;
 }
 

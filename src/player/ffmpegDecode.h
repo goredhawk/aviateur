@@ -33,7 +33,7 @@ public:
         return height;
     }
 
-    double GetFps() const {
+    float GetFps() const {
         return videoFps;
     }
 
@@ -110,7 +110,7 @@ private:
 
     volatile bool sourceIsOpened = false;
 
-    double videoFps = 0;
+    float videoFps = 0;
 
     double videoBaseTime = 0;
 
