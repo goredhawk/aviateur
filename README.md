@@ -17,7 +17,11 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 3. Select the adapter with the previously obtained USB ID.
 4. Select your drone channel.
 5. Select your WFB key.
-6. *Start* & Enjoy!
+6. *Start* & Fly!
+
+### Common run issues
+
+If the application crashes at startup, try installing [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
 
 ### Latency test
 ![](tutorials/latency_test.jpg)
@@ -38,7 +42,7 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 2. Install dependencies.
    ```powershell
    .\vcpkg integrate install
-   .\vcpkg install libusb ffmpeg libsodium vcpkg-tool-ninja
+   .\vcpkg install libusb ffmpeg libsodium
    ```
 
 3. Add VCPKG_ROOT() to environment. (Change the value to your vcpkg path.)
@@ -61,7 +65,3 @@ CMake Error at C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/I
 
 This is because the pre-installed vcpkg from Visual Studio installer overrides the PKG_ROOT environment variable.
 To fix this, find `set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")` in CMakeLists.txt, replace `$ENV{VCPKG_ROOT}` with the vcpkg you cloned previously.
-
-### Common run issues
-
-If the application crashes at startup, try installing [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
