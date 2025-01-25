@@ -190,6 +190,7 @@ public:
     std::vector<toolkit::AnyCallable<void>> rtpStreamCallbacks;
     std::vector<toolkit::AnyCallable<void>> bitrateUpdateCallbacks;
     std::vector<toolkit::AnyCallable<void>> decoderReadyCallbacks;
+    std::vector<toolkit::AnyCallable<void>> dongleUpdateCallbacks;
 
     void EmitLog(LogLevel level, std::string msg) {
         for (auto &callback : logCallbacks) {
@@ -264,6 +265,16 @@ public:
         for (auto &callback : decoderReadyCallbacks) {
             try {
                 callback.operator()<float>(std::move(videoFps));
+            } catch (std::bad_any_cast &) {
+                Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
+            }
+        }
+    }
+
+    void EmitDongleUpdate() {
+        for (auto &callback : dongleUpdateCallbacks) {
+            try {
+                callback.operator()<>();
             } catch (std::bad_any_cast &) {
                 Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }

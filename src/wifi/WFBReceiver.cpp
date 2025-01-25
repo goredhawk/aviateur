@@ -21,8 +21,8 @@
 std::vector<std::string> WFBReceiver::GetDongleList() {
     std::vector<std::string> list;
 
-    libusb_context *find_ctx;
     // Initialize libusb
+    libusb_context *find_ctx;
     libusb_init(&find_ctx);
 
     // Get list of USB devices
@@ -88,25 +88,6 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
 
     auto logger = std::make_shared<Logger>();
 
-    auto logCallback = [logger](LogLevel level, const std::string &msg) {
-        switch (level) {
-            case LogLevel::Info: {
-                logger->info(msg);
-            } break;
-            case LogLevel::Debug: {
-                logger->debug(msg);
-            } break;
-            case LogLevel::Warn: {
-                logger->warn(msg);
-            } break;
-            case LogLevel::Error: {
-                logger->error(msg);
-            } break;
-            default:;
-        }
-    };
-    // GuiInterface::Instance().logCallbacks.emplace_back(logCallback);
-
     int rc = libusb_init(&ctx);
     if (rc < 0) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to initialize libusb");
@@ -118,7 +99,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
     devHandle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
     if (devHandle == nullptr) {
         GuiInterface::Instance().PutLog(LogLevel::Error,
-                                        "Cannot find device {:04x}:{:04x}",
+                                        "Cannot open device {:04x}:{:04x}",
                                         wifiDeviceVid,
                                         wifiDevicePid);
         libusb_exit(ctx);
@@ -137,7 +118,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
         return false;
     }
 
-    usbThread = std::make_shared<std::thread>([=]() {
+    usbThread = std::make_shared<std::thread>([=, this]() {
         WiFiDriver wifi_driver{logger};
         try {
             rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
@@ -161,7 +142,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
             GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to release interface");
         }
 
-        logger->info("USB thread stopped");
+        GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
 
         libusb_close(devHandle);
         libusb_exit(ctx);

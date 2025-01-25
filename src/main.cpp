@@ -119,7 +119,7 @@ public:
         auto vbox = std::make_shared<Flint::VBoxContainer>();
         collapse_panel_->add_child(vbox);
 
-        logo_ = std::make_shared<Flint::VectorImage>("openipc-logo-white.svg");
+        logo_ = std::make_shared<Flint::VectorImage>("assets/openipc-logo-white.svg");
         texture = logo_;
 
         auto render_server = Flint::RenderServer::get_singleton();
@@ -187,6 +187,8 @@ public:
         auto capture_button = std::make_shared<Flint::Button>();
         vbox->add_child(capture_button);
         capture_button->set_text("Capture Frame");
+        auto icon = std::make_shared<Flint::VectorImage>("assets/CaptureImage.svg");
+        capture_button->set_icon_normal(icon);
         auto capture_callback = [this] {
             auto output_file = player_->captureJpeg();
             if (output_file.empty()) {
@@ -199,6 +201,8 @@ public:
 
         auto record_button = std::make_shared<Flint::Button>();
         vbox->add_child(record_button);
+        auto icon2 = std::make_shared<Flint::VectorImage>("assets/RecordVideo.svg");
+        record_button->set_icon_normal(icon2);
         record_button->set_text("Record MP4");
 
         auto record_button_raw = record_button.get();
@@ -322,7 +326,7 @@ public:
     void custom_update(double delta) override {
         player_->update(delta);
 
-        hw_status_label_->set_text("Hw Acc: " + std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
+        hw_status_label_->set_text("Hw Decoding: " + std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
 
         display_fps_label_->set_text("Display FPS: " + std::to_string(Flint::Engine::get_singleton()->get_fps_int()));
 
@@ -384,8 +388,9 @@ public:
     std::shared_ptr<Flint::MenuButton> dongle_menu_button_;
     std::shared_ptr<Flint::MenuButton> channel_button_;
     std::shared_ptr<Flint::MenuButton> channel_width_button_;
+    std::shared_ptr<Flint::Button> refresh_dongle_button_;
 
-    std::string vidPid = "";
+    std::string vidPid;
     int channel = 173;
     int channelWidthMode = 0;
     std::string keyPath = DEFAULT_KEY_NAME;
@@ -393,15 +398,19 @@ public:
 
     std::shared_ptr<Flint::Button> play_button_;
 
-    void update_dongle_list(Flint::PopupMenu &menu) {
+    void update_dongle_list() {
+        auto menu = dongle_menu_button_->get_popup_menu().lock();
+
         auto dongles = GuiInterface::GetDongleList();
 
+        menu->clear_items();
+
         bool previous_device_exists = false;
-        for (auto dongle : dongles) {
+        for (const auto& dongle : dongles) {
             if (vidPid == dongle) {
                 previous_device_exists = true;
             }
-            menu.create_item(dongle);
+            menu->create_item(dongle);
         }
 
         if (!previous_device_exists) {
@@ -458,12 +467,19 @@ public:
             dongle_menu_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
             hbox_container->add_child(dongle_menu_button_);
 
-            auto dongle_menu = dongle_menu_button_->get_popup_menu();
-
             auto callback = [this](uint32_t) { vidPid = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
-            update_dongle_list(*dongle_menu.lock());
+            update_dongle_list();
+
+            refresh_dongle_button_ = std::make_shared<Flint::Button>();
+            auto icon = std::make_shared<Flint::VectorImage>("assets/Refresh.svg");
+            refresh_dongle_button_->set_icon_normal(icon);
+            refresh_dongle_button_->set_text("");
+            hbox_container->add_child(refresh_dongle_button_);
+
+            auto callback2 = [this]() { update_dongle_list(); };
+            refresh_dongle_button_->connect_signal("pressed", callback2);
         }
 
         {
@@ -605,6 +621,9 @@ int main() {
     // Redirect standard output to a file
     freopen("last_run_log.txt", "w", stdout);
 
+    // Initialize the default libusb context.
+    int rc = libusb_init(NULL);
+
     Flint::Logger::set_module_level("Aviateur", Flint::Logger::Level::Info);
 
     auto logCallback = [](LogLevel level, std::string msg) {
@@ -676,6 +695,8 @@ int main() {
     app->main_loop();
 
     delete app;
+
+    libusb_exit(NULL);
 
     return EXIT_SUCCESS;
 }
