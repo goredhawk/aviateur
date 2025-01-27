@@ -195,8 +195,33 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     mTextureAllocated = true;
 }
 
-void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
+void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& data) {
     auto encoder = mDevice->create_command_encoder("upload yuv data");
+
+    if (stabilize) {
+        auto encoder2 = mDevice->create_command_encoder("read yuv renderer output texture");
+
+        cv::Mat frame = cv::Mat::zeros(cv::Size(outputTex->get_size().x, outputTex->get_size().y), CV_8UC4);
+        encoder2->read_texture(outputTex, {}, frame.data);
+
+        mQueue->submit_and_wait(encoder2);
+
+        if (previous_frame.has_value()) {
+            cv::Mat stabilizedFrame = stab.stabilize(previous_frame.value(), frame);
+
+            auto encoder3 = mDevice->create_command_encoder("write yuv renderer output texture");
+
+            encoder3->write_texture(outputTex, {}, stabilizedFrame.data);
+
+            mQueue->submit_and_wait(encoder3);
+        }
+
+        previous_frame = frame;
+    } else {
+        if (previous_frame.has_value()) {
+            previous_frame.reset();
+        }
+    }
 
     if (data->linesize[0]) {
         int RowLength = data->linesize[0];
@@ -215,7 +240,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
     mQueue->submit_and_wait(encoder);
 }
 
-void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex, bool stabilize) {
+void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex, bool stabilize) {
     if (!mTextureAllocated) {
         return;
     }
@@ -257,34 +282,6 @@ void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex, bool st
     encoder->end_render_pass();
 
     mQueue->submit_and_wait(encoder);
-
-    if (stabilize) {
-        auto encoder2 = mDevice->create_command_encoder("read output texture");
-
-        std::vector<char> pixels(outputTex->get_size().area() * 4);
-        encoder2->read_texture(outputTex, {}, pixels.data());
-
-        mQueue->submit_and_wait(encoder2);
-
-        cv::Mat frame = cv::Mat::zeros(cv::Size(outputTex->get_size().x, outputTex->get_size().y), CV_8UC4);
-        memcpy(frame.data, pixels.data(), outputTex->get_size().area() * 4);
-
-        if (previous_frame.has_value()) {
-            cv::Mat smoothedFrame = stab.stabilize(previous_frame.value(), frame, 1);
-
-            auto encoder3 = mDevice->create_command_encoder("write output texture");
-
-            encoder3->write_texture(outputTex, {}, smoothedFrame.data);
-
-            mQueue->submit_and_wait(encoder3);
-        }
-
-        previous_frame = frame;
-    } else {
-        if (previous_frame.has_value()) {
-            previous_frame.reset();
-        }
-    }
 }
 
 void YuvRenderer::clear() {

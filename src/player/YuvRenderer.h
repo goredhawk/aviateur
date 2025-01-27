@@ -23,7 +23,7 @@ public:
     YuvRenderer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);
     ~YuvRenderer() = default;
     void init();
-    void render(std::shared_ptr<Pathfinder::Texture> outputTex, bool stabilize);
+    void render(const std::shared_ptr<Pathfinder::Texture>& outputTex, bool stabilize);
     void updateTextureInfo(int width, int height, int format);
     void updateTextureData(const std::shared_ptr<AVFrame> &data);
     void clear();
@@ -50,6 +50,8 @@ private:
     bool mTextureAllocated = false;
 
     VideoStab stab;
+
+    bool stabilize = false;
 
     bool mNeedClear = false;
 

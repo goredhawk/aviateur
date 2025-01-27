@@ -6,71 +6,17 @@
 
 class VideoStab {
 public:
-    VideoStab();
+    VideoStab() = default;
 
-    cv::Mat stabilize(cv::Mat prev_frame, cv::Mat cur_frame, int down_sampling_factor);
+    cv::Mat stabilize(cv::Mat prev_frame, cv::Mat cur_frame);
 
 private:
-    cv::Mat scaled_prev_frame_gray;
-    cv::Mat scaled_cur_frame_gray;
+    cv::Mat prev_grey;
+    cv::Mat cur_grey;
 
-    int k;
+    int k = 1;
 
-    const int HORIZONTAL_BORDER_CROP = 30;
-
-    cv::Mat smoothedMat;
-    cv::Mat affine;
-
-    cv::Mat smoothedFrame;
-    cv::Mat croppedFrame;
-
-    double dx;
-    double dy;
-    double da;
-    double ds_x;
-    double ds_y;
-
-    double sx;
-    double sy;
-
-    double scaleX;
-    double scaleY;
-    double theta;
-    double transX;
-    double transY;
-
-    double diff_scaleX;
-    double diff_scaleY;
-    double diff_transX;
-    double diff_transY;
-    double diff_theta;
-
-    double errscaleX;
-    double errscaleY;
-    double errtheta;
-    double errtransX;
-    double errtransY;
-
-    double Q_scaleX;
-    double Q_scaleY;
-    double Q_theta;
-    double Q_transX;
-    double Q_transY;
-
-    double R_scaleX;
-    double R_scaleY;
-    double R_theta;
-    double R_transX;
-    double R_transY;
-
-    double sum_scaleX;
-    double sum_scaleY;
-    double sum_theta;
-    double sum_transX;
-    double sum_transY;
-
-    // Kalman Filter implementation
-    void kalman_filter(double *scaleX, double *scaleY, double *theta, double *transX, double *transY);
+    cv::Mat last_xform;
 };
 
 #endif// VIDEO_STAB_H
