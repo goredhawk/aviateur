@@ -85,8 +85,9 @@ YuvRenderer::YuvRenderer(std::shared_ptr<Pathfinder::Device> device, std::shared
 }
 
 void YuvRenderer::init() {
-    mRenderPass = mDevice->create_render_pass(
-        Pathfinder::TextureFormat::Rgba8Unorm, Pathfinder::AttachmentLoadOp::Clear, "yuv render pass");
+    mRenderPass = mDevice->create_render_pass(Pathfinder::TextureFormat::Rgba8Unorm,
+                                              Pathfinder::AttachmentLoadOp::Clear,
+                                              "yuv render pass");
 
     initPipeline();
     initGeometry();
@@ -101,11 +102,11 @@ void YuvRenderer::initGeometry() {
         1.0,  1.0,  1.0, 1.0, // 2
         -1.0, -1.0, 0.0, 0.0, // 3
         1.0,  1.0,  1.0, 1.0, // 4
-        -1.0, 1.0,  0.0, 1.0 // 5
+        -1.0, 1.0,  0.0, 1.0  // 5
     };
 
     mVertexBuffer = mDevice->create_buffer(
-        { Pathfinder::BufferType::Vertex, sizeof(vertices), Pathfinder::MemoryProperty::DeviceLocal },
+        {Pathfinder::BufferType::Vertex, sizeof(vertices), Pathfinder::MemoryProperty::DeviceLocal},
         "yuv renderer vertex buffer");
 
     auto encoder = mDevice->create_command_encoder("upload yuv vertex buffer");
@@ -121,28 +122,25 @@ void YuvRenderer::initPipeline() {
 
     uint32_t stride = 4 * sizeof(float);
 
-    attribute_descriptions.push_back(
-        { 0, 2, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex });
+    attribute_descriptions.push_back({0, 2, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex});
 
     attribute_descriptions.push_back(
-        { 0, 2, Pathfinder::DataType::f32, stride, 2 * sizeof(float), Pathfinder::VertexInputRate::Vertex });
+        {0, 2, Pathfinder::DataType::f32, stride, 2 * sizeof(float), Pathfinder::VertexInputRate::Vertex});
 
     Pathfinder::BlendState blend_state;
     blend_state.enabled = false;
 
     mUniformBuffer = mDevice->create_buffer(
-        { Pathfinder::BufferType::Uniform, sizeof(FragUniformBlock),
-          Pathfinder::MemoryProperty::HostVisibleAndCoherent },
+        {Pathfinder::BufferType::Uniform, sizeof(FragUniformBlock), Pathfinder::MemoryProperty::HostVisibleAndCoherent},
         "yuv renderer uniform buffer");
 
     mDescriptorSet = mDevice->create_descriptor_set();
-    mDescriptorSet->add_or_update(
-        {
-            Pathfinder::Descriptor::uniform(0, Pathfinder::ShaderStage::Fragment, "bUniform0", mUniformBuffer),
-            Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y"),
-            Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u"),
-            Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v"),
-        });
+    mDescriptorSet->add_or_update({
+        Pathfinder::Descriptor::uniform(0, Pathfinder::ShaderStage::Fragment, "bUniform0", mUniformBuffer),
+        Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y"),
+        Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u"),
+        Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v"),
+    });
 
     // //    mTexY->setFixedSamplePositions(false);
     // mTexY->setMinificationFilter(QOpenGLTexture::Nearest);
@@ -159,7 +157,11 @@ void YuvRenderer::initPipeline() {
     mPipeline = mDevice->create_render_pipeline(
         mDevice->create_shader_module(vert_source, Pathfinder::ShaderStage::Vertex, "yuv vert"),
         mDevice->create_shader_module(frag_source, Pathfinder::ShaderStage::Fragment, "yuv frag"),
-        attribute_descriptions, blend_state, mDescriptorSet, Pathfinder::TextureFormat::Rgba8Unorm, "yuv pipeline");
+        attribute_descriptions,
+        blend_state,
+        mDescriptorSet,
+        Pathfinder::TextureFormat::Rgba8Unorm,
+        "yuv pipeline");
 }
 
 void YuvRenderer::updateTextureInfo(int width, int height, int format) {
@@ -169,25 +171,25 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
 
     mPixFmt = format;
 
-    mTexY = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "y texture");
+    mTexY = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "y texture");
 
     if (format == AV_PIX_FMT_YUV420P || format == AV_PIX_FMT_YUVJ420P) {
-        mTexU = mDevice->create_texture({ { width / 2, height / 2 }, Pathfinder::TextureFormat::R8 }, "u texture");
+        mTexU = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::R8}, "u texture");
 
-        mTexV = mDevice->create_texture({ { width / 2, height / 2 }, Pathfinder::TextureFormat::R8 }, "v texture");
+        mTexV = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::R8}, "v texture");
     } else if (format == AV_PIX_FMT_NV12) {
-        mTexU = mDevice->create_texture({ { width / 2, height / 2 }, Pathfinder::TextureFormat::Rg8 }, "u texture");
+        mTexU = mDevice->create_texture({{width / 2, height / 2}, Pathfinder::TextureFormat::Rg8}, "u texture");
 
         // V is not used for NV12.
         if (mTexV == nullptr) {
-            mTexV = mDevice->create_texture({ { 2, 2 }, Pathfinder::TextureFormat::R8 }, "dummy v texture");
+            mTexV = mDevice->create_texture({{2, 2}, Pathfinder::TextureFormat::R8}, "dummy v texture");
         }
     }
     //  yuv444p
     else {
-        mTexU = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "u texture");
+        mTexU = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "u texture");
 
-        mTexV = mDevice->create_texture({ { width, height }, Pathfinder::TextureFormat::R8 }, "v texture");
+        mTexV = mDevice->create_texture({{width, height}, Pathfinder::TextureFormat::R8}, "v texture");
     }
     mTextureAllocated = true;
 }
@@ -212,7 +214,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame> &data) {
     mQueue->submit_and_wait(encoder);
 }
 
-void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex) {
+void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex, bool stabilize) {
     if (!mTextureAllocated) {
         return;
     }
@@ -225,7 +227,7 @@ void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex) {
 
     // Update uniform buffers.
     {
-        FragUniformBlock uniform = { mPixFmt };
+        FragUniformBlock uniform = {mPixFmt};
 
         // We don't need to preserve the data until the upload commands are implemented because
         // these uniform buffers are host-visible/coherent.
@@ -233,20 +235,19 @@ void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex) {
     }
 
     // Update descriptor set.
-    mDescriptorSet->add_or_update(
-        {
-            Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y", mTexY, mSampler),
-            Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u", mTexU, mSampler),
-            Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v", mTexV, mSampler),
-        });
+    mDescriptorSet->add_or_update({
+        Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y", mTexY, mSampler),
+        Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u", mTexU, mSampler),
+        Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v", mTexV, mSampler),
+    });
 
     encoder->begin_render_pass(mRenderPass, outputTex, Pathfinder::ColorF::black());
 
-    encoder->set_viewport({ { 0, 0 }, outputTex->get_size() });
+    encoder->set_viewport({{0, 0}, outputTex->get_size()});
 
     encoder->bind_render_pipeline(mPipeline);
 
-    encoder->bind_vertex_buffers({ mVertexBuffer });
+    encoder->bind_vertex_buffers({mVertexBuffer});
 
     encoder->bind_descriptor_set(mDescriptorSet);
 
@@ -255,6 +256,34 @@ void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex) {
     encoder->end_render_pass();
 
     mQueue->submit_and_wait(encoder);
+
+    if (stabilize) {
+        auto encoder2 = mDevice->create_command_encoder("read output texture");
+
+        std::vector<char> pixels(outputTex->get_size().area() * 4);
+        encoder2->read_texture(outputTex, {}, pixels.data());
+
+        mQueue->submit_and_wait(encoder2);
+
+        cv::Mat frame = cv::Mat::zeros(cv::Size(outputTex->get_size().x, outputTex->get_size().y), CV_8UC4);
+        memcpy(frame.data, pixels.data(), outputTex->get_size().area() * 4);
+
+        if (previous_frame.has_value()) {
+            cv::Mat smoothedFrame = stab.stabilize(previous_frame.value(), frame);
+
+            auto encoder3 = mDevice->create_command_encoder("write output texture");
+
+            encoder3->write_texture(outputTex, {}, smoothedFrame.data);
+
+            mQueue->submit_and_wait(encoder3);
+        }
+
+        previous_frame = frame;
+    } else {
+        if (previous_frame.has_value()) {
+            previous_frame.reset();
+        }
+    }
 }
 
 void YuvRenderer::clear() {

@@ -92,6 +92,8 @@ public:
 
     std::shared_ptr<Flint::Label> display_fps_label_;
 
+    std::shared_ptr<Flint::Button> video_stabilization_button_;
+
     // Record when the signal had been lost.
     std::chrono::time_point<std::chrono::steady_clock> signal_lost_time_;
 
@@ -237,60 +239,17 @@ public:
         };
         record_button->connect_signal("pressed", record_callback);
 
-        // {
-        //     auto record_gif_button = std::make_shared<Flint::Button>();
-        //     vbox->add_child(record_gif_button);
-        //     record_gif_button->set_text("Record GIF");
-        //     record_gif_button->set_toggle_mode(true);
-        //     auto record_gif_callback = [record_gif_button, this]() {
-        //         if (!is_recording) {
-        //             is_recording = player_->startRecord();
-        //
-        //             if (is_recording) {
-        //                 record_gif_button->set_text("Stop");
-        //             } else {
-        //                 tip_label_->show_tip("Recording failed!");
-        //             }
-        //             //     if(recordTimer.started){
-        //             //         recordTimer.start();
-        //
-        //             // if(!recordTimer.started){
-        //             //     recordTimer.started = player.startRecord();
-        //             //     if(recordTimer.started){
-        //             //         recordTimer.start();
-        //             //     }else{
-        //             //         tips.showPop('Record failed! ',3000);
-        //             //     }
-        //             // }else{
-        //             //     recordTimer.started = false;
-        //             //     let f = player.stopRecord();
-        //             //     if(f!==''){
-        //             //         tips.showPop('Saved '+f,3000);
-        //             //     }else{
-        //             //         tips.showPop('Record failed! ',3000);
-        //             //     }
-        //             //     recordTimer.stop();
-        //             // }
-        //         } else {
-        //             auto file_path = player_->stopRecord();
-        //             // Show tip
-        //             record_gif_button->set_text("Record GIF");
-        //         }
-        //     };
-        //     record_button->connect_signal("pressed", record_callback);
-        // }
-
         {
-            auto video_stabilization_button = std::make_shared<Flint::CheckButton>();
-            video_stabilization_button->set_text("Video Stabilization");
-            vbox->add_child(video_stabilization_button);
+            video_stabilization_button_ = std::make_shared<Flint::CheckButton>();
+            video_stabilization_button_->set_text("Video Stabilization");
+            vbox->add_child(video_stabilization_button_);
 
             auto callback = [this](bool toggled) {
                 if (toggled) {
-                    show_red_tip("Video stabilization is not supported yet!");
+                    show_red_tip("Video stabilization is experimental!");
                 }
             };
-            video_stabilization_button->connect_signal("toggled", callback);
+            video_stabilization_button_->connect_signal("toggled", callback);
         }
 
         {
@@ -356,7 +315,7 @@ public:
             return;
         }
         auto render_image = (Flint::RenderImage *)texture.get();
-        player_->m_yuv_renderer->render(render_image->get_texture());
+        player_->m_yuv_renderer->render(render_image->get_texture(), video_stabilization_button_->get_pressed());
     }
 
     // When connected.
@@ -406,7 +365,7 @@ public:
         menu->clear_items();
 
         bool previous_device_exists = false;
-        for (const auto& dongle : dongles) {
+        for (const auto &dongle : dongles) {
             if (vidPid == dongle) {
                 previous_device_exists = true;
             }
@@ -619,7 +578,7 @@ int main() {
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
 
     // Redirect standard output to a file
-    freopen("last_run_log.txt", "w", stdout);
+    //    freopen("last_run_log.txt", "w", stdout);
 
     // Initialize the default libusb context.
     int rc = libusb_init(NULL);

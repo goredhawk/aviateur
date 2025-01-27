@@ -17,9 +17,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 find_package(PkgConfig REQUIRED)
 
 find_package(FFmpeg REQUIRED)
+include_directories(${FFMPEG_INCLUDE_DIRS})
+
 find_package(unofficial-sodium CONFIG REQUIRED)
 pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
-include_directories(${FFMPEG_INCLUDE_DIRS})
+find_package(OpenCV REQUIRED)
 
 file(GLOB_RECURSE SRC_LIST
         src/*.cpp
@@ -48,6 +50,7 @@ target_link_libraries(${PROJECT_NAME}
         ${FFMPEG_LIBRARIES}
         PkgConfig::LIBUSB
         unofficial-sodium::sodium
+        ${OpenCV_LIBS}
         WiFiDriver
         flint_gui
 )

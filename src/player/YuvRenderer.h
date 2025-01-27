@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "libavutil/frame.h"
-#include <memory>
 #include <pathfinder/common/color.h>
 #include <pathfinder/common/math/mat4.h>
 #include <pathfinder/common/math/vec3.h>
@@ -9,14 +7,23 @@
 #include <pathfinder/gpu/queue.h>
 #include <pathfinder/gpu/render_pipeline.h>
 #include <pathfinder/gpu/texture.h>
+
+#include <memory>
 #include <vector>
+
+#include "../stabilization/video_stab.h"
+#include "libavutil/frame.h"
+
+namespace cv {
+class Mat;
+}
 
 class YuvRenderer {
 public:
     YuvRenderer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);
     ~YuvRenderer() = default;
     void init();
-    void render(std::shared_ptr<Pathfinder::Texture> outputTex);
+    void render(std::shared_ptr<Pathfinder::Texture> outputTex, bool stabilize);
     void updateTextureInfo(int width, int height, int format);
     void updateTextureData(const std::shared_ptr<AVFrame> &data);
     void clear();
@@ -37,8 +44,12 @@ private:
     std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;
     std::shared_ptr<Pathfinder::Buffer> mUniformBuffer;
 
+    std::optional<cv::Mat> previous_frame;
+
     int mPixFmt = 0;
     bool mTextureAllocated = false;
+
+    VideoStab stab;
 
     bool mNeedClear = false;
 

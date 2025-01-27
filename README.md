@@ -42,7 +42,7 @@ If the application crashes at startup, try installing [Microsoft Visual C++ Redi
 2. Install dependencies.
    ```powershell
    .\vcpkg integrate install
-   .\vcpkg install libusb ffmpeg libsodium
+   .\vcpkg install libusb ffmpeg libsodium opencv
    ```
 
 3. Add VCPKG_ROOT() to environment. (Change the value to your vcpkg path.)

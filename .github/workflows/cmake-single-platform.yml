@@ -30,7 +30,7 @@ jobs:
           cd vcpkg
           .\bootstrap-vcpkg.bat
           .\vcpkg integrate install
-          .\vcpkg install libusb ffmpeg libsodium
+          .\vcpkg install libusb ffmpeg libsodium opencv
           echo ("VCPKG_ROOT=" + "$PWD") >> $env:GITHUB_ENV
 
       - name: Configure CMake
