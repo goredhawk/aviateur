@@ -1,4 +1,5 @@
 ﻿#include "YuvRenderer.h"
+
 #include "libavutil/pixfmt.h"
 
 std::string vertCode = R"(#version 310 es
@@ -269,7 +270,7 @@ void YuvRenderer::render(std::shared_ptr<Pathfinder::Texture> outputTex, bool st
         memcpy(frame.data, pixels.data(), outputTex->get_size().area() * 4);
 
         if (previous_frame.has_value()) {
-            cv::Mat smoothedFrame = stab.stabilize(previous_frame.value(), frame);
+            cv::Mat smoothedFrame = stab.stabilize(previous_frame.value(), frame, 1);
 
             auto encoder3 = mDevice->create_command_encoder("write output texture");
 
