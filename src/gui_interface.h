@@ -183,6 +183,7 @@ public:
 
     // Signals.
     std::vector<toolkit::AnyCallable<void>> logCallbacks;
+    std::vector<toolkit::AnyCallable<void>> tipCallbacks;
     std::vector<toolkit::AnyCallable<void>> wifiStopCallbacks;
     std::vector<toolkit::AnyCallable<void>> wifiFrameCountCallbacks;
     std::vector<toolkit::AnyCallable<void>> wfbFrameCountCallbacks;
@@ -196,6 +197,15 @@ public:
         for (auto &callback : logCallbacks) {
             try {
                 callback.operator()<LogLevel, std::string>(std::move(level), std::move(msg));
+            } catch (std::bad_any_cast &) {
+            }
+        }
+    }
+
+    void ShowTip(std::string msg) {
+        for (auto &callback : tipCallbacks) {
+            try {
+                callback.operator()<std::string>(std::move(msg));
             } catch (std::bad_any_cast &) {
             }
         }

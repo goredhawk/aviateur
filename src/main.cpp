@@ -280,6 +280,9 @@ public:
             bitrate_label->set_text(text);
         };
         GuiInterface::Instance().bitrateUpdateCallbacks.emplace_back(onBitrateUpdate);
+
+        auto onTipUpdate = [this](std::string msg) { show_red_tip(msg); };
+        GuiInterface::Instance().tipCallbacks.emplace_back(onTipUpdate);
     }
 
     void custom_update(double delta) override {
@@ -421,15 +424,17 @@ public:
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
-            dongle_menu_button_->set_text(vidPid);
+
             dongle_menu_button_->container_sizing.expand_h = true;
             dongle_menu_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
             hbox_container->add_child(dongle_menu_button_);
 
+            // Do this before setting dongle button text.
+            update_dongle_list();
+            dongle_menu_button_->set_text(vidPid);
+
             auto callback = [this](uint32_t) { vidPid = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
-
-            update_dongle_list();
 
             refresh_dongle_button_ = std::make_shared<Flint::Button>();
             auto icon = std::make_shared<Flint::VectorImage>("assets/Refresh.svg");
@@ -545,20 +550,18 @@ public:
 
         {
             play_button_ = std::make_shared<Flint::Button>();
-            play_button_->set_text("Start");
-            auto green = Flint::ColorU(78, 135, 82);
-            play_button_->theme_normal.bg_color = green;
-            play_button_->theme_hovered.bg_color = green;
-            play_button_->theme_pressed.bg_color = green;
-
             play_button_->container_sizing.expand_h = true;
             play_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            update_start_button_looking(true);
 
             auto callback1 = [this] {
                 bool start = play_button_->get_text() == "Start";
 
                 if (start) {
                     bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
+                    if (!res) {
+                        start = false;
+                    }
                 } else {
                     GuiInterface::Stop();
                 }

@@ -98,11 +98,13 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
 
     devHandle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
     if (devHandle == nullptr) {
+        libusb_exit(ctx);
+
         GuiInterface::Instance().PutLog(LogLevel::Error,
                                         "Cannot open device {:04x}:{:04x}",
                                         wifiDeviceVid,
                                         wifiDevicePid);
-        libusb_exit(ctx);
+        GuiInterface::Instance().ShowTip("Invalid USB device!");
         return false;
     }
 
