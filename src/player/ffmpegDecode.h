@@ -7,15 +7,13 @@
 
 #include "ffmpegInclude.h"
 
-class QQuickRealTimePlayer;
-
-class FFmpegDecoder {
+class FfmpegDecoder {
     friend class RealTimePlayer;
 
 public:
-    FFmpegDecoder() = default;
+    FfmpegDecoder() = default;
 
-    ~FFmpegDecoder() {
+    ~FfmpegDecoder() {
         CloseInput();
     }
 

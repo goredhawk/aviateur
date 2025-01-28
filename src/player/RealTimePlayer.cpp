@@ -80,7 +80,7 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
     url = playUrl;
 
     analysisThread = std::thread([this, forceSoftwareDecoding] {
-        auto decoder_ = std::make_shared<FFmpegDecoder>();
+        auto decoder_ = std::make_shared<FfmpegDecoder>();
 
         // 打开并分析输入
         bool ok = decoder_->OpenInput(url, forceSoftwareDecoding);
@@ -88,7 +88,9 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
             emitError("Loading URL failed", -2);
             return;
         }
+
         decoder = decoder_;
+
         GuiInterface::Instance().EmitDecoderReady(decoder_->GetFps());
 
         hwEnabled = decoder->hwDecoderEnabled;
@@ -161,9 +163,12 @@ void RealTimePlayer::stop() {
         // 清空缓冲
         videoFrameQueue.pop();
     }
+
     // SDL_CloseAudio();
+
     if (decoder) {
         decoder->CloseInput();
+        decoder.reset();
     }
 }
 

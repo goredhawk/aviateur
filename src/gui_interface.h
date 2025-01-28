@@ -191,7 +191,8 @@ public:
     std::vector<toolkit::AnyCallable<void>> rtpStreamCallbacks;
     std::vector<toolkit::AnyCallable<void>> bitrateUpdateCallbacks;
     std::vector<toolkit::AnyCallable<void>> decoderReadyCallbacks;
-    std::vector<toolkit::AnyCallable<void>> dongleUpdateCallbacks;
+
+    std::vector<toolkit::AnyCallable<void>> urlStreamShouldStopCallbacks;
 
     void EmitLog(LogLevel level, std::string msg) {
         for (auto &callback : logCallbacks) {
@@ -281,8 +282,8 @@ public:
         }
     }
 
-    void EmitDongleUpdate() {
-        for (auto &callback : dongleUpdateCallbacks) {
+    void EmitUrlStreamShouldStop() {
+        for (auto &callback : urlStreamShouldStopCallbacks) {
             try {
                 callback.operator()<>();
             } catch (std::bad_any_cast &) {

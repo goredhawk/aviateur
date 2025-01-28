@@ -72,7 +72,7 @@ public:
     toolkit::AnyCallable<void> onHasAudio;
 
 protected:
-    std::shared_ptr<FFmpegDecoder> decoder;
+    std::shared_ptr<FfmpegDecoder> decoder;
     // Play file URL
     std::string url;
 
