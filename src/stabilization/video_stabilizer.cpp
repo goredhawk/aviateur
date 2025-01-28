@@ -6,12 +6,10 @@ modified by chen jia.
 email:chenjia2013@foxmail.com
 */
 
-#include "video_stab.h"
+#include "video_stabilizer.h"
 
 #include <cassert>
 #include <cmath>
-#include <fstream>
-#include <iostream>
 #include <opencv2/opencv.hpp>
 
 using namespace std;
@@ -19,10 +17,8 @@ using namespace cv;
 
 // This video stabilization smooths the global trajectory using a sliding average window
 
-// const int SMOOTHING_RADIUS = 15; // In frames. The larger, the more stable the video, but less reactive to sudden
-// panning
-const int HORIZONTAL_BORDER_CROP =
-    20; // In pixels. Crops the border to reduce the black borders from stabilisation being too noticeable.
+// In pixels. Crops the border to reduce the black borders from stabilisation being too noticeable.
+const int HORIZONTAL_BORDER_CROP = 20;
 
 // 1. Get previous to current frame transformation (dx, dy, da) for all frames
 // 2. Accumulate the transformations to get the image trajectory
@@ -31,22 +27,8 @@ const int HORIZONTAL_BORDER_CROP =
 // trajectory
 // 5. Apply the new transformation to the video
 
-struct TransformParam {
-    TransformParam() {}
-
-    TransformParam(double _dx, double _dy, double _da) {
-        dx = _dx;
-        dy = _dy;
-        da = _da;
-    }
-
-    double dx;
-    double dy;
-    double da; // angle
-};
-
 struct Trajectory {
-    Trajectory() {}
+    Trajectory() = default;
 
     Trajectory(double _x, double _y, double _a) {
         x = _x;
@@ -87,9 +69,13 @@ struct Trajectory {
     double a; // angle
 };
 
-cv::Mat VideoStab::stabilize(cv::Mat prev, cv::Mat cur) {
-    cvtColor(prev, prev_grey, COLOR_BGR2GRAY);
-    cvtColor(cur, cur_grey, COLOR_BGR2GRAY);
+cv::Mat VideoStabilizer::stabilize(cv::Mat prev, cv::Mat cur) {
+    prev_grey = prev;
+    cur_grey = cur;
+
+    Mat xform = Mat::zeros(2, 3, CV_64F);
+    xform.at<double>(0, 0) = 1;
+    xform.at<double>(1, 1) = 1;
 
     // Step 1 - Get previous to current frame transformation (dx, dy, da)
     double a = 0;
@@ -103,22 +89,27 @@ cv::Mat VideoStab::stabilize(cv::Mat prev, cv::Mat cur) {
     Trajectory P_;                  // priori estimate error covariance
     Trajectory K;                   // gain
     Trajectory z;                   // actual measurement
-    double pstd = 4e-3;             // can be changed
+    double pstd = 4e-1;             // can be changed
     double cstd = 0.25;             // can be changed
     Trajectory Q(pstd, pstd, pstd); // process noise covariance
     Trajectory R(cstd, cstd, cstd); // measurement noise covariance
 
-    int vert_border = HORIZONTAL_BORDER_CROP * prev.rows / prev.cols; // get the aspect ratio correct
+    // Get the vertical border (Make sure the aspect ratio is correct)
+    int vert_border = HORIZONTAL_BORDER_CROP * prev.rows / prev.cols;
 
     // Vector from prev to cur
     vector<Point2f> prev_corner, cur_corner;
-    vector<Point2f> prev_corner2, cur_corner2;
     vector<uchar> status;
     vector<float> err;
 
     goodFeaturesToTrack(prev_grey, prev_corner, 200, 0.01, 30);
+    if (prev_corner.empty()) {
+        return xform;
+    }
+
     calcOpticalFlowPyrLK(prev_grey, cur_grey, prev_corner, cur_corner, status, err);
 
+    vector<Point2f> prev_corner2, cur_corner2;
     prev_corner2.reserve(prev_corner.size());
     cur_corner2.reserve(cur_corner.size());
 
@@ -130,10 +121,10 @@ cv::Mat VideoStab::stabilize(cv::Mat prev, cv::Mat cur) {
         }
     }
 
-    // rigid transform, translation + rotation only, no scaling/shearing
-    Mat xform = estimateAffinePartial2D(prev_corner2, cur_corner2);
+    // Rigid transform, translation + rotation only, no scaling/shearing
+    xform = estimateAffinePartial2D(prev_corner2, cur_corner2);
 
-    // in rare cases no transform is found. We'll just use the last known good transform.
+    // In rare cases no transform is found. We'll just use the last known good transform.
     if (xform.data == nullptr) {
         last_xform.copyTo(xform);
     }
@@ -153,14 +144,14 @@ cv::Mat VideoStab::stabilize(cv::Mat prev, cv::Mat cur) {
     z = Trajectory(x, y, a);
 
     if (k == 1) {
-        // initial guesses
+        // Initial guesses
         X = Trajectory(0, 0, 0); // Initial estimate,  set 0
         P = Trajectory(1, 1, 1); // set error variance,set 1
     } else {
-        // time update (prediction)
+        // Time update (prediction)
         X_ = X;     // X_(k) = X(k-1);
         P_ = P + Q; // P_(k) = P(k-1)+Q;
-        // measurement update（correction）
+        // Measurement update（correction）
         K = P_ / (P_ + R);                  // gain;K(k) = P_(k)/( P_(k)+R );
         X = X_ + K * (z - X_);              // z-X_ is residual,X(k) = X_(k)+K(k)*(z(k)-X_(k));
         P = (Trajectory(1, 1, 1) - K) * P_; // P(k) = (1-K(k))*P_(k);
@@ -183,20 +174,9 @@ cv::Mat VideoStab::stabilize(cv::Mat prev, cv::Mat cur) {
     xform.at<double>(0, 2) = dx;
     xform.at<double>(1, 2) = dy;
 
-    // Get stabilized frame.
-    Mat cur2;
-    warpAffine(prev, cur2, xform, cur.size());
-
-    // Crop black parts.
-    cur2 = cur2(Range(vert_border, cur2.rows - vert_border),
-                Range(HORIZONTAL_BORDER_CROP, cur2.cols - HORIZONTAL_BORDER_CROP));
-
-    // Resize cur2 back to cur size, for better side by side comparison
-    resize(cur2, cur2, cur.size());
-
     cur_grey.copyTo(prev_grey);
 
     k++;
 
-    return cur2;
+    return xform;
 }

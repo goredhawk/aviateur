@@ -4,13 +4,21 @@
 
 std::string vertCode = R"(#version 310 es
 
+layout(std140) uniform bUniform0 {
+    mat4 xform;
+    int pixFmt;
+    int pad0;
+    int pad1;
+    int pad2;
+};
+
 layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec2 aUV;
 
 out vec2 v_texCoord;
 
 void main() {
-    gl_Position = vec4(aPos, 1.0f, 1.0f);
+    gl_Position = xform * vec4(aPos, 1.0f, 1.0f);
     v_texCoord = aUV;
 }
 )";
@@ -32,6 +40,7 @@ uniform sampler2D tex_u;
 uniform sampler2D tex_v;
 
 layout(std140) uniform bUniform0 {
+    mat4 xform;
     int pixFmt;
     int pad0;
     int pad1;
@@ -74,6 +83,7 @@ void main() {
 )";
 
 struct FragUniformBlock {
+    Pathfinder::Mat4 xform;
     int pixFmt;
     int pad0;
     int pad1;
@@ -128,7 +138,7 @@ void YuvRenderer::initPipeline() {
     attribute_descriptions.push_back(
         {0, 2, Pathfinder::DataType::f32, stride, 2 * sizeof(float), Pathfinder::VertexInputRate::Vertex});
 
-    Pathfinder::BlendState blend_state;
+    Pathfinder::BlendState blend_state{};
     blend_state.enabled = false;
 
     mUniformBuffer = mDevice->create_buffer(
@@ -137,17 +147,13 @@ void YuvRenderer::initPipeline() {
 
     mDescriptorSet = mDevice->create_descriptor_set();
     mDescriptorSet->add_or_update({
-        Pathfinder::Descriptor::uniform(0, Pathfinder::ShaderStage::Fragment, "bUniform0", mUniformBuffer),
+        Pathfinder::Descriptor::uniform(0, Pathfinder::ShaderStage::VertexAndFragment, "bUniform0", mUniformBuffer),
         Pathfinder::Descriptor::sampled(1, Pathfinder::ShaderStage::Fragment, "tex_y"),
         Pathfinder::Descriptor::sampled(2, Pathfinder::ShaderStage::Fragment, "tex_u"),
         Pathfinder::Descriptor::sampled(3, Pathfinder::ShaderStage::Fragment, "tex_v"),
     });
 
-    // //    mTexY->setFixedSamplePositions(false);
-    // mTexY->setMinificationFilter(QOpenGLTexture::Nearest);
-    // mTexY->setMagnificationFilter(QOpenGLTexture::Nearest);
-    // mTexY->setWrapMode(QOpenGLTexture::ClampToEdge);
-    Pathfinder::SamplerDescriptor sampler_desc;
+    Pathfinder::SamplerDescriptor sampler_desc{};
     sampler_desc.mag_filter = Pathfinder::SamplerFilter::Nearest;
     sampler_desc.min_filter = Pathfinder::SamplerFilter::Nearest;
     sampler_desc.address_mode_u = Pathfinder::SamplerAddressMode::ClampToEdge;
@@ -195,49 +201,68 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
     mTextureAllocated = true;
 }
 
-void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& data) {
+void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData) {
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
     if (stabilize) {
-        auto encoder2 = mDevice->create_command_encoder("read yuv renderer output texture");
+        cv::Mat frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
 
-        cv::Mat frame = cv::Mat::zeros(cv::Size(outputTex->get_size().x, outputTex->get_size().y), CV_8UC4);
-        encoder2->read_texture(outputTex, {}, frame.data);
+        if (mPreviousFrame.has_value()) {
+            auto stabXform = stabilizer.stabilize(mPreviousFrame.value(), frameY);
 
-        mQueue->submit_and_wait(encoder2);
+            mXform = Pathfinder::Mat3(1);
+            mXform.v[0] = stabXform.at<double>(0, 0);
+            mXform.v[3] = stabXform.at<double>(0, 1);
+            mXform.v[1] = stabXform.at<double>(1, 0);
+            mXform.v[4] = stabXform.at<double>(1, 1);
+            mXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
+            mXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
 
-        if (previous_frame.has_value()) {
-            cv::Mat stabilizedFrame = stab.stabilize(previous_frame.value(), frame);
-
-            auto encoder3 = mDevice->create_command_encoder("write yuv renderer output texture");
-
-            encoder3->write_texture(outputTex, {}, stabilizedFrame.data);
-
-            mQueue->submit_and_wait(encoder3);
+            mXform = mXform.scale(Pathfinder::Vec2F(1.0f + 40.0f / mTexY->get_size().x));
         }
 
-        previous_frame = frame;
+        mPreviousFrame = frameY.clone();
+
+        if (!mPrevFrameData) {
+            mPrevFrameData = curFrameData;
+        }
+
+        if (mPrevFrameData->linesize[0]) {
+            encoder->write_texture(mTexY, {}, mPrevFrameData->data[0]);
+        }
+        if (mPrevFrameData->linesize[1]) {
+            encoder->write_texture(mTexU, {}, mPrevFrameData->data[1]);
+        }
+        if (mPrevFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
+            encoder->write_texture(mTexV, {}, mPrevFrameData->data[2]);
+        }
+
+        mQueue->submit_and_wait(encoder);
+
+        // Do this after submitting.
+        mPrevFrameData = curFrameData;
     } else {
-        if (previous_frame.has_value()) {
-            previous_frame.reset();
+        if (mPreviousFrame.has_value()) {
+            mPreviousFrame.reset();
         }
-    }
+        if (mPrevFrameData) {
+            mPrevFrameData.reset();
+        }
 
-    if (data->linesize[0]) {
-        int RowLength = data->linesize[0];
-        int ImageHeight = data->height;
-        encoder->write_texture(mTexY, {}, data->data[0]);
-    }
-    if (data->linesize[1]) {
-        int RowLength = data->linesize[1];
-        int ImageHeight = data->height;
-        encoder->write_texture(mTexU, {}, data->data[1]);
-    }
-    if (data->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
-        encoder->write_texture(mTexV, {}, data->data[2]);
-    }
+        mXform = Pathfinder::Mat3(1);
 
-    mQueue->submit_and_wait(encoder);
+        if (curFrameData->linesize[0]) {
+            encoder->write_texture(mTexY, {}, curFrameData->data[0]);
+        }
+        if (curFrameData->linesize[1]) {
+            encoder->write_texture(mTexU, {}, curFrameData->data[1]);
+        }
+        if (curFrameData->linesize[2] && mPixFmt != AV_PIX_FMT_NV12) {
+            encoder->write_texture(mTexV, {}, curFrameData->data[2]);
+        }
+
+        mQueue->submit_and_wait(encoder);
+    }
 }
 
 void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex, bool stabilize) {
@@ -253,7 +278,7 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex, 
 
     // Update uniform buffers.
     {
-        FragUniformBlock uniform = {mPixFmt};
+        FragUniformBlock uniform = {Pathfinder::Mat4::from_mat3(mXform), mPixFmt};
 
         // We don't need to preserve the data until the upload commands are implemented because
         // these uniform buffers are host-visible/coherent.

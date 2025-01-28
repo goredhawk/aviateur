@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include <pathfinder/common/color.h>
+#include <pathfinder/common/math/mat3.h>
 #include <pathfinder/common/math/mat4.h>
-#include <pathfinder/common/math/vec3.h>
 #include <pathfinder/gpu/device.h>
 #include <pathfinder/gpu/queue.h>
 #include <pathfinder/gpu/render_pipeline.h>
@@ -11,7 +11,7 @@
 #include <memory>
 #include <vector>
 
-#include "../stabilization/video_stab.h"
+#include "../stabilization/video_stabilizer.h"
 #include "libavutil/frame.h"
 
 namespace cv {
@@ -25,8 +25,12 @@ public:
     void init();
     void render(const std::shared_ptr<Pathfinder::Texture>& outputTex, bool stabilize);
     void updateTextureInfo(int width, int height, int format);
-    void updateTextureData(const std::shared_ptr<AVFrame> &data);
+    void updateTextureData(const std::shared_ptr<AVFrame>& data);
     void clear();
+
+    bool stabilize = false;
+
+    Pathfinder::Mat3 mXform;
 
 protected:
     void initPipeline();
@@ -39,19 +43,18 @@ private:
     std::shared_ptr<Pathfinder::Texture> mTexY;
     std::shared_ptr<Pathfinder::Texture> mTexU;
     std::shared_ptr<Pathfinder::Texture> mTexV;
+    std::shared_ptr<AVFrame> mPrevFrameData;
     std::shared_ptr<Pathfinder::DescriptorSet> mDescriptorSet;
     std::shared_ptr<Pathfinder::Sampler> mSampler;
     std::shared_ptr<Pathfinder::Buffer> mVertexBuffer;
     std::shared_ptr<Pathfinder::Buffer> mUniformBuffer;
 
-    std::optional<cv::Mat> previous_frame;
+    std::optional<cv::Mat> mPreviousFrame;
 
     int mPixFmt = 0;
     bool mTextureAllocated = false;
 
-    VideoStab stab;
-
-    bool stabilize = false;
+    VideoStabilizer stabilizer;
 
     bool mNeedClear = false;
 

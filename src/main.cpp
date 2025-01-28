@@ -245,6 +245,7 @@ public:
             vbox->add_child(video_stabilization_button_);
 
             auto callback = [this](bool toggled) {
+                player_->m_yuv_renderer->stabilize = toggled;
                 if (toggled) {
                     show_red_tip("Video stabilization is experimental!");
                 }
