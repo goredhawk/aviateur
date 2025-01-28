@@ -94,6 +94,10 @@ public:
 
     std::shared_ptr<Flint::Button> video_stabilization_button_;
 
+    std::shared_ptr<Flint::Button> fullscreen_button_;
+
+    std::shared_ptr<Flint::Button> record_button_;
+
     // Record when the signal had been lost.
     std::chrono::time_point<std::chrono::steady_clock> signal_lost_time_;
 
@@ -107,6 +111,26 @@ public:
         auto green = Flint::ColorU(78, 135, 82);
         tip_label_->set_text_style(Flint::TextStyle{green});
         tip_label_->show_tip(tip);
+    }
+
+    void custom_input(Flint::InputEvent &event) override {
+        auto input_server = Flint::InputServer::get_singleton();
+
+        if (event.type == Flint::InputEventType::Key) {
+            auto key_args = event.args.key;
+
+            if (key_args.key == Flint::KeyCode::F11) {
+                if (key_args.pressed) {
+                    fullscreen_button_->press();
+                }
+            }
+
+            if (key_args.key == Flint::KeyCode::R && input_server->is_key_pressed(Flint::KeyCode::LeftControl)) {
+                if (key_args.pressed) {
+                    record_button_->press();
+                }
+            }
+        }
     }
 
     void custom_ready() override {
@@ -201,19 +225,19 @@ public:
         };
         capture_button->connect_signal("pressed", capture_callback);
 
-        auto record_button = std::make_shared<Flint::Button>();
-        vbox->add_child(record_button);
+        record_button_ = std::make_shared<Flint::Button>();
+        vbox->add_child(record_button_);
         auto icon2 = std::make_shared<Flint::VectorImage>("assets/RecordVideo.svg");
-        record_button->set_icon_normal(icon2);
-        record_button->set_text("Record MP4");
+        record_button_->set_icon_normal(icon2);
+        record_button_->set_text("Record MP4 (CTRL+R)");
 
-        auto record_button_raw = record_button.get();
+        auto record_button_raw = record_button_.get();
         auto record_callback = [record_button_raw, this] {
             if (!is_recording) {
                 is_recording = player_->startRecord();
 
                 if (is_recording) {
-                    record_button_raw->set_text("Stop Recording");
+                    record_button_raw->set_text("Stop Recording (CTRL+R)");
 
                     record_start_time = std::chrono::steady_clock::now();
 
@@ -227,7 +251,7 @@ public:
 
                 auto output_file = player_->stopRecord();
 
-                record_button_raw->set_text("Record MP4");
+                record_button_raw->set_text("Record MP4 (CTRL+R)");
                 record_status_label_->set_text("Not Recording");
 
                 if (output_file.empty()) {
@@ -237,7 +261,7 @@ public:
                 }
             }
         };
-        record_button->connect_signal("pressed", record_callback);
+        record_button_->connect_signal("pressed", record_callback);
 
         {
             video_stabilization_button_ = std::make_shared<Flint::CheckButton>();
@@ -266,9 +290,6 @@ public:
             button->connect_signal("toggled", callback);
         }
 
-        auto record_timer_label = std::make_shared<Flint::Label>();
-        record_timer_label->set_text("Record");
-
         auto onBitrateUpdate = [bitrate_label](uint64_t bitrate) {
             std::string text = "Bitrate: ";
             if (bitrate > 1000 * 1000) {
@@ -276,7 +297,7 @@ public:
             } else if (bitrate > 1000) {
                 text += std::format("{:.1f}", bitrate / 1000.0) + " Kbps";
             } else {
-                text += bitrate + " bps";
+                text += std::format("{:d}", bitrate) + " bps";
             }
             bitrate_label->set_text(text);
         };
@@ -642,17 +663,17 @@ int main() {
     GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);
 
     {
-        auto fullscreen_button = std::make_shared<Flint::CheckButton>();
-        render_rect->add_child(fullscreen_button);
-        fullscreen_button->set_anchor_flag(Flint::AnchorFlag::TopLeft);
+        render_rect->fullscreen_button_ = std::make_shared<Flint::CheckButton>();
+        render_rect->add_child(render_rect->fullscreen_button_);
+        render_rect->fullscreen_button_->set_anchor_flag(Flint::AnchorFlag::TopLeft);
 
-        fullscreen_button->set_text("Fullscreen");
+        render_rect->fullscreen_button_->set_text("Fullscreen (F11)");
 
         auto callback = [control_panel_raw](bool toggled) {
             app->set_fullscreen(toggled);
             control_panel_raw->set_visibility(!toggled);
         };
-        fullscreen_button->connect_signal("toggled", callback);
+        render_rect->fullscreen_button_->connect_signal("toggled", callback);
     }
 
     app->main_loop();
