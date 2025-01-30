@@ -79,9 +79,9 @@ private:
 
     void CloseAudio();
 
-    int DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
+    int DecodeAudio(int nStreamIndex, const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
 
-    bool DecodeVideo(const AVPacket *avpkt, std::shared_ptr<AVFrame> &pOutFrame);
+    bool DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame> &pOutFrame);
 
     void writeAudioBuff(uint8_t *aSample, size_t aSize);
 
@@ -126,14 +126,14 @@ private:
 
     int height{};
 
-    void emitOnBitrate(uint64_t pBitrate) {
-        onBitrate(pBitrate);
+    void emitBitrateUpdate(uint64_t pBitrate) {
+        bitrateUpdateCallback(pBitrate);
     }
 
     volatile uint64_t bytesSecond = 0;
     uint64_t bitrate = 0;
     uint64_t lastCountBitrateTime = 0;
-    std::function<void(uint64_t bitrate)> onBitrate;
+    std::function<void(uint64_t bitrate)> bitrateUpdateCallback;
 
     // Audio buffer
     std::mutex abBuffMtx;

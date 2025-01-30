@@ -1,15 +1,14 @@
 ﻿#pragma once
 
-#include "YuvRenderer.h"
-#include "ffmpegDecode.h"
 #include <memory>
 #include <queue>
 #include <thread>
 
+#include "../util/util.h"
 #include "GifEncoder.h"
 #include "Mp4Encoder.h"
-
-#include "../util/util.h"
+#include "YuvRenderer.h"
+#include "ffmpegDecode.h"
 
 class RealTimePlayer {
 public:
@@ -19,12 +18,24 @@ public:
 
     std::shared_ptr<AVFrame> getFrame(bool &got);
 
-    bool infoDirty() const { return m_infoChanged; }
-    void makeInfoDirty(bool dirty) { m_infoChanged = dirty; }
-    int videoWidth() const { return m_videoWidth; }
-    int videoHeight() const { return m_videoHeight; }
-    int videoFormat() const { return m_videoFormat; }
-    bool getMuted() const { return isMuted; }
+    bool infoDirty() const {
+        return m_infoChanged;
+    }
+    void makeInfoDirty(bool dirty) {
+        m_infoChanged = dirty;
+    }
+    int videoWidth() const {
+        return m_videoWidth;
+    }
+    int videoHeight() const {
+        return m_videoHeight;
+    }
+    int videoFormat() const {
+        return m_videoFormat;
+    }
+    bool getMuted() const {
+        return isMuted;
+    }
     // 播放
     void play(const std::string &playUrl, bool forceSoftwareDecoding);
     // 停止
@@ -47,17 +58,14 @@ public:
     // 获取视频高度
     int getVideoHeight() const;
 
-    void forceSoftwareDecoding(bool force) ;
+    void forceSoftwareDecoding(bool force);
 
     bool isHardwareAccelerated() const;
 
     // Signals
 
-    std::vector<toolkit::AnyCallable<void>> connectionLostCallbacks;
-    void emitConnectionLost();
-
-    std::vector<toolkit::AnyCallable<void>> errorCallbacks;
-    void emitError(std::string msg, int errorCode);
+    std::vector<toolkit::AnyCallable<void>> decoderErrorCallbacks;
+    void emitDecoderError();
 
     // void gotRecordVol(double vol);
     toolkit::AnyCallable<void> gotRecordVolume;
@@ -106,8 +114,8 @@ protected:
 
 public:
     std::shared_ptr<YuvRenderer> m_yuv_renderer;
-    int m_videoWidth {};
-    int m_videoHeight {};
-    int m_videoFormat {};
+    int m_videoWidth{};
+    int m_videoHeight{};
+    int m_videoFormat{};
     bool m_infoChanged = false;
 };

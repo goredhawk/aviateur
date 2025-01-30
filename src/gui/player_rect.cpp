@@ -217,8 +217,8 @@ void PlayerRect::custom_ready() {
     GuiInterface::Instance().urlStreamShouldStopCallbacks.emplace_back(onUrlStreamShouldStop);
 }
 
-void PlayerRect::custom_update(double delta) {
-    player_->update(delta);
+void PlayerRect::custom_update(double dt) {
+    player_->update(dt);
 
     hw_status_label_->set_text("Hw Decoding: " + std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
 

@@ -13,7 +13,8 @@ RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::
     m_yuv_renderer = std::make_shared<YuvRenderer>(device, queue);
     m_yuv_renderer->init();
 
-    connectionLostCallbacks.push_back([this] {
+    // If the decoder fails, try to replay.
+    decoderErrorCallbacks.push_back([this] {
         stop();
         play(url, forceSoftwareDecoding_);
     });
@@ -82,10 +83,10 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
     analysisThread = std::thread([this, forceSoftwareDecoding] {
         auto decoder_ = std::make_shared<FfmpegDecoder>();
 
-        // 打开并分析输入
         bool ok = decoder_->OpenInput(url, forceSoftwareDecoding);
         if (!ok) {
-            emitError("Loading URL failed", -2);
+            GuiInterface::Instance().PutLog(LogLevel::Error, "Loading URL failed");
+            emitDecoderError();
             return;
         }
 
@@ -104,21 +105,17 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
                         continue;
                     }
 
-                    {
-                        // Push frame to the buffer queue.
-                        std::lock_guard lck(mtx);
-                        if (videoFrameQueue.size() > 10) {
-                            videoFrameQueue.pop();
-                        }
-                        videoFrameQueue.push(frame);
+                    // Push frame to the buffer queue.
+                    std::lock_guard lck(mtx);
+                    if (videoFrameQueue.size() > 10) {
+                        videoFrameQueue.pop();
                     }
-                } catch (const std::exception &e) {
-                    // Decoding stopped.
-
-                    emitError(e.what(), -2);
-
-                    emitConnectionLost();
-
+                    videoFrameQueue.push(frame);
+                }
+                // Decoder error.
+                catch (const std::exception &e) {
+                    GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
+                    emitDecoderError();
                     break;
                 }
             }
@@ -128,18 +125,17 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
         decodeThread.detach();
 
         if (!isMuted && decoder->HasAudio()) {
-            // 开启音频
             enableAudio();
         }
-        // 是否存在音频
+
         // emit onHasAudio(decoder->HasAudio());
 
         if (decoder->HasVideo()) {
             onVideoInfoReady(decoder->GetWidth(), decoder->GetHeight(), decoder->GetVideoFrameFormat());
         }
 
-        // 码率计算回调
-        decoder->onBitrate = [this](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
+        // Bitrate callback.
+        decoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
     });
 
     // Start analysis thread.
@@ -166,10 +162,10 @@ void RealTimePlayer::stop() {
 
     // SDL_CloseAudio();
 
-    if (decoder) {
-        decoder->CloseInput();
-        decoder.reset();
-    }
+//    if (decoder) {
+//        decoder->CloseInput();
+//        decoder.reset();
+//    }
 }
 
 void RealTimePlayer::setMuted(bool muted) {
@@ -305,22 +301,10 @@ bool RealTimePlayer::isHardwareAccelerated() const {
     return hwEnabled;
 }
 
-void RealTimePlayer::emitConnectionLost() {
-    for (auto &callback : connectionLostCallbacks) {
+void RealTimePlayer::emitDecoderError() {
+    for (auto &callback : decoderErrorCallbacks) {
         try {
             callback();
-        } catch (std::bad_any_cast &) {
-            abort();
-        }
-    }
-}
-
-void RealTimePlayer::emitError(std::string msg, int errorCode) {
-    GuiInterface::Instance().PutLog(LogLevel::Error, msg + " (error code: " + std::to_string(errorCode) + ")");
-
-    for (auto &callback : errorCallbacks) {
-        try {
-            callback.operator()<std::string, int>(std::move(msg), std::move(errorCode));
         } catch (std::bad_any_cast &) {
             abort();
         }

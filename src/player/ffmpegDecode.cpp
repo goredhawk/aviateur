@@ -167,10 +167,7 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
                 bitrate = bytesSecond * 8 * 1000 / (now - lastCountBitrateTime);
                 bytesSecond = 0;
 
-                // Bitrate callback
-                if (onBitrate) {
-                    onBitrate(bitrate);
-                }
+                emitBitrateUpdate(bitrate);
 
                 lastCountBitrateTime = now;
             }
@@ -279,7 +276,7 @@ bool FfmpegDecoder::OpenVideo() {
                     }
 
                     if (avcodec_parameters_to_context(pVideoCodecCtx, pFormatCtx->streams[i]->codecpar) >= 0) {
-                        res = !(avcodec_open2(pVideoCodecCtx, codec, nullptr) < 0);
+                        res = avcodec_open2(pVideoCodecCtx, codec, nullptr) >= 0;
                         if (res) {
                             width = pVideoCodecCtx->width;
                             height = pVideoCodecCtx->height;
@@ -368,7 +365,7 @@ bool FfmpegDecoder::OpenAudio() {
                     pAudioCodecCtx = avcodec_alloc_context3(codec);
                     if (pAudioCodecCtx) {
                         if (avcodec_parameters_to_context(pAudioCodecCtx, pFormatCtx->streams[i]->codecpar) >= 0) {
-                            res = !(avcodec_open2(pAudioCodecCtx, codec, nullptr) < 0);
+                            res = avcodec_open2(pAudioCodecCtx, codec, nullptr) >= 0;
                         }
                     }
                 }
@@ -387,7 +384,7 @@ bool FfmpegDecoder::OpenAudio() {
 
 void FfmpegDecoder::CloseVideo() {
     if (pVideoCodecCtx) {
-        avcodec_close(pVideoCodecCtx);
+        avcodec_free_context(&pVideoCodecCtx);
         pVideoCodecCtx = nullptr;
         videoStreamIndex = 0;
     }
@@ -395,20 +392,20 @@ void FfmpegDecoder::CloseVideo() {
 
 void FfmpegDecoder::CloseAudio() {
     if (pAudioCodecCtx) {
-        avcodec_close(pAudioCodecCtx);
+        avcodec_free_context(&pAudioCodecCtx);
         pAudioCodecCtx = nullptr;
         audioStreamIndex = 0;
     }
 }
 
-int FfmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t *pOutBuffer, size_t nOutBufferSize) {
-    int decodedSize = 0;
+int FfmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize) {
+    size_t decodedSize = 0;
 
-    int packetSize = avpkt->size;
-    const uint8_t *pPacketData = avpkt->data;
+    int packetSize = av_pkt->size;
+    const uint8_t *pPacketData = av_pkt->data;
 
     while (packetSize > 0) {
-        int sizeToDecode = nOutBufferSize;
+        size_t sizeToDecode = nOutBufferSize;
         uint8_t *pDest = pOutBuffer + decodedSize;
         AVFrame *audioFrame = av_frame_alloc();
         if (!audioFrame) {

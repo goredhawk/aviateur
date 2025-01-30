@@ -50,7 +50,7 @@ public:
 
     void custom_ready() override;
 
-    void custom_update(double delta) override;
+    void custom_update(double dt) override;
 
     void custom_draw() override;
 

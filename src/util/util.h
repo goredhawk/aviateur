@@ -24,30 +24,31 @@
 #include <vector>
 
 #if defined(_WIN32)
-#undef FD_SETSIZE
-// 修改默认64为1024路
-#define FD_SETSIZE 1024
+    #undef FD_SETSIZE
+    // 修改默认64为1024路
+    #define FD_SETSIZE 1024
 #else
-#include <cstddef>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
+    #include <sys/time.h>
+    #include <sys/types.h>
+    #include <unistd.h>
+
+    #include <cstddef>
 #endif // defined(_WIN32)
 
 #if defined(__APPLE__)
-#include "TargetConditionals.h"
-#if TARGET_IPHONE_SIMULATOR
-#define OS_IPHONE
-#elif TARGET_OS_IPHONE
-#define OS_IPHONE
-#endif
+    #include "TargetConditionals.h"
+    #if TARGET_IPHONE_SIMULATOR
+        #define OS_IPHONE
+    #elif TARGET_OS_IPHONE
+        #define OS_IPHONE
+    #endif
 #endif //__APPLE__
 
-#define INSTANCE_IMP(class_name, ...)                                                                                  \
-    class_name &class_name::Instance() {                                                                               \
-        static std::shared_ptr<class_name> s_instance(new class_name(__VA_ARGS__));                                    \
-        static class_name &s_instance_ref = *s_instance;                                                               \
-        return s_instance_ref;                                                                                         \
+#define INSTANCE_IMP(class_name, ...)                                               \
+    class_name &class_name::Instance() {                                            \
+        static std::shared_ptr<class_name> s_instance(new class_name(__VA_ARGS__)); \
+        static class_name &s_instance_ref = *s_instance;                            \
+        return s_instance_ref;                                                      \
     }
 
 namespace toolkit {
@@ -64,7 +65,9 @@ public:
         return *this;
     }
 
-    std::string operator<<(std::ostream &(*f)(std::ostream &)) const { return *this; }
+    std::string operator<<(std::ostream &(*f)(std::ostream &)) const {
+        return *this;
+    }
 
 private:
     std::stringstream _stream;
@@ -105,8 +108,12 @@ public:
         return *ptr;
     }
 
-    operator bool() { return _data.operator bool(); }
-    bool empty() { return !bool(); }
+    operator bool() {
+        return _data.operator bool();
+    }
+    bool empty() {
+        return !bool();
+    }
 
 private:
     std::shared_ptr<void> _data;
@@ -144,21 +151,27 @@ private:
 template <class C>
 class ObjectStatistic {
 public:
-    ObjectStatistic() { ++getCounter(); }
+    ObjectStatistic() {
+        ++getCounter();
+    }
 
-    ~ObjectStatistic() { --getCounter(); }
+    ~ObjectStatistic() {
+        --getCounter();
+    }
 
-    static size_t count() { return getCounter().load(); }
+    static size_t count() {
+        return getCounter().load();
+    }
 
 private:
     static std::atomic<size_t> &getCounter();
 };
 
-#define StatisticImp(Type)                                                                                             \
-    template <>                                                                                                        \
-    std::atomic<size_t> &ObjectStatistic<Type>::getCounter() {                                                         \
-        static std::atomic<size_t> instance(0);                                                                        \
-        return instance;                                                                                               \
+#define StatisticImp(Type)                                     \
+    template <>                                                \
+    std::atomic<size_t> &ObjectStatistic<Type>::getCounter() { \
+        static std::atomic<size_t> instance(0);                \
+        return instance;                                       \
     }
 
 std::string makeRandStr(int sz, bool printable = true);
@@ -188,7 +201,7 @@ bool start_with(const std::string &str, const std::string &substr);
 bool end_with(const std::string &str, const std::string &substr);
 
 #ifndef bzero
-#define bzero(ptr, size) memset((ptr), 0, (size));
+    #define bzero(ptr, size) memset((ptr), 0, (size));
 #endif // bzero
 
 #if defined(ANDROID)
@@ -208,17 +221,17 @@ int vasprintf(char **strp, const char *fmt, va_list ap);
 int asprintf(char **strp, const char *fmt, ...);
 const char *strcasestr(const char *big, const char *little);
 
-#if !defined(strcasecmp)
-#define strcasecmp _stricmp
-#endif
+    #if !defined(strcasecmp)
+        #define strcasecmp _stricmp
+    #endif
 
-#ifndef ssize_t
-#ifdef _WIN64
-#define ssize_t int64_t
-#else
-#define ssize_t int32_t
-#endif
-#endif
+    #ifndef ssize_t
+        #ifdef _WIN64
+            #define ssize_t int64_t
+        #else
+            #define ssize_t int32_t
+        #endif
+    #endif
 #endif // WIN32
 
 /**
@@ -287,11 +300,9 @@ template <typename Ret>
 struct AnyCallable {
     AnyCallable() = default;
     template <typename F>
-    AnyCallable(F &&fun)
-        : AnyCallable(std::function(std::forward<F>(fun))) {}
+    AnyCallable(F &&fun) : AnyCallable(std::function(std::forward<F>(fun))) {}
     template <typename... Args>
-    AnyCallable(std::function<Ret(Args...)> fun)
-        : m_any(fun) {}
+    AnyCallable(std::function<Ret(Args...)> fun) : m_any(fun) {}
     template <typename... Args>
     Ret operator()(Args &&...args) {
         return std::invoke(std::any_cast<std::function<Ret(Args...)>>(m_any), std::forward<Args>(args)...);
