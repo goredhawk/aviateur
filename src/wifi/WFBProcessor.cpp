@@ -62,11 +62,11 @@ void Aggregator::init_fec(int k, int n) {
 
 void Aggregator::deinit_fec() {
     for (int ring_idx = 0; ring_idx < RX_RING_SIZE; ring_idx++) {
-        delete rx_ring[ring_idx].fragment_map;
+        delete[] rx_ring[ring_idx].fragment_map;
         for (int i = 0; i < fec_n; i++) {
-            delete rx_ring[ring_idx].fragments[i];
+            delete[] rx_ring[ring_idx].fragments[i];
         }
-        delete rx_ring[ring_idx].fragments;
+        delete[] rx_ring[ring_idx].fragments;
     }
 
     fec_free(fec_p);
