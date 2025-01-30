@@ -14,7 +14,7 @@ RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::
     m_yuv_renderer->init();
 
     // If the decoder fails, try to replay.
-    decoderErrorCallbacks.push_back([this] {
+    connectionLostCallbacks.push_back([this] {
         stop();
         play(url, forceSoftwareDecoding_);
     });
@@ -86,7 +86,6 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
         bool ok = decoder_->OpenInput(url, forceSoftwareDecoding);
         if (!ok) {
             GuiInterface::Instance().PutLog(LogLevel::Error, "Loading URL failed");
-            emitDecoderError();
             return;
         }
 
@@ -115,7 +114,7 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
                 // Decoder error.
                 catch (const std::exception &e) {
                     GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
-                    emitDecoderError();
+                    emitConnectionLost();
                     break;
                 }
             }
@@ -162,10 +161,10 @@ void RealTimePlayer::stop() {
 
     // SDL_CloseAudio();
 
-//    if (decoder) {
-//        decoder->CloseInput();
-//        decoder.reset();
-//    }
+    if (decoder) {
+        decoder->CloseInput();
+        decoder.reset();
+    }
 }
 
 void RealTimePlayer::setMuted(bool muted) {
@@ -301,8 +300,8 @@ bool RealTimePlayer::isHardwareAccelerated() const {
     return hwEnabled;
 }
 
-void RealTimePlayer::emitDecoderError() {
-    for (auto &callback : decoderErrorCallbacks) {
+void RealTimePlayer::emitConnectionLost() {
+    for (auto &callback : connectionLostCallbacks) {
         try {
             callback();
         } catch (std::bad_any_cast &) {

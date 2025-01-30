@@ -64,8 +64,8 @@ public:
 
     // Signals
 
-    std::vector<toolkit::AnyCallable<void>> decoderErrorCallbacks;
-    void emitDecoderError();
+    std::vector<toolkit::AnyCallable<void>> connectionLostCallbacks;
+    void emitConnectionLost();
 
     // void gotRecordVol(double vol);
     toolkit::AnyCallable<void> gotRecordVolume;
