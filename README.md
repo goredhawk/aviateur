@@ -27,8 +27,8 @@ If the application crashes at startup, try installing [Microsoft Visual C++ Redi
 ![](tutorials/latency_test.jpg)
 
 ### TODOs
-- Video stabilization using optical flow
-- i18n
+- Night image enhancement
+- Multi-language support
 - Linux client
 - Android client
 
