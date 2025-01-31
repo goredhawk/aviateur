@@ -32,4 +32,6 @@ public:
     void update_url_start_button_looking(bool start_status) const;
 
     void custom_ready() override;
+
+    void custom_input(Flint::InputEvent &event) override;
 };

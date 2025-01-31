@@ -28,13 +28,13 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
         play_button_->theme_normal.bg_color = red;
         play_button_->theme_hovered.bg_color = red;
         play_button_->theme_pressed.bg_color = red;
-        play_button_->set_text("Stop");
+        play_button_->set_text("Stop (F5)");
     } else {
         auto green = Flint::ColorU(78, 135, 82);
         play_button_->theme_normal.bg_color = green;
         play_button_->theme_hovered.bg_color = green;
         play_button_->theme_pressed.bg_color = green;
-        play_button_->set_text("Start");
+        play_button_->set_text("Start (F5)");
     }
 }
 
@@ -46,13 +46,13 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
         play_url_button_->theme_normal.bg_color = red;
         play_url_button_->theme_hovered.bg_color = red;
         play_url_button_->theme_pressed.bg_color = red;
-        play_url_button_->set_text("Close");
+        play_url_button_->set_text("Close (F5)");
     } else {
         auto green = Flint::ColorU(78, 135, 82);
         play_url_button_->theme_normal.bg_color = green;
         play_url_button_->theme_hovered.bg_color = green;
         play_url_button_->theme_pressed.bg_color = green;
-        play_url_button_->set_text("Open");
+        play_url_button_->set_text("Open (F5)");
     }
 }
 
@@ -223,7 +223,7 @@ void ControlPanel::custom_ready() {
             update_adapter_start_button_looking(true);
 
             auto callback1 = [this] {
-                bool start = play_button_->get_text() == "Start";
+                bool start = play_button_->get_text() == "Start (F5)";
 
                 if (start) {
                     bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
@@ -273,7 +273,7 @@ void ControlPanel::custom_ready() {
             update_url_start_button_looking(true);
 
             auto callback1 = [this] {
-                bool start = play_url_button_->get_text() == "Open";
+                bool start = play_url_button_->get_text() == "Open (F5)";
 
                 if (start) {
                     // Hw decoding always crashes when playing URL streams.
@@ -287,6 +287,26 @@ void ControlPanel::custom_ready() {
 
             play_url_button_->connect_signal("pressed", callback1);
             vbox_container->add_child(play_url_button_);
+        }
+    }
+}
+
+void ControlPanel::custom_input(Flint::InputEvent &event) {
+    auto input_server = Flint::InputServer::get_singleton();
+
+    if (event.type == Flint::InputEventType::Key) {
+        auto key_args = event.args.key;
+
+        if (key_args.key == Flint::KeyCode::F5) {
+            if (key_args.pressed) {
+                if (tab_container_->get_current_tab().has_value()) {
+                    if (tab_container_->get_current_tab().value() == 0) {
+                        play_button_->press();
+                    } else {
+                        play_url_button_->press();
+                    }
+                }
+            }
         }
     }
 }

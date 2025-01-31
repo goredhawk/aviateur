@@ -26,7 +26,7 @@ void PlayerRect::custom_input(Flint::InputEvent &event) {
             }
         }
 
-        if (key_args.key == Flint::KeyCode::R && input_server->is_key_pressed(Flint::KeyCode::LeftControl)) {
+        if (playing_ && key_args.key == Flint::KeyCode::F10) {
             if (key_args.pressed) {
                 record_button_->press();
             }
@@ -136,7 +136,7 @@ void PlayerRect::custom_ready() {
     vbox->add_child(record_button_);
     auto icon2 = std::make_shared<Flint::VectorImage>("assets/RecordVideo.svg");
     record_button_->set_icon_normal(icon2);
-    record_button_->set_text("Record MP4 (CTRL+R)");
+    record_button_->set_text("Record MP4 (F10)");
 
     auto record_button_raw = record_button_.get();
     auto record_callback = [record_button_raw, this] {
@@ -144,7 +144,7 @@ void PlayerRect::custom_ready() {
             is_recording = player_->startRecord();
 
             if (is_recording) {
-                record_button_raw->set_text("Stop Recording (CTRL+R)");
+                record_button_raw->set_text("Stop Recording (F10)");
 
                 record_start_time = std::chrono::steady_clock::now();
 
@@ -158,7 +158,7 @@ void PlayerRect::custom_ready() {
 
             auto output_file = player_->stopRecord();
 
-            record_button_raw->set_text("Record MP4 (CTRL+R)");
+            record_button_raw->set_text("Record MP4 (F10)");
             record_status_label_->set_text("Not Recording");
 
             if (output_file.empty()) {
@@ -264,6 +264,11 @@ void PlayerRect::start_playing(const std::string &url) {
 
 void PlayerRect::stop_playing() {
     playing_ = false;
+
+    if (is_recording) {
+        record_button_->press();
+    }
+
     // Fix crash in WFBReceiver destructor.
     if (player_) {
         player_->stop();
