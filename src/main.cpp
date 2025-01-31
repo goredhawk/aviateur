@@ -28,7 +28,7 @@ int main() {
 
     Flint::Logger::set_module_level(LOGGER_MODULE, Flint::Logger::Level::Info);
 
-    auto logCallback = [](LogLevel level, const std::string& msg) {
+    auto logCallback = [](LogLevel level, std::string msg) {
         switch (level) {
             case LogLevel::Info: {
                 Flint::Logger::info(msg, LOGGER_MODULE);

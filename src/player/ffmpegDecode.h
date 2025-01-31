@@ -15,6 +15,9 @@ public:
 
     ~FfmpegDecoder() {
         CloseInput();
+
+        swrCtx.reset();
+        hwFrame.reset();
     }
 
     bool OpenInput(std::string &inputFile, bool forceSoftwareDecoding);
@@ -85,9 +88,9 @@ private:
 
     void writeAudioBuff(uint8_t *aSample, size_t aSize);
 
-    std::function<void(const std::shared_ptr<AVPacket> &packet)> _gotPktCallback = nullptr;
+    std::function<void(const std::shared_ptr<AVPacket> &packet)> _gotPktCallback;
 
-    std::function<void(const std::shared_ptr<AVFrame> &frame)> _gotFrameCallback = nullptr;
+    std::function<void(const std::shared_ptr<AVFrame> &frame)> _gotFrameCallback;
 
     bool initHwDecoder(AVCodecContext *ctx, enum AVHWDeviceType type);
 
@@ -114,8 +117,6 @@ private:
 
     double audioBaseTime = 0;
 
-    SwsContext *pImgConvertCtx = nullptr;
-
     std::mutex _releaseLock;
 
     bool hasVideoStream{};
@@ -137,7 +138,7 @@ private:
 
     // Audio buffer
     std::mutex abBuffMtx;
-    std::shared_ptr<AVFifo> audioFifoBuffer;
+    AVFifo* audioFifoBuffer{};
 
     // Hardware decoding
     AVHWDeviceType hwDecoderType;

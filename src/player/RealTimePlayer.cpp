@@ -20,33 +20,32 @@ RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::
     });
 }
 
-void RealTimePlayer::update(float delta) {
+void RealTimePlayer::update(float dt) {
+    if (playStop) {
+        return;
+    }
+
     if (m_infoChanged) {
         m_yuv_renderer->updateTextureInfo(m_videoWidth, m_videoHeight, m_videoFormat);
         m_infoChanged = false;
     }
 
-    bool got = false;
-    std::shared_ptr<AVFrame> frame = getFrame(got);
-    if (got && frame->linesize[0]) {
+    std::shared_ptr<AVFrame> frame = getFrame();
+    if (frame && frame->linesize[0]) {
         m_yuv_renderer->updateTextureData(frame);
     }
 }
 
-std::shared_ptr<AVFrame> RealTimePlayer::getFrame(bool &got) {
-    // Got a frame?
-    got = false;
-
+std::shared_ptr<AVFrame> RealTimePlayer::getFrame() {
     std::lock_guard lck(mtx);
 
     // No frame in the queue
     if (videoFrameQueue.empty()) {
-        return {};
+        return nullptr;
     }
 
     // Get a frame from the queue
     std::shared_ptr<AVFrame> frame = videoFrameQueue.front();
-    got = true;
 
     // Remove the frame from the queue.
     videoFrameQueue.pop();
@@ -80,18 +79,16 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
 
     url = playUrl;
 
-    analysisThread = std::thread([this, forceSoftwareDecoding] {
-        auto decoder_ = std::make_shared<FfmpegDecoder>();
+    decoder = std::make_shared<FfmpegDecoder>();
 
-        bool ok = decoder_->OpenInput(url, forceSoftwareDecoding);
+    analysisThread = std::thread([this, forceSoftwareDecoding] {
+        bool ok = decoder->OpenInput(url, forceSoftwareDecoding);
         if (!ok) {
             GuiInterface::Instance().PutLog(LogLevel::Error, "Loading URL failed");
             return;
         }
 
-        decoder = decoder_;
-
-        GuiInterface::Instance().EmitDecoderReady(decoder_->GetFps());
+        GuiInterface::Instance().EmitDecoderReady(decoder->GetFps());
 
         hwEnabled = decoder->hwDecoderEnabled;
 
@@ -147,16 +144,18 @@ void RealTimePlayer::stop() {
     if (decoder && decoder->pFormatCtx) {
         decoder->pFormatCtx->interrupt_callback.callback = [](void *) { return 1; };
     }
+
     if (analysisThread.joinable()) {
         analysisThread.join();
     }
+
     if (decodeThread.joinable()) {
         decodeThread.join();
     }
-    while (!videoFrameQueue.empty()) {
+
+    {
         std::lock_guard lck(mtx);
-        // 清空缓冲
-        videoFrameQueue.pop();
+        videoFrameQueue = std::queue<std::shared_ptr<AVFrame>>();
     }
 
     // SDL_CloseAudio();

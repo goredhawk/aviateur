@@ -14,9 +14,9 @@ class RealTimePlayer {
 public:
     RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);
     ~RealTimePlayer();
-    void update(float delta);
+    void update(float dt);
 
-    std::shared_ptr<AVFrame> getFrame(bool &got);
+    std::shared_ptr<AVFrame> getFrame();
 
     bool infoDirty() const {
         return m_infoChanged;
@@ -81,19 +81,22 @@ public:
 
 protected:
     std::shared_ptr<FfmpegDecoder> decoder;
+
     // Play file URL
     std::string url;
 
     volatile bool playStop = true;
 
     volatile bool isMuted = true;
-    // 帧队列
+
     std::queue<std::shared_ptr<AVFrame>> videoFrameQueue;
+
     std::mutex mtx;
-    // 解码线程
+
     std::thread decodeThread;
-    // 分析线程
+
     std::thread analysisThread;
+
     // 最后输出的帧
     std::shared_ptr<AVFrame> _lastFrame;
     // 视频是否ready

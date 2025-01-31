@@ -154,7 +154,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
 
         usbThread.reset();
 
-        GuiInterface::Instance().NotifyWifiStop();
+        GuiInterface::Instance().EmitWifiStopped();
     });
     usbThread->detach();
 

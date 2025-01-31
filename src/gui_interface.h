@@ -133,10 +133,6 @@ public:
         EmitLog(level, str);
     }
 
-    void NotifyWifiStop() {
-        EmitWifiStopped();
-    }
-
     int NotifyRtpStream(int pt, uint16_t ssrc) {
         // Get free port.
         std::string sdpFile = "sdp/sdp.sdp";
