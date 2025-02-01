@@ -49,7 +49,6 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     av_dict_set(&param, "buffer_size", "425984", 0);
     av_dict_set(&param, "rtsp_transport", "tcp", 0);
     av_dict_set(&param, "protocol_whitelist", "file,udp,tcp,rtp,rtmp,rtsp,http", 0);
-    av_dict_set_int(&param, "stimeout", (int64_t)10, 0);
 
     // 打开输入
     if (avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &param) != 0) {
@@ -344,7 +343,7 @@ bool FfmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame>
             res = true;
         }
 
-        if (hwDecoderEnabled) {
+        if (res && hwDecoderEnabled) {
             if (dropCurrentVideoFrame) {
                 pOutFrame.reset();
                 return false;
