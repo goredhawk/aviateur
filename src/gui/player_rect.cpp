@@ -80,24 +80,24 @@ void PlayerRect::custom_ready() {
     hud_container_->set_visibility(false);
     hud_container_->set_separation(16);
 
-    auto bitrate_label = std::make_shared<Flint::Label>();
-    hud_container_->add_child(bitrate_label);
-    bitrate_label->set_text("Bitrate: 0 Kbps");
-    bitrate_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
-
     {
-        video_fps_label_ = std::make_shared<Flint::Label>();
-        hud_container_->add_child(video_fps_label_);
-        video_fps_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
-        video_fps_label_->set_text("Video FPS: ");
+        video_info_label_ = std::make_shared<Flint::Label>();
+        hud_container_->add_child(video_info_label_);
+        video_info_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+        video_info_label_->set_text("");
 
-        auto onFpsUpdate = [this](float fps) {
-            std::string text = "Video FPS: " + std::to_string(int(round(fps)));
-
-            video_fps_label_->set_text(text);
+        auto onFpsUpdate = [this](uint32_t width, uint32_t height, float fps) {
+            std::stringstream ss;
+            ss << width << "x" << height << "@" << int(round(fps));
+            video_info_label_->set_text(ss.str());
         };
         GuiInterface::Instance().decoderReadyCallbacks.emplace_back(onFpsUpdate);
     }
+
+    bitrate_label_ = std::make_shared<Flint::Label>();
+    hud_container_->add_child(bitrate_label_);
+    bitrate_label_->set_text("Bit rate: 0 bps");
+    bitrate_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
 
     {
         display_fps_label_ = std::make_shared<Flint::Label>();
@@ -191,22 +191,24 @@ void PlayerRect::custom_ready() {
 
         auto callback = [this](bool toggled) {
             force_software_decoding = toggled;
-            player_->stop();
-            player_->play(playing_file_, force_software_decoding);
+            if (playing_) {
+                player_->stop();
+                player_->play(playing_file_, force_software_decoding);
+            }
         };
         button->connect_signal("toggled", callback);
     }
 
-    auto onBitrateUpdate = [bitrate_label](uint64_t bitrate) {
-        std::string text = "Bitrate: ";
-        if (bitrate > 1000 * 1000) {
-            text += std::format("{:.1f}", bitrate / 1000.0 / 1000.0) + " Mbps";
-        } else if (bitrate > 1000) {
-            text += std::format("{:.1f}", bitrate / 1000.0) + " Kbps";
+    auto onBitrateUpdate = [this](uint64_t bitrate) {
+        std::string text = "Bit rate: ";
+        if (bitrate > 1024 * 1024) {
+            text += std::format("{:.1f}", bitrate / 1024.0 / 1024.0) + " Mbps";
+        } else if (bitrate > 1024) {
+            text += std::format("{:.1f}", bitrate / 1024.0) + " Kbps";
         } else {
             text += std::format("{:d}", bitrate) + " bps";
         }
-        bitrate_label->set_text(text);
+        bitrate_label_->set_text(text);
     };
     GuiInterface::Instance().bitrateUpdateCallbacks.emplace_back(onBitrateUpdate);
 
@@ -220,7 +222,7 @@ void PlayerRect::custom_ready() {
 void PlayerRect::custom_update(double dt) {
     player_->update(dt);
 
-    hw_status_label_->set_text("Hw Decoding: " + std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
+    hw_status_label_->set_text("Hw decoding: " + std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
 
     display_fps_label_->set_text("Display FPS: " + std::to_string(Flint::Engine::get_singleton()->get_fps_int()));
 
@@ -255,7 +257,7 @@ void PlayerRect::custom_draw() {
 
 void PlayerRect::start_playing(const std::string &url) {
     playing_ = true;
-    player_->play(url, url.starts_with("udp") || force_software_decoding);
+    player_->play(url, force_software_decoding);
     texture = render_image_;
 
     collapse_panel_->set_visibility(true);

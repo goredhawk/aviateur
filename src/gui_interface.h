@@ -268,10 +268,10 @@ public:
         }
     }
 
-    void EmitDecoderReady(float videoFps) {
+    void EmitDecoderReady(uint32_t width, uint32_t height, float videoFps) {
         for (auto &callback : decoderReadyCallbacks) {
             try {
-                callback.operator()<float>(std::move(videoFps));
+                callback.operator()<uint32_t, uint32_t, float>(std::move(width), std::move(height), std::move(videoFps));
             } catch (std::bad_any_cast &) {
                 Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }

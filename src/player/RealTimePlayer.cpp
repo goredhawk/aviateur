@@ -88,7 +88,7 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
             return;
         }
 
-        GuiInterface::Instance().EmitDecoderReady(decoder->GetFps());
+        GuiInterface::Instance().EmitDecoderReady(decoder->GetWidth(), decoder->GetHeight(), decoder->GetFps());
 
         hwEnabled = decoder->hwDecoderEnabled;
 

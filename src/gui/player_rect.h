@@ -27,9 +27,11 @@ public:
 
     std::shared_ptr<Flint::Label> record_status_label_;
 
+    std::shared_ptr<Flint::Label> bitrate_label_;
+
     std::shared_ptr<Flint::Label> hw_status_label_;
 
-    std::shared_ptr<Flint::Label> video_fps_label_;
+    std::shared_ptr<Flint::Label> video_info_label_;
 
     std::shared_ptr<Flint::Label> display_fps_label_;
 
