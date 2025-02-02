@@ -1,10 +1,11 @@
 ﻿#pragma once
 
+#include <common/any_callable.h>
+
 #include <memory>
 #include <queue>
 #include <thread>
 
-#include "../util/util.h"
 #include "GifEncoder.h"
 #include "Mp4Encoder.h"
 #include "YuvRenderer.h"
@@ -19,19 +20,19 @@ public:
     std::shared_ptr<AVFrame> getFrame();
 
     bool infoDirty() const {
-        return m_infoChanged;
+        return infoChanged_;
     }
     void makeInfoDirty(bool dirty) {
-        m_infoChanged = dirty;
+        infoChanged_ = dirty;
     }
     int videoWidth() const {
-        return m_videoWidth;
+        return videoWidth_;
     }
     int videoHeight() const {
-        return m_videoHeight;
+        return videoHeight_;
     }
     int videoFormat() const {
-        return m_videoFormat;
+        return videoFormat_;
     }
     bool getMuted() const {
         return isMuted;
@@ -64,20 +65,20 @@ public:
 
     // Signals
 
-    std::vector<toolkit::AnyCallable<void>> connectionLostCallbacks;
+    std::vector<Flint::AnyCallable<void>> connectionLostCallbacks;
     void emitConnectionLost();
 
     // void gotRecordVol(double vol);
-    toolkit::AnyCallable<void> gotRecordVolume;
+    Flint::AnyCallable<void> gotRecordVolume;
 
     // void onBitrate(long bitrate);
-    toolkit::AnyCallable<void> onBitrateUpdate;
+    Flint::AnyCallable<void> onBitrateUpdate;
 
     // void onMutedChanged(bool muted);
-    toolkit::AnyCallable<void> onMutedChanged;
+    Flint::AnyCallable<void> onMutedChanged;
 
     // void onHasAudio(bool has);
-    toolkit::AnyCallable<void> onHasAudio;
+    Flint::AnyCallable<void> onHasAudio;
 
 protected:
     std::shared_ptr<FfmpegDecoder> decoder;
@@ -98,17 +99,17 @@ protected:
     std::thread analysisThread;
 
     // 最后输出的帧
-    std::shared_ptr<AVFrame> _lastFrame;
+    std::shared_ptr<AVFrame> lastFrame_;
     // 视频是否ready
     void onVideoInfoReady(int width, int height, int format);
-    // 播放音频
+
     bool enableAudio();
-    // 停止播放音频
+
     void disableAudio();
-    // MP4录制器
-    std::shared_ptr<Mp4Encoder> _mp4Encoder;
-    // GIF录制器
-    std::shared_ptr<GifEncoder> _gifEncoder;
+
+    std::shared_ptr<Mp4Encoder> mp4Encoder_;
+
+    std::shared_ptr<GifEncoder> gifEncoder_;
 
     bool hasAudio() const;
 
@@ -116,9 +117,9 @@ protected:
     bool hwEnabled = false;
 
 public:
-    std::shared_ptr<YuvRenderer> m_yuv_renderer;
-    int m_videoWidth{};
-    int m_videoHeight{};
-    int m_videoFormat{};
-    bool m_infoChanged = false;
+    std::shared_ptr<YuvRenderer> yuvRenderer_;
+    int videoWidth_{};
+    int videoHeight_{};
+    int videoFormat_{};
+    bool infoChanged_ = false;
 };

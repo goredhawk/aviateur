@@ -5,22 +5,21 @@
 #include "Mp4Encoder.h"
 
 Mp4Encoder::Mp4Encoder(const std::string &saveFilePath) {
-    // 分配
-    _formatCtx = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
-    // 设置格式
-    _formatCtx->oformat = av_guess_format("mov", nullptr, nullptr);
-    // 文件保存路径
-    _saveFilePath = saveFilePath;
+    formatCtx_ = std::shared_ptr<AVFormatContext>(avformat_alloc_context(), &avformat_free_context);
+
+    formatCtx_->oformat = av_guess_format("mov", nullptr, nullptr);
+
+    saveFilePath_ = saveFilePath;
 }
 
 Mp4Encoder::~Mp4Encoder() {
-    if (_isOpen) {
+    if (isOpen_) {
         stop();
     }
 }
 
 void Mp4Encoder::addTrack(AVStream *stream) {
-    AVStream *os = avformat_new_stream(_formatCtx.get(), nullptr);
+    AVStream *os = avformat_new_stream(formatCtx_.get(), nullptr);
     if (!os) {
         return;
     }
@@ -31,31 +30,31 @@ void Mp4Encoder::addTrack(AVStream *stream) {
     os->codecpar->codec_tag = 0;
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         audioIndex = os->index;
-        _originAudioTimeBase = stream->time_base;
+        originAudioTimeBase_ = stream->time_base;
     } else if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         videoIndex = os->index;
-        _originVideoTimeBase = stream->time_base;
+        originVideoTimeBase_ = stream->time_base;
     }
 }
 
 bool Mp4Encoder::start() {
     // 初始化上下文
-    if (avio_open(&_formatCtx->pb, _saveFilePath.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
+    if (avio_open(&formatCtx_->pb, saveFilePath_.c_str(), AVIO_FLAG_READ_WRITE) < 0) {
         return false;
     }
     // 写输出流头信息
     AVDictionary *opts = nullptr;
     av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov", 0);
-    int ret = avformat_write_header(_formatCtx.get(), &opts);
+    int ret = avformat_write_header(formatCtx_.get(), &opts);
     if (ret < 0) {
         return false;
     }
-    _isOpen = true;
+    isOpen_ = true;
     return true;
 }
 
 void Mp4Encoder::writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo) {
-    if (!_isOpen) {
+    if (!isOpen_) {
         return;
     }
 #ifdef I_FRAME_FIRST
@@ -71,19 +70,19 @@ void Mp4Encoder::writePacket(const std::shared_ptr<AVPacket> &pkt, bool isVideo)
 #endif
     if (isVideo) {
         pkt->stream_index = videoIndex;
-        av_packet_rescale_ts(pkt.get(), _originVideoTimeBase, _formatCtx->streams[videoIndex]->time_base);
+        av_packet_rescale_ts(pkt.get(), originVideoTimeBase_, formatCtx_->streams[videoIndex]->time_base);
     } else {
         pkt->stream_index = audioIndex;
-        av_packet_rescale_ts(pkt.get(), _originAudioTimeBase, _formatCtx->streams[audioIndex]->time_base);
+        av_packet_rescale_ts(pkt.get(), originAudioTimeBase_, formatCtx_->streams[audioIndex]->time_base);
     }
     pkt->pos = -1;
-    av_write_frame(_formatCtx.get(), pkt.get());
+    av_write_frame(formatCtx_.get(), pkt.get());
 }
 
 void Mp4Encoder::stop() {
-    _isOpen = false;
-    // 写文件尾
-    av_write_trailer(_formatCtx.get());
-    // 关闭文件
-    avio_close(_formatCtx->pb);
+    isOpen_ = false;
+
+    av_write_trailer(formatCtx_.get());
+
+    avio_close(formatCtx_->pb);
 }

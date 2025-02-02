@@ -10,8 +10,8 @@
 #define DEFAULT_GIF_FRAMERATE 10
 
 RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
-    m_yuv_renderer = std::make_shared<YuvRenderer>(device, queue);
-    m_yuv_renderer->init();
+    yuvRenderer_ = std::make_shared<YuvRenderer>(device, queue);
+    yuvRenderer_->init();
 
     // If the decoder fails, try to replay.
     connectionLostCallbacks.push_back([this] {
@@ -25,14 +25,14 @@ void RealTimePlayer::update(float dt) {
         return;
     }
 
-    if (m_infoChanged) {
-        m_yuv_renderer->updateTextureInfo(m_videoWidth, m_videoHeight, m_videoFormat);
-        m_infoChanged = false;
+    if (infoChanged_) {
+        yuvRenderer_->updateTextureInfo(videoWidth_, videoHeight_, videoFormat_);
+        infoChanged_ = false;
     }
 
     std::shared_ptr<AVFrame> frame = getFrame();
     if (frame && frame->linesize[0]) {
-        m_yuv_renderer->updateTextureData(frame);
+        yuvRenderer_->updateTextureData(frame);
     }
 }
 
@@ -50,22 +50,22 @@ std::shared_ptr<AVFrame> RealTimePlayer::getFrame() {
     // Remove the frame from the queue.
     videoFrameQueue.pop();
 
-    _lastFrame = frame;
+    lastFrame_ = frame;
 
     return frame;
 }
 
 void RealTimePlayer::onVideoInfoReady(int width, int height, int format) {
-    if (m_videoWidth != width) {
-        m_videoWidth = width;
+    if (videoWidth_ != width) {
+        videoWidth_ = width;
         makeInfoDirty(true);
     }
-    if (m_videoHeight != height) {
-        m_videoHeight = height;
+    if (videoHeight_ != height) {
+        videoHeight_ = height;
         makeInfoDirty(true);
     }
-    if (m_videoFormat != format) {
-        m_videoFormat = format;
+    if (videoFormat_ != format) {
+        videoFormat_ = format;
         makeInfoDirty(true);
     }
 }
@@ -188,7 +188,7 @@ RealTimePlayer::~RealTimePlayer() {
 }
 
 std::string RealTimePlayer::captureJpeg() {
-    if (!_lastFrame) {
+    if (!lastFrame_) {
         return "";
     }
 
@@ -212,13 +212,13 @@ std::string RealTimePlayer::captureJpeg() {
     std::ofstream outfile(filePath.str());
     outfile.close();
 
-    auto ok = JpegEncoder::encodeJpeg(filePath.str(), _lastFrame);
+    auto ok = JpegEncoder::encodeJpeg(filePath.str(), lastFrame_);
 
     return ok ? std::string(filePath.str()) : "";
 }
 
 bool RealTimePlayer::startRecord() {
-    if (playStop && !_lastFrame) {
+    if (playStop && !lastFrame_) {
         return false;
     }
 
@@ -242,39 +242,39 @@ bool RealTimePlayer::startRecord() {
     std::ofstream outfile(filePath.str());
     outfile.close();
 
-    _mp4Encoder = std::make_shared<Mp4Encoder>(filePath.str());
+    mp4Encoder_ = std::make_shared<Mp4Encoder>(filePath.str());
 
     // Audio track not handled for now.
     if (decoder->HasAudio()) {
-        _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex]);
+        mp4Encoder_->addTrack(decoder->pFormatCtx->streams[decoder->audioStreamIndex]);
     }
 
     // Add video track.
     if (decoder->HasVideo()) {
-        _mp4Encoder->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex]);
+        mp4Encoder_->addTrack(decoder->pFormatCtx->streams[decoder->videoStreamIndex]);
     }
 
-    if (!_mp4Encoder->start()) {
+    if (!mp4Encoder_->start()) {
         return false;
     }
 
     // 设置获得NALU回调
     decoder->_gotPktCallback = [this](const std::shared_ptr<AVPacket> &packet) {
         // 输入编码器
-        _mp4Encoder->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
+        mp4Encoder_->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
     };
 
     return true;
 }
 
 std::string RealTimePlayer::stopRecord() const {
-    if (!_mp4Encoder) {
+    if (!mp4Encoder_) {
         return {};
     }
-    _mp4Encoder->stop();
+    mp4Encoder_->stop();
     decoder->_gotPktCallback = nullptr;
 
-    return _mp4Encoder->_saveFilePath;
+    return mp4Encoder_->saveFilePath_;
 }
 
 int RealTimePlayer::getVideoWidth() const {
@@ -374,9 +374,9 @@ bool RealTimePlayer::startGifRecord() {
                          .count()
                   << ".gif";
 
-    _gifEncoder = std::make_shared<GifEncoder>();
+    gifEncoder_ = std::make_shared<GifEncoder>();
 
-    if (!_gifEncoder->open(decoder->width,
+    if (!gifEncoder_->open(decoder->width,
                            decoder->height,
                            decoder->GetVideoFrameFormat(),
                            DEFAULT_GIF_FRAMERATE,
@@ -386,21 +386,21 @@ bool RealTimePlayer::startGifRecord() {
 
     // 设置获得解码帧回调
     decoder->_gotFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
-        if (!_gifEncoder) {
+        if (!gifEncoder_) {
             return;
         }
-        if (!_gifEncoder->isOpened()) {
+        if (!gifEncoder_->isOpened()) {
             return;
         }
         // 根据GIF帧率跳帧
         uint64_t now =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
                 .count();
-        if (_gifEncoder->getLastEncodeTime() + 1000 / _gifEncoder->getFrameRate() > now) {
+        if (gifEncoder_->getLastEncodeTime() + 1000 / gifEncoder_->getFrameRate() > now) {
             return;
         }
-        // 编码
-        _gifEncoder->encodeFrame(frame);
+
+        gifEncoder_->encodeFrame(frame);
     };
 
     return true;
@@ -408,9 +408,9 @@ bool RealTimePlayer::startGifRecord() {
 
 std::string RealTimePlayer::stopGifRecord() const {
     decoder->_gotFrameCallback = nullptr;
-    if (!_gifEncoder) {
+    if (!gifEncoder_) {
         return "";
     }
-    _gifEncoder->close();
-    return _gifEncoder->_saveFilePath;
+    gifEncoder_->close();
+    return gifEncoder_->_saveFilePath;
 }

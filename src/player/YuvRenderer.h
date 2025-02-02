@@ -28,9 +28,9 @@ public:
     void updateTextureData(const std::shared_ptr<AVFrame>& data);
     void clear();
 
-    bool stabilize = false;
+    bool mStabilize = false;
 
-    Pathfinder::Mat3 mXform;
+    Pathfinder::Mat3 mStabXform;
 
 protected:
     void initPipeline();
@@ -54,11 +54,11 @@ private:
     int mPixFmt = 0;
     bool mTextureAllocated = false;
 
-    VideoStabilizer stabilizer;
+    VideoStabilizer mStabilizer;
 
     bool mNeedClear = false;
 
     std::shared_ptr<Pathfinder::Device> mDevice;
 
-    volatile bool inited = false;
+    volatile bool mInited = false;
 };

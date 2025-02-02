@@ -176,7 +176,7 @@ void PlayerRect::custom_ready() {
         vbox->add_child(video_stabilization_button_);
 
         auto callback = [this](bool toggled) {
-            player_->m_yuv_renderer->stabilize = toggled;
+            player_->yuvRenderer_->mStabilize = toggled;
             if (toggled) {
                 show_red_tip("Video stabilization is experimental!");
             }
@@ -252,7 +252,7 @@ void PlayerRect::custom_draw() {
         return;
     }
     auto render_image = (Flint::RenderImage *)texture.get();
-    player_->m_yuv_renderer->render(render_image->get_texture(), video_stabilization_button_->get_pressed());
+    player_->yuvRenderer_->render(render_image->get_texture(), video_stabilization_button_->get_pressed());
 }
 
 void PlayerRect::start_playing(const std::string &url) {

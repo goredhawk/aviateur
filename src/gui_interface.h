@@ -1,20 +1,26 @@
 #pragma once
 
+#include <common/any_callable.h>
+#include <mini/ini.h>
+
 #include <filesystem>
 #include <fstream>
 #include <future>
 #include <nlohmann/json.hpp>
 
-#include "util/mini.h"
 #include "wifi/WFBReceiver.h"
 
-#define CONFIG "config."
 #define CONFIG_FILE "config.ini"
-#define CONFIG_DEVICE CONFIG "pidVid"
-#define CONFIG_CHANNEL CONFIG "channel"
-#define CONFIG_CHANNEL_WIDTH_MODE CONFIG "channelWidth"
-#define CONFIG_CHANNEL_KEY CONFIG "key"
-#define CONFIG_CHANNEL_CODEC CONFIG "codec"
+
+#define CONFIG_ADAPTER "adapter"
+#define ADAPTER_DEVICE "pid_vid"
+#define ADAPTER_CHANNEL "channel"
+#define ADAPTER_CHANNEL_WIDTH_MODE "channel_width_mode"
+#define ADAPTER_CHANNEL_KEY "key"
+#define ADAPTER_CHANNEL_CODEC "codec"
+
+#define CONFIG_GUI "gui"
+#define CONFIG_GUI_LANG "language"
 
 /// Channels.
 constexpr std::array CHANNELS{
@@ -49,25 +55,37 @@ public:
     }
 
     explicit GuiInterface() {
-        // Load config
-        try {
-            toolkit::mINI::Instance().parseFile(CONFIG_FILE);
-        } catch (...) {
-            config_file_exists = false;
+        // Load config.
+        mINI::INIFile file(CONFIG_FILE);
+        bool readSuccess = file.read(ini_);
+
+        if (!readSuccess) {
+            ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = "";
+            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL] = "161";
+            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = "0";
+            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY] = "gs.key";
+            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC] = "AUTO";
+
+            ini_[CONFIG_GUI][CONFIG_GUI_LANG] = "en";
         }
     }
 
-    // Get config.
-    static nlohmann::json GetConfig() {
-        nlohmann::json config;
-        for (const auto &item : toolkit::mINI::Instance()) {
-            config[std::string(item.first)] = std::string(item.second.c_str());
-        }
-        return config;
+    ~GuiInterface() {
+        SaveConfig();
     }
 
     static std::vector<std::string> GetDongleList() {
         return WFBReceiver::Instance().GetDongleList();
+    }
+
+    static bool SaveConfig() {
+        // For clearing obsolete entries.
+        // Instance().ini_.clear();
+
+        mINI::INIFile file(CONFIG_FILE);
+        bool writeSuccess = file.write(Instance().ini_, true);
+
+        return writeSuccess;
     }
 
     static bool Start(const std::string &vidPid,
@@ -75,16 +93,11 @@ public:
                       int channelWidthMode,
                       const std::string &keyPath,
                       const std::string &codec) {
-        // For clearing obsolete entries.
-        toolkit::mINI::Instance().clear();
-
-        // Save config.
-        toolkit::mINI::Instance()[CONFIG_DEVICE] = vidPid;
-        toolkit::mINI::Instance()[CONFIG_CHANNEL] = channel;
-        toolkit::mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE] = channelWidthMode;
-        toolkit::mINI::Instance()[CONFIG_CHANNEL_KEY] = keyPath;
-        toolkit::mINI::Instance()[CONFIG_CHANNEL_CODEC] = codec;
-        toolkit::mINI::Instance().dumpFile(CONFIG_FILE);
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = vidPid;
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL] = std::to_string(channel);
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = std::to_string(channelWidthMode);
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY] = keyPath;
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC] = codec;
 
         // Set port.
         Instance().playerPort = GetFreePort();
@@ -169,6 +182,8 @@ public:
         return 52356;
     }
 
+    mINI::INIStructure ini_;
+
     long long wfbFrameCount_ = 0;
     long long wifiFrameCount_ = 0;
     long long rtpPktCount_ = 0;
@@ -178,17 +193,17 @@ public:
     bool config_file_exists = true;
 
     // Signals.
-    std::vector<toolkit::AnyCallable<void>> logCallbacks;
-    std::vector<toolkit::AnyCallable<void>> tipCallbacks;
-    std::vector<toolkit::AnyCallable<void>> wifiStopCallbacks;
-    std::vector<toolkit::AnyCallable<void>> wifiFrameCountCallbacks;
-    std::vector<toolkit::AnyCallable<void>> wfbFrameCountCallbacks;
-    std::vector<toolkit::AnyCallable<void>> rtpPktCountCallbacks;
-    std::vector<toolkit::AnyCallable<void>> rtpStreamCallbacks;
-    std::vector<toolkit::AnyCallable<void>> bitrateUpdateCallbacks;
-    std::vector<toolkit::AnyCallable<void>> decoderReadyCallbacks;
+    std::vector<Flint::AnyCallable<void>> logCallbacks;
+    std::vector<Flint::AnyCallable<void>> tipCallbacks;
+    std::vector<Flint::AnyCallable<void>> wifiStopCallbacks;
+    std::vector<Flint::AnyCallable<void>> wifiFrameCountCallbacks;
+    std::vector<Flint::AnyCallable<void>> wfbFrameCountCallbacks;
+    std::vector<Flint::AnyCallable<void>> rtpPktCountCallbacks;
+    std::vector<Flint::AnyCallable<void>> rtpStreamCallbacks;
+    std::vector<Flint::AnyCallable<void>> bitrateUpdateCallbacks;
+    std::vector<Flint::AnyCallable<void>> decoderReadyCallbacks;
 
-    std::vector<toolkit::AnyCallable<void>> urlStreamShouldStopCallbacks;
+    std::vector<Flint::AnyCallable<void>> urlStreamShouldStopCallbacks;
 
     void EmitLog(LogLevel level, std::string msg) {
         for (auto &callback : logCallbacks) {
@@ -271,7 +286,9 @@ public:
     void EmitDecoderReady(uint32_t width, uint32_t height, float videoFps) {
         for (auto &callback : decoderReadyCallbacks) {
             try {
-                callback.operator()<uint32_t, uint32_t, float>(std::move(width), std::move(height), std::move(videoFps));
+                callback.operator()<uint32_t, uint32_t, float>(std::move(width),
+                                                               std::move(height),
+                                                               std::move(videoFps));
             } catch (std::bad_any_cast &) {
                 Instance().PutLog(LogLevel::Error, "Mismatched signal argument types!");
             }

@@ -57,13 +57,12 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
 }
 
 void ControlPanel::custom_ready() {
-    if (GuiInterface::Instance().config_file_exists) {
-        vidPid = toolkit::mINI::Instance()[CONFIG_DEVICE];
-        channel = toolkit::mINI::Instance()[CONFIG_CHANNEL];
-        channelWidthMode = toolkit::mINI::Instance()[CONFIG_CHANNEL_WIDTH_MODE];
-        keyPath = toolkit::mINI::Instance()[CONFIG_CHANNEL_KEY];
-        codec = toolkit::mINI::Instance()[CONFIG_CHANNEL_CODEC];
-    }
+    auto &ini = GuiInterface::Instance().ini_;
+    vidPid = ini[CONFIG_ADAPTER][ADAPTER_DEVICE];
+    channel = std::stoi(ini[CONFIG_ADAPTER][ADAPTER_CHANNEL]);
+    channelWidthMode = std::stoi(ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE]);
+    keyPath = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY];
+    codec = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC];
 
     theme_panel_->border_width = 0;
 
@@ -191,14 +190,14 @@ void ControlPanel::custom_ready() {
 
             auto text_edit = std::make_shared<Flint::TextEdit>();
             text_edit->set_editable(false);
-            text_edit->set_text(DEFAULT_KEY_NAME);
+            text_edit->set_text(keyPath);
             text_edit->container_sizing.expand_h = true;
             text_edit->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
             hbox_container->add_child(text_edit);
 
             auto file_dialog = std::make_shared<Flint::FileDialog>();
             add_child(file_dialog);
-            file_dialog->set_default_path(std::filesystem::absolute(DEFAULT_KEY_NAME).string());
+            file_dialog->set_default_path(std::filesystem::absolute(keyPath).string());
 
             auto select_button = std::make_shared<Flint::Button>();
             select_button->set_text("Open");

@@ -204,21 +204,21 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
 void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData) {
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
-    if (stabilize) {
+    if (mStabilize) {
         cv::Mat frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
 
         if (mPreviousFrame.has_value()) {
-            auto stabXform = stabilizer.stabilize(mPreviousFrame.value(), frameY);
+            auto stabXform = mStabilizer.stabilize(mPreviousFrame.value(), frameY);
 
-            mXform = Pathfinder::Mat3(1);
-            mXform.v[0] = stabXform.at<double>(0, 0);
-            mXform.v[3] = stabXform.at<double>(0, 1);
-            mXform.v[1] = stabXform.at<double>(1, 0);
-            mXform.v[4] = stabXform.at<double>(1, 1);
-            mXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
-            mXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
+            mStabXform = Pathfinder::Mat3(1);
+            mStabXform.v[0] = stabXform.at<double>(0, 0);
+            mStabXform.v[3] = stabXform.at<double>(0, 1);
+            mStabXform.v[1] = stabXform.at<double>(1, 0);
+            mStabXform.v[4] = stabXform.at<double>(1, 1);
+            mStabXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
+            mStabXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
 
-            mXform = mXform.scale(Pathfinder::Vec2F(1.0f + 40.0f / mTexY->get_size().x));
+            mStabXform = mStabXform.scale(Pathfinder::Vec2F(1.0f + 40.0f / mTexY->get_size().x));
         }
 
         mPreviousFrame = frameY.clone();
@@ -249,7 +249,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
             mPrevFrameData.reset();
         }
 
-        mXform = Pathfinder::Mat3(1);
+        mStabXform = Pathfinder::Mat3(1);
 
         if (curFrameData->linesize[0]) {
             encoder->write_texture(mTexY, {}, curFrameData->data[0]);
@@ -278,7 +278,7 @@ void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex, 
 
     // Update uniform buffers.
     {
-        FragUniformBlock uniform = {Pathfinder::Mat4::from_mat3(mXform), mPixFmt};
+        FragUniformBlock uniform = {Pathfinder::Mat4::from_mat3(mStabXform), mPixFmt};
 
         // We don't need to preserve the data until the upload commands are implemented because
         // these uniform buffers are host-visible/coherent.

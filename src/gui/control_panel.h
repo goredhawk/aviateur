@@ -3,8 +3,6 @@
 #include "../gui_interface.h"
 #include "app.h"
 
-constexpr auto DEFAULT_KEY_NAME = "gs.key";
-
 class ControlPanel : public Flint::Panel {
 public:
     std::shared_ptr<Flint::MenuButton> dongle_menu_button_;
@@ -13,10 +11,10 @@ public:
     std::shared_ptr<Flint::Button> refresh_dongle_button_;
 
     std::string vidPid;
-    uint32_t channel = 173;
+    uint32_t channel = 0;
     uint32_t channelWidthMode = 0;
-    std::string keyPath = DEFAULT_KEY_NAME;
-    std::string codec = "AUTO";
+    std::string keyPath;
+    std::string codec;
 
     std::shared_ptr<Flint::Button> play_button_;
 
