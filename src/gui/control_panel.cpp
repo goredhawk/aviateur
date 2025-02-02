@@ -29,13 +29,13 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
         play_button_->theme_normal.bg_color = red;
         play_button_->theme_hovered.bg_color = red;
         play_button_->theme_pressed.bg_color = red;
-        play_button_->set_text("Stop (F5)");
+        play_button_->set_text(FTR("Stop") + " (F5)");
     } else {
         auto green = Flint::ColorU(78, 135, 82);
         play_button_->theme_normal.bg_color = green;
         play_button_->theme_hovered.bg_color = green;
         play_button_->theme_pressed.bg_color = green;
-        play_button_->set_text("Start (F5)");
+        play_button_->set_text(FTR("Start") + " (F5)");
     }
 }
 
@@ -47,13 +47,13 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
         play_url_button_->theme_normal.bg_color = red;
         play_url_button_->theme_hovered.bg_color = red;
         play_url_button_->theme_pressed.bg_color = red;
-        play_url_button_->set_text("Close (F5)");
+        play_url_button_->set_text(FTR("Close") + " (F5)");
     } else {
         auto green = Flint::ColorU(78, 135, 82);
         play_url_button_->theme_normal.bg_color = green;
         play_url_button_->theme_hovered.bg_color = green;
         play_url_button_->theme_pressed.bg_color = green;
-        play_url_button_->set_text("Open (F5)");
+        play_url_button_->set_text(FTR("Start") + " (F5)");
     }
 }
 
@@ -88,7 +88,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text("PID.VID");
+            label->set_text(FTR("Device ID"));
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
@@ -201,7 +201,7 @@ void ControlPanel::custom_ready() {
             file_dialog->set_default_path(std::filesystem::absolute(keyPath).string());
 
             auto select_button = std::make_shared<Flint::Button>();
-            select_button->set_text("Open");
+            select_button->set_text(FTR("Open"));
 
             std::weak_ptr file_dialog_weak = file_dialog;
             std::weak_ptr text_edit_weak = text_edit;
@@ -223,7 +223,7 @@ void ControlPanel::custom_ready() {
             update_adapter_start_button_looking(true);
 
             auto callback1 = [this] {
-                bool start = play_button_->get_text() == "Start (F5)";
+                bool start = play_button_->get_text() == FTR("Start") + " (F5)";
 
                 if (start) {
                     bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
@@ -273,7 +273,7 @@ void ControlPanel::custom_ready() {
             update_url_start_button_looking(true);
 
             auto callback1 = [this] {
-                bool start = play_url_button_->get_text() == "Open (F5)";
+                bool start = play_url_button_->get_text() == FTR("Start") + " (F5)";
 
                 if (start) {
                     // Hw decoding always crashes when playing URL streams.

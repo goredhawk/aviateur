@@ -12,7 +12,11 @@ Recording,正在录制,Запись
 Stop Recording,停止录制,Остановить запись
 Channel,频道,Канал
 Channel width,带宽,Ширина канала
-Key,密匙,Ключ
+Key,密钥,Ключ
 Settings,设置,Настройки
 Video stabilization,视频增稳,Стабилизация видео
 Software decoding,软件解码,программное декодирование
+Start,开始,начинать
+Open,打开,Открыть
+Close,关闭,Закрывать
+Device ID,设备 ID,Устройство ID
