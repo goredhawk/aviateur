@@ -1,4 +1,5 @@
 #include "control_panel.h"
+#include "settings_tab.h"
 
 void ControlPanel::update_dongle_list() {
     auto menu = dongle_menu_button_->get_popup_menu().lock();
@@ -70,12 +71,12 @@ void ControlPanel::custom_ready() {
     add_child(tab_container_);
     tab_container_->set_anchor_flag(Flint::AnchorFlag::FullRect);
 
-    // Wi-Fi adapter tab
+    // Wi-Fi card tab
     {
         auto margin_container = std::make_shared<Flint::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(0, "Adapter");
+        tab_container_->set_tab_title(0, FTR("Network card"));
 
         auto vbox_container = std::make_shared<Flint::VBoxContainer>();
         vbox_container->set_separation(8);
@@ -87,7 +88,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text("Adapter ID:");
+            label->set_text("PID.VID");
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
@@ -118,7 +119,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text("Channel:");
+            label->set_text(FTR("Channel"));
             hbox_container->add_child(label);
 
             channel_button_ = std::make_shared<Flint::MenuButton>();
@@ -149,7 +150,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text("Channel Width:");
+            label->set_text(FTR("Channel width"));
             hbox_container->add_child(label);
 
             channel_width_button_ = std::make_shared<Flint::MenuButton>();
@@ -185,7 +186,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text("Key:");
+            label->set_text(FTR("Key"));
             hbox_container->add_child(label);
 
             auto text_edit = std::make_shared<Flint::TextEdit>();
@@ -287,6 +288,13 @@ void ControlPanel::custom_ready() {
             play_url_button_->connect_signal("pressed", callback1);
             vbox_container->add_child(play_url_button_);
         }
+    }
+
+    // Settings tab
+    {
+        auto margin_container = std::make_shared<SettingsContainer>();
+        tab_container_->add_child(margin_container);
+        tab_container_->set_tab_title(2, FTR("Settings"));
     }
 }
 

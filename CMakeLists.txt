@@ -31,7 +31,9 @@ file(GLOB_RECURSE SRC_LIST
 
 file(COPY gs.key assets DESTINATION ${CMAKE_BINARY_DIR})
 
-add_executable(${PROJECT_NAME} ${SRC_LIST})
+add_executable(${PROJECT_NAME} ${SRC_LIST}
+        src/gui/settings_tab.cpp
+        src/gui/settings_tab.h)
 
 if (WIN32)
     string(APPEND CMAKE_CXX_FLAGS " /utf-8")

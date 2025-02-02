@@ -2,6 +2,7 @@
 
 #include <common/any_callable.h>
 #include <mini/ini.h>
+#include <servers/translation_server.h>
 
 #include <filesystem>
 #include <fstream>
@@ -67,6 +68,8 @@ public:
             ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC] = "AUTO";
 
             ini_[CONFIG_GUI][CONFIG_GUI_LANG] = "en";
+        } else {
+            set_locale(ini_[CONFIG_GUI][CONFIG_GUI_LANG]);
         }
     }
 
@@ -81,6 +84,8 @@ public:
     static bool SaveConfig() {
         // For clearing obsolete entries.
         // Instance().ini_.clear();
+
+        Instance().ini_[CONFIG_GUI][CONFIG_GUI_LANG] = Instance().locale_;
 
         mINI::INIFile file(CONFIG_FILE);
         bool writeSuccess = file.write(Instance().ini_, true);
@@ -182,7 +187,14 @@ public:
         return 52356;
     }
 
+    void set_locale(std::string locale) {
+        locale_ = locale;
+        Flint::TranslationServer::get_singleton()->set_locale(locale_);
+    }
+
     mINI::INIStructure ini_;
+
+    std::string locale_ = "en";
 
     long long wfbFrameCount_ = 0;
     long long wifiFrameCount_ = 0;

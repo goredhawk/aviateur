@@ -29,7 +29,6 @@ If the application crashes at startup, try installing [Microsoft Visual C++ Redi
 ### TODOs
 - Ground side OSD
 - Night image enhancement
-- Multi-language support
 - Linux client
 - Android client
 

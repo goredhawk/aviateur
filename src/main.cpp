@@ -1,5 +1,6 @@
 ﻿#include <glad/gl.h>
 #include <nodes/ui/menu_button.h>
+#include <resources/default_resource.h>
 #include <servers/render_server.h>
 
 #include "app.h"
@@ -22,6 +23,11 @@ int main() {
 
     app = new Flint::App({1280, 720});
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
+
+    Flint::TranslationServer::get_singleton()->load_translations("assets/translations.csv");
+
+    auto font = std::make_shared<Flint::Font>("assets/NotoSansSC-Regular.ttf");
+    Flint::DefaultResource::get_singleton()->set_default_font(font);
 
     // Initialize the default libusb context.
     int rc = libusb_init(nullptr);
@@ -81,7 +87,7 @@ int main() {
         player_rect->fullscreen_button_ = std::make_shared<Flint::CheckButton>();
         player_rect->add_child(player_rect->fullscreen_button_);
         player_rect->fullscreen_button_->set_anchor_flag(Flint::AnchorFlag::TopLeft);
-        player_rect->fullscreen_button_->set_text("Fullscreen (F11)");
+        player_rect->fullscreen_button_->set_text(FTR("Fullscreen") + " (F11)");
 
         auto callback = [control_panel_weak](bool toggled) {
             if (!control_panel_weak.expired()) {
