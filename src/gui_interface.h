@@ -20,6 +20,9 @@
 #define ADAPTER_CHANNEL_KEY "key"
 #define ADAPTER_CHANNEL_CODEC "codec"
 
+#define CONFIG_STREAMING "streaming"
+#define CONFIG_STREAMING_URL "url"
+
 #define CONFIG_GUI "gui"
 #define CONFIG_GUI_LANG "language"
 
@@ -66,6 +69,8 @@ public:
             ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = "0";
             ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY] = "gs.key";
             ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC] = "AUTO";
+
+            ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = "udp://239.0.0.1:1234";
 
             ini_[CONFIG_GUI][CONFIG_GUI_LANG] = "en";
         } else {

@@ -1,4 +1,5 @@
 #include "control_panel.h"
+
 #include "settings_tab.h"
 
 void ControlPanel::update_dongle_list() {
@@ -76,7 +77,7 @@ void ControlPanel::custom_ready() {
         auto margin_container = std::make_shared<Flint::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(0, FTR("Network card"));
+        tab_container_->set_tab_title(0, FTR("Wi-Fi card"));
 
         auto vbox_container = std::make_shared<Flint::VBoxContainer>();
         vbox_container->set_separation(8);
@@ -246,7 +247,7 @@ void ControlPanel::custom_ready() {
         auto margin_container = std::make_shared<Flint::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(1, "URL");
+        tab_container_->set_tab_title(1, FTR("Streaming"));
 
         auto vbox_container = std::make_shared<Flint::VBoxContainer>();
         vbox_container->set_separation(8);
@@ -261,7 +262,7 @@ void ControlPanel::custom_ready() {
 
         url_edit_ = std::make_shared<Flint::TextEdit>();
         url_edit_->set_editable(true);
-        url_edit_->set_text("udp://239.0.0.1:1234");
+        url_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL]);
         url_edit_->container_sizing.expand_h = true;
         url_edit_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
         hbox_container->add_child(url_edit_);
@@ -276,8 +277,8 @@ void ControlPanel::custom_ready() {
                 bool start = play_url_button_->get_text() == FTR("Start") + " (F5)";
 
                 if (start) {
-                    // Hw decoding always crashes when playing URL streams.
                     GuiInterface::Instance().EmitRtpStream(url_edit_->get_text());
+                    GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = url_edit_->get_text();
                 } else {
                     GuiInterface::Instance().EmitUrlStreamShouldStop();
                 }

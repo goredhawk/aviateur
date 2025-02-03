@@ -3,15 +3,15 @@ Language,语言,Язык
 Fullscreen,全屏,Полноэкранный
 Bit rate,码率,Битрейт
 Display FPS,显示帧率,Отображение FPS
-Hw decoding,硬件解码,аппаратное декодирование
-Network card,网卡,Сетевая карта
+Hardware decoding,硬件解码,аппаратное декодирование
+Wi-Fi card,网卡,Wi-Fi карта
 Capture frame,截图,кадр захвата
 Player control,播放控制,контроль игрока
 Record MP4,录制 MP4,Запись MP4
 Recording,正在录制,Запись
 Stop Recording,停止录制,Остановить запись
 Channel,频道,Канал
-Channel width,带宽,Ширина канала
+Channel width,频宽,Ширина канала
 Key,密钥,Ключ
 Settings,设置,Настройки
 Video stabilization,视频增稳,Стабилизация видео
@@ -20,3 +20,6 @@ Start,开始,начинать
 Open,打开,Открыть
 Close,关闭,Закрывать
 Device ID,设备 ID,Устройство ID
+Streaming,串流,Потоковое
+On,开,вкл
+Off,关,выкл

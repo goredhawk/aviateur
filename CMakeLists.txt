@@ -40,7 +40,7 @@ if (WIN32)
 endif ()
 
 add_subdirectory(3rd/devourer)
-target_include_directories(${PROJECT_NAME} PRIVATE 3rd/devourer/src 3rd/devourer/hal)
+target_include_directories(${PROJECT_NAME} PRIVATE "3rd/devourer/src" "3rd/devourer/hal")
 
 add_subdirectory(3rd/flint_gui)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/flint_gui/src")
@@ -49,7 +49,7 @@ add_subdirectory(3rd/json)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
 
 add_subdirectory(3rd/mINI)
-target_include_directories(${PROJECT_NAME} PRIVATE 3rd/mINI/src)
+target_include_directories(${PROJECT_NAME} PRIVATE "3rd/mINI/src")
 
 target_link_libraries(${PROJECT_NAME}
         ${FFMPEG_LIBRARIES}

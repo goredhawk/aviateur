@@ -222,8 +222,8 @@ void PlayerRect::custom_ready() {
 void PlayerRect::custom_update(double dt) {
     player_->update(dt);
 
-    hw_status_label_->set_text(FTR("Hw decoding") + ": " +
-                               std::string(player_->isHardwareAccelerated() ? "ON" : "OFF"));
+    hw_status_label_->set_text(FTR("Hardware decoding") + ": " +
+                               std::string(player_->isHardwareAccelerated() ? FTR("On") : FTR("Off")));
 
     display_fps_label_->set_text(FTR("Display FPS") + ": " +
                                  std::to_string(Flint::Engine::get_singleton()->get_fps_int()));
