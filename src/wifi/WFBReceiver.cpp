@@ -104,7 +104,7 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
                                         "Cannot open device {:04x}:{:04x}",
                                         wifiDeviceVid,
                                         wifiDevicePid);
-        GuiInterface::Instance().ShowTip("Invalid USB device!");
+        GuiInterface::Instance().ShowTip(FTR("invalid usb msg"));
         return false;
     }
 

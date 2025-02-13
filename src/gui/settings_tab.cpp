@@ -13,7 +13,7 @@ void SettingsContainer::custom_ready() {
         vbox_container->add_child(hbox_container);
 
         auto label = std::make_shared<Flint::Label>();
-        label->set_text(FTR("Language") + ":");
+        label->set_text(FTR("lang") + ":");
         hbox_container->add_child(label);
 
         auto lang_menu_button = std::make_shared<Flint::MenuButton>();

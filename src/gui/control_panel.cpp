@@ -30,13 +30,13 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
         play_button_->theme_normal.bg_color = red;
         play_button_->theme_hovered.bg_color = red;
         play_button_->theme_pressed.bg_color = red;
-        play_button_->set_text(FTR("Stop") + " (F5)");
+        play_button_->set_text(FTR("stop") + " (F5)");
     } else {
         auto green = Flint::ColorU(78, 135, 82);
         play_button_->theme_normal.bg_color = green;
         play_button_->theme_hovered.bg_color = green;
         play_button_->theme_pressed.bg_color = green;
-        play_button_->set_text(FTR("Start") + " (F5)");
+        play_button_->set_text(FTR("start") + " (F5)");
     }
 }
 
@@ -48,13 +48,13 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
         play_url_button_->theme_normal.bg_color = red;
         play_url_button_->theme_hovered.bg_color = red;
         play_url_button_->theme_pressed.bg_color = red;
-        play_url_button_->set_text(FTR("Close") + " (F5)");
+        play_url_button_->set_text(FTR("close") + " (F5)");
     } else {
         auto green = Flint::ColorU(78, 135, 82);
         play_url_button_->theme_normal.bg_color = green;
         play_url_button_->theme_hovered.bg_color = green;
         play_url_button_->theme_pressed.bg_color = green;
-        play_url_button_->set_text(FTR("Start") + " (F5)");
+        play_url_button_->set_text(FTR("start") + " (F5)");
     }
 }
 
@@ -77,7 +77,7 @@ void ControlPanel::custom_ready() {
         auto margin_container = std::make_shared<Flint::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(0, FTR("Wi-Fi card"));
+        tab_container_->set_tab_title(0, FTR("wi-fi card"));
 
         auto vbox_container = std::make_shared<Flint::VBoxContainer>();
         vbox_container->set_separation(8);
@@ -89,7 +89,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text(FTR("Device ID"));
+            label->set_text(FTR("device id"));
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
@@ -120,7 +120,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text(FTR("Channel"));
+            label->set_text(FTR("channel"));
             hbox_container->add_child(label);
 
             channel_button_ = std::make_shared<Flint::MenuButton>();
@@ -151,7 +151,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text(FTR("Channel width"));
+            label->set_text(FTR("channel width"));
             hbox_container->add_child(label);
 
             channel_width_button_ = std::make_shared<Flint::MenuButton>();
@@ -187,7 +187,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text(FTR("Key"));
+            label->set_text(FTR("key"));
             hbox_container->add_child(label);
 
             auto text_edit = std::make_shared<Flint::TextEdit>();
@@ -202,7 +202,7 @@ void ControlPanel::custom_ready() {
             file_dialog->set_default_path(std::filesystem::absolute(keyPath).string());
 
             auto select_button = std::make_shared<Flint::Button>();
-            select_button->set_text(FTR("Open"));
+            select_button->set_text(FTR("open"));
 
             std::weak_ptr file_dialog_weak = file_dialog;
             std::weak_ptr text_edit_weak = text_edit;
@@ -224,7 +224,7 @@ void ControlPanel::custom_ready() {
             update_adapter_start_button_looking(true);
 
             auto callback1 = [this] {
-                bool start = play_button_->get_text() == FTR("Start") + " (F5)";
+                bool start = play_button_->get_text() == FTR("start") + " (F5)";
 
                 if (start) {
                     bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
@@ -247,7 +247,7 @@ void ControlPanel::custom_ready() {
         auto margin_container = std::make_shared<Flint::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(1, FTR("Streaming"));
+        tab_container_->set_tab_title(1, FTR("streaming"));
 
         auto vbox_container = std::make_shared<Flint::VBoxContainer>();
         vbox_container->set_separation(8);
@@ -274,7 +274,7 @@ void ControlPanel::custom_ready() {
             update_url_start_button_looking(true);
 
             auto callback1 = [this] {
-                bool start = play_url_button_->get_text() == FTR("Start") + " (F5)";
+                bool start = play_url_button_->get_text() == FTR("start") + " (F5)";
 
                 if (start) {
                     GuiInterface::Instance().EmitRtpStream(url_edit_->get_text());
@@ -295,7 +295,7 @@ void ControlPanel::custom_ready() {
     {
         auto margin_container = std::make_shared<SettingsContainer>();
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(2, FTR("Settings"));
+        tab_container_->set_tab_title(2, FTR("settings"));
     }
 }
 

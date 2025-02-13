@@ -42,7 +42,7 @@ void PlayerRect::custom_ready() {
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
     collapse_panel_ = std::make_shared<Flint::CollapseContainer>();
-    collapse_panel_->set_title(FTR("Player control"));
+    collapse_panel_->set_title(FTR("player control"));
     collapse_panel_->set_collapse(true);
     collapse_panel_->set_color(Flint::ColorU(84, 138, 247));
     collapse_panel_->set_anchor_flag(Flint::AnchorFlag::TopRight);
@@ -96,14 +96,14 @@ void PlayerRect::custom_ready() {
 
     bitrate_label_ = std::make_shared<Flint::Label>();
     hud_container_->add_child(bitrate_label_);
-    bitrate_label_->set_text(FTR("Bit rate") + ": 0 bps");
+    bitrate_label_->set_text(FTR("bit rate") + ": 0 bps");
     bitrate_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
 
     {
         display_fps_label_ = std::make_shared<Flint::Label>();
         hud_container_->add_child(display_fps_label_);
         display_fps_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
-        display_fps_label_->set_text(FTR("Display FPS") + ":");
+        display_fps_label_->set_text(FTR("display fps") + ":");
     }
 
     hw_status_label_ = std::make_shared<Flint::Label>();
@@ -119,15 +119,15 @@ void PlayerRect::custom_ready() {
 
     auto capture_button = std::make_shared<Flint::Button>();
     vbox->add_child(capture_button);
-    capture_button->set_text(FTR("Capture frame"));
+    capture_button->set_text(FTR("capture frame"));
     auto icon = std::make_shared<Flint::VectorImage>("assets/CaptureImage.svg");
     capture_button->set_icon_normal(icon);
     auto capture_callback = [this] {
         auto output_file = player_->captureJpeg();
         if (output_file.empty()) {
-            show_red_tip("Failed to capture frame!");
+            show_red_tip(FTR("capture fail"));
         } else {
-            show_green_tip("Frame saved to: " + output_file);
+            show_green_tip(FTR("frame saved") + output_file);
         }
     };
     capture_button->connect_signal("pressed", capture_callback);
@@ -136,7 +136,7 @@ void PlayerRect::custom_ready() {
     vbox->add_child(record_button_);
     auto icon2 = std::make_shared<Flint::VectorImage>("assets/RecordVideo.svg");
     record_button_->set_icon_normal(icon2);
-    record_button_->set_text(FTR("Record MP4") + " (F10)");
+    record_button_->set_text(FTR("record mp4") + " (F10)");
 
     auto record_button_raw = record_button_.get();
     auto record_callback = [record_button_raw, this] {
@@ -144,27 +144,27 @@ void PlayerRect::custom_ready() {
             is_recording = player_->startRecord();
 
             if (is_recording) {
-                record_button_raw->set_text(FTR("Stop Recording") + " (F10)");
+                record_button_raw->set_text(FTR("stop recording") + " (F10)");
 
                 record_start_time = std::chrono::steady_clock::now();
 
-                record_status_label_->set_text(FTR("Recording") + ": 00:00");
+                record_status_label_->set_text(FTR("recording") + ": 00:00");
             } else {
                 record_status_label_->set_text("");
-                show_red_tip("Recording failed!");
+                show_red_tip(FTR("record fail"));
             }
         } else {
             is_recording = false;
 
             auto output_file = player_->stopRecord();
 
-            record_button_raw->set_text(FTR("Record MP4") + " (F10)");
+            record_button_raw->set_text(FTR("record mp4") + " (F10)");
             record_status_label_->set_text("");
 
             if (output_file.empty()) {
-                show_red_tip("Failed to save the record file!");
+                show_red_tip(FTR("save record fail"));
             } else {
-                show_green_tip("Video saved to: " + output_file);
+                show_green_tip(FTR("video saved") + output_file);
             }
         }
     };
@@ -172,13 +172,13 @@ void PlayerRect::custom_ready() {
 
     {
         video_stabilization_button_ = std::make_shared<Flint::CheckButton>();
-        video_stabilization_button_->set_text(FTR("Video stabilization"));
+        video_stabilization_button_->set_text(FTR("video stab"));
         vbox->add_child(video_stabilization_button_);
 
         auto callback = [this](bool toggled) {
             player_->yuvRenderer_->mStabilize = toggled;
             if (toggled) {
-                show_red_tip("Video stabilization is experimental!");
+                show_red_tip(FTR("video stab warning"));
             }
         };
         video_stabilization_button_->connect_signal("toggled", callback);
@@ -186,7 +186,7 @@ void PlayerRect::custom_ready() {
 
     {
         auto button = std::make_shared<Flint::CheckButton>();
-        button->set_text(FTR("Software decoding"));
+        button->set_text(FTR("sw decoding"));
         vbox->add_child(button);
 
         auto callback = [this](bool toggled) {
@@ -200,7 +200,7 @@ void PlayerRect::custom_ready() {
     }
 
     auto onBitrateUpdate = [this](uint64_t bitrate) {
-        std::string text = FTR("Bit rate") + ": ";
+        std::string text = FTR("bit rate") + ": ";
         if (bitrate > 1024 * 1024) {
             text += std::format("{:.1f}", bitrate / 1024.0 / 1024.0) + " Mbps";
         } else if (bitrate > 1024) {
@@ -222,10 +222,10 @@ void PlayerRect::custom_ready() {
 void PlayerRect::custom_update(double dt) {
     player_->update(dt);
 
-    hw_status_label_->set_text(FTR("Hardware decoding") + ": " +
-                               std::string(player_->isHardwareAccelerated() ? FTR("On") : FTR("Off")));
+    hw_status_label_->set_text(FTR("hw decoding") + ": " +
+                               std::string(player_->isHardwareAccelerated() ? FTR("on") : FTR("off")));
 
-    display_fps_label_->set_text(FTR("Display FPS") + ": " +
+    display_fps_label_->set_text(FTR("display fps") + ": " +
                                  std::to_string(Flint::Engine::get_singleton()->get_fps_int()));
 
     if (is_recording) {
@@ -238,7 +238,7 @@ void PlayerRect::custom_update(double dt) {
         int seconds = total_seconds % 60;
 
         std::ostringstream ss;
-        ss << FTR("Recording") << ": ";
+        ss << FTR("recording") << ": ";
         if (hours > 0) {
             ss << hours << ":";
         }

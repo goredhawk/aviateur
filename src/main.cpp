@@ -1,13 +1,11 @@
 ﻿#include <glad/gl.h>
 #include <nodes/ui/menu_button.h>
 #include <resources/default_resource.h>
-#include <servers/render_server.h>
 
 #include "app.h"
 #include "gui/control_panel.h"
 #include "gui/player_rect.h"
 #include "gui_interface.h"
-#include "resources/render_image.h"
 #include "wifi/WFBReceiver.h"
 
 constexpr auto LOGGER_MODULE = "Aviateur";
@@ -17,6 +15,9 @@ static Flint::App* app;
 int main() {
     // Redirect standard output to a file
     //    freopen("last_run_log.txt", "w", stdout);
+
+    // Windows crash dump
+    // SetUnhandledExceptionFilter(UnhandledExceptionFilter);
 
     // Flint::Logger::set_default_level(Flint::Logger::Level::Info);
     Flint::Logger::set_module_level("Flint", Flint::Logger::Level::Info);
@@ -77,7 +78,7 @@ int main() {
     auto onWifiStop = [control_panel_weak, player_rect_weak] {
         if (!control_panel_weak.expired() && !player_rect_weak.expired()) {
             player_rect_weak.lock()->stop_playing();
-            player_rect_weak.lock()->show_red_tip("Wi-Fi stopped!");
+            player_rect_weak.lock()->show_red_tip(FTR("wi-fi stopped msg"));
             control_panel_weak.lock()->update_adapter_start_button_looking(true);
         }
     };
@@ -87,7 +88,7 @@ int main() {
         player_rect->fullscreen_button_ = std::make_shared<Flint::CheckButton>();
         player_rect->add_child(player_rect->fullscreen_button_);
         player_rect->fullscreen_button_->set_anchor_flag(Flint::AnchorFlag::TopLeft);
-        player_rect->fullscreen_button_->set_text(FTR("Fullscreen") + " (F11)");
+        player_rect->fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
 
         auto callback = [control_panel_weak](bool toggled) {
             if (!control_panel_weak.expired()) {
