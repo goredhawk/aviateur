@@ -50,4 +50,19 @@ void SettingsContainer::custom_ready() {
         };
         lang_menu_button->connect_signal("item_selected", callback);
     }
+
+    {
+        auto open_capture_folder_button = std::make_shared<Flint::MenuButton>();
+
+        open_capture_folder_button->container_sizing.expand_h = true;
+        open_capture_folder_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        vbox_container->add_child(open_capture_folder_button);
+        open_capture_folder_button->set_text(FTR("open capture folder"));
+
+        auto callback = [this]() {
+            auto absolutePath = std::string(getenv("USERPROFILE")) + "/Videos/Aviateur Captures/";
+            ShellExecuteA(NULL, "open", absolutePath.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+        };
+        open_capture_folder_button->connect_signal("pressed", callback);
+    }
 }

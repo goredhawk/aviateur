@@ -59,8 +59,14 @@ public:
     }
 
     explicit GuiInterface() {
+#ifdef _WIN32
+        auto filepath = std::string(getenv("APPDATA")) + "/Aviateur/" CONFIG_FILE;
+#else ifdef __linux__
+        auto filepath = "~/aviateur/" CONFIG_FILE;
+#endif
+
         // Load config.
-        mINI::INIFile file(CONFIG_FILE);
+        mINI::INIFile file(filepath);
         bool readSuccess = file.read(ini_);
 
         if (!readSuccess) {
@@ -92,7 +98,21 @@ public:
 
         Instance().ini_[CONFIG_GUI][CONFIG_GUI_LANG] = Instance().locale_;
 
-        mINI::INIFile file(CONFIG_FILE);
+#ifdef _WIN32
+        auto filepath = std::string(getenv("APPDATA")) + "/Aviateur/" ;
+#else ifdef __linux__
+        auto filepath = "~/aviateur/" ;
+#endif
+
+        try {
+            if (!std::filesystem::exists(filepath)) {
+                std::filesystem::create_directories(filepath);
+            }
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << std::endl;
+        }
+
+        mINI::INIFile file(filepath + std::string(CONFIG_FILE));
         bool writeSuccess = file.write(Instance().ini_, true);
 
         return writeSuccess;

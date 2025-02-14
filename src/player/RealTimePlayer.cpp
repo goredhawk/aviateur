@@ -192,7 +192,11 @@ std::string RealTimePlayer::captureJpeg() {
         return "";
     }
 
-    auto absolutePath = std::filesystem::absolute("capture");
+#ifdef _WIN32
+    auto absolutePath = std::string(getenv("USERPROFILE")) + "/Videos/Aviateur Captures/";
+#else ifdef __linux__
+    auto absolutePath = "~/pictures/aviateur captures/";
+#endif
 
     try {
         if (!std::filesystem::exists(absolutePath)) {
@@ -203,7 +207,7 @@ std::string RealTimePlayer::captureJpeg() {
     }
 
     std::stringstream filePath;
-    filePath << "capture/";
+    filePath << absolutePath;
     filePath << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch())
                     .count()
@@ -222,7 +226,11 @@ bool RealTimePlayer::startRecord() {
         return false;
     }
 
-    auto absolutePath = std::filesystem::absolute("recording");
+#ifdef _WIN32
+    auto absolutePath = std::string(getenv("USERPROFILE")) + "/Videos/Aviateur Captures/";
+#else ifdef __linux__
+    auto absolutePath = "~/pictures/aviateur captures/";
+#endif
 
     try {
         if (!std::filesystem::exists(absolutePath)) {
@@ -233,7 +241,7 @@ bool RealTimePlayer::startRecord() {
     }
 
     std::stringstream filePath;
-    filePath << "recording/";
+    filePath << absolutePath;
     filePath << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch())
                     .count()

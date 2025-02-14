@@ -2,10 +2,10 @@ tag,en,zh,ru
 lang,Language,语言,Язык
 fullscreen,Fullscreen,全屏,Полноэкранный
 bit rate,Bit rate,码率,Битрейт
-fps,Display FPS,显示帧率,Отображение FPS
+display fps,Display FPS,显示帧率,Отображение FPS
 hw decoding,Hardware decoding,硬件解码,аппаратное декодирование
 wi-fi card,Wi-Fi card,网卡,Wi-Fi карта
-capture,Capture frame,截图,кадр захвата
+capture frame,Capture frame,截图,кадр захвата
 player control,Player control,播放控制,контроль игрока
 record mp4,Record MP4,录制 MP4,Запись MP4
 recording,Recording,正在录制,Запись
@@ -17,6 +17,7 @@ settings,Settings,设置,Настройки
 video stab,Video stabilization,视频增稳,Стабилизация видео
 sw decoding,Software decoding,软件解码,программное декодирование
 start,Start,开始,начинать
+stop,Stop,停止,остановить
 open,Open,打开,Открыть
 close,Close,关闭,Закрывать
 device id,Device ID,设备 ID,Устройство ID
@@ -31,3 +32,4 @@ record fail,Recording failed!,录制失败！,Запись не удалась
 save record fail,Failed to save the record file!,保存录制文件失败！,Не удалось сохранить файл записи!
 video saved,Video saved to: ,视频保存至：,Видео сохранено в:
 video stab warning,Video stabilization is experimental!,视频增稳是实验性功能！,Стабилизация видео экспериментальная!
+open capture folder,Open capture folder,打开录制文件夹,Открыть папку захвата
