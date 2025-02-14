@@ -1,6 +1,6 @@
 # Aviateur
 
-Cross-platform OpenIPC FPV ground station. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]).
+OpenIPC FPV ground station for Windows. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]).
 
 ![](tutorials/interface.jpg)
 
@@ -21,7 +21,7 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 
 ### Common run issues
 
-If the application crashes at startup, try installing [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
+* If the application crashes at startup, try installing [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
 
 ### Latency test
 ![](tutorials/latency_test.jpg)
@@ -30,13 +30,13 @@ If the application crashes at startup, try installing [Microsoft Visual C++ Redi
 - Ground side OSD
 - Night image enhancement
 - Linux client
-- Android client
 
 ### How to build
 1. Install vcpkg.
    ```powershell
    git clone https://github.com/microsoft/vcpkg.git
-   cd vcpkg; .\bootstrap-vcpkg.bat
+   cd vcpkg
+   .\bootstrap-vcpkg.bat
    ```
    
 2. Install dependencies.

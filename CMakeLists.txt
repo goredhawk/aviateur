@@ -15,12 +15,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
 
 find_package(FFmpeg REQUIRED)
-include_directories(${FFMPEG_INCLUDE_DIRS})
-
 find_package(unofficial-sodium CONFIG REQUIRED)
-pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
 find_package(OpenCV REQUIRED)
 
 file(GLOB_RECURSE SRC_LIST
@@ -31,9 +29,7 @@ file(GLOB_RECURSE SRC_LIST
 
 file(COPY gs.key assets DESTINATION ${CMAKE_BINARY_DIR})
 
-add_executable(${PROJECT_NAME} ${SRC_LIST}
-        src/gui/settings_tab.cpp
-        src/gui/settings_tab.h)
+add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 if (WIN32)
     string(APPEND CMAKE_CXX_FLAGS " /utf-8")
