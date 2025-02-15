@@ -62,6 +62,8 @@ public:
     }
 
     explicit GuiInterface() {
+        ShowWindow(GetConsoleWindow(), SW_HIDE); // SW_RESTORE to bring back
+
         // Windows crash dump
         SetUnhandledExceptionFilter(UnhandledExceptionFilter);
 
