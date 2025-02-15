@@ -100,4 +100,23 @@ void SettingsContainer::custom_ready() {
         };
         open_crash_dumps_button->connect_signal("pressed", callback);
     }
+
+    {
+        auto show_console_btn = std::make_shared<Flint::CheckButton>();
+
+        show_console_btn->container_sizing.expand_h = true;
+        show_console_btn->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        vbox_container->add_child(show_console_btn);
+        show_console_btn->set_text(FTR("show console"));
+        show_console_btn->set_toggle_mode(true);
+
+        auto callback = [this](bool toggled) {
+            if (toggled) {
+                ShowWindow(GetConsoleWindow(), SW_RESTORE);
+            } else {
+                ShowWindow(GetConsoleWindow(), SW_HIDE);
+            }
+        };
+        show_console_btn->connect_signal("toggled", callback);
+    }
 }

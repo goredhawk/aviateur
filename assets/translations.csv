@@ -35,3 +35,4 @@ video stab warning,Video stabilization is experimental!,视频增稳是实验性
 open capture folder,Open capture folder,打开录制文件夹,Открыть папку захвата
 open appdata folder,Open user data folder,打开用户数据文件夹,Открыть папку с данными пользователя
 open crash dump folder,Open crash dump folder,打开崩溃数据文件夹,Открыть папку аварийного дампа
+show console,Show console,显示控制台,Показать консоль

@@ -68,7 +68,8 @@ public:
         SetUnhandledExceptionFilter(UnhandledExceptionFilter);
 
         // Redirect standard output to a file
-        freopen((GetAppDataDir() + std::string("last_run_log.txt")).c_str(), "w", stdout);
+        // DO NOT USE WHEN DEPLOYING, AS IT WILL CRASH THE APP ON USER PCs.
+        // freopen((GetAppDataDir() + std::string("last_run_log.txt")).c_str(), "w", stdout);
 
         // Set up loggers
         {

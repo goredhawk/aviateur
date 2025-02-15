@@ -14,6 +14,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
 
@@ -27,7 +29,7 @@ file(GLOB_RECURSE SRC_LIST
         src/*.h
 )
 
-file(COPY gs.key assets DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY gs.key assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
