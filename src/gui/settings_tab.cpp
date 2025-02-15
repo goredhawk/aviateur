@@ -60,9 +60,44 @@ void SettingsContainer::custom_ready() {
         open_capture_folder_button->set_text(FTR("open capture folder"));
 
         auto callback = [this]() {
-            auto absolutePath = std::string(getenv("USERPROFILE")) + "/Videos/Aviateur Captures/";
-            ShellExecuteA(NULL, "open", absolutePath.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+            ShellExecuteA(NULL, "open", GuiInterface::GetCaptureDir().c_str(), NULL, NULL, SW_SHOWDEFAULT);
         };
         open_capture_folder_button->connect_signal("pressed", callback);
+    }
+
+    {
+        auto open_appdata_button = std::make_shared<Flint::Button>();
+
+        open_appdata_button->container_sizing.expand_h = true;
+        open_appdata_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        vbox_container->add_child(open_appdata_button);
+        open_appdata_button->set_text(FTR("open appdata folder"));
+
+        auto callback = [this]() {
+            auto dir = GuiInterface::GetAppDataDir();
+            ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+        };
+        open_appdata_button->connect_signal("pressed", callback);
+    }
+
+    {
+        auto open_crash_dumps_button = std::make_shared<Flint::Button>();
+
+        open_crash_dumps_button->container_sizing.expand_h = true;
+        open_crash_dumps_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        vbox_container->add_child(open_crash_dumps_button);
+        open_crash_dumps_button->set_text(FTR("open crash dump folder"));
+
+        auto callback = [this] {
+            auto dir = GuiInterface::GetAppDataDir();
+            auto path = std::filesystem::path(dir).parent_path().parent_path().parent_path();
+            auto appdata_local = path.string() + "\\Local";
+            auto dumps_dir = appdata_local + "\\CrashDumps";
+
+            if (std::filesystem::exists(dumps_dir)) {
+                ShellExecuteA(NULL, "open", dumps_dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+            }
+        };
+        open_crash_dumps_button->connect_signal("pressed", callback);
     }
 }

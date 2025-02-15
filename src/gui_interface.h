@@ -97,7 +97,7 @@ public:
         auto dir = GetAppDataDir();
 
         // Load config.
-        mINI::INIFile file(dir);
+        mINI::INIFile file(dir + CONFIG_FILE);
         bool readSuccess = file.read(ini_);
 
         if (!readSuccess) {
@@ -125,7 +125,7 @@ public:
 
     static std::string GetAppDataDir() {
 #ifdef _WIN32
-        auto dir = std::string(getenv("APPDATA")) + "/Aviateur/";
+        auto dir = std::string(getenv("APPDATA")) + "\\Aviateur\\";
 #else ifdef __linux__
         auto dir = "~/aviateur/";
 #endif
@@ -134,7 +134,7 @@ public:
 
     static std::string GetCaptureDir() {
 #ifdef _WIN32
-        auto dir = std::string(getenv("USERPROFILE")) + "/Videos/Aviateur Captures/";
+        auto dir = std::string(getenv("USERPROFILE")) + "\\Videos\\Aviateur Captures\\";
 #else ifdef __linux__
         auto dir = "~/pictures/aviateur captures/";
 #endif
