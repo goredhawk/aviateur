@@ -9,6 +9,7 @@
 #include <future>
 #include <nlohmann/json.hpp>
 
+#include "app.h"
 #include "wifi/WFBReceiver.h"
 
 #define CONFIG_FILE "config.ini"
@@ -25,6 +26,8 @@
 
 #define CONFIG_GUI "gui"
 #define CONFIG_GUI_LANG "language"
+
+constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Channels.
 constexpr std::array CHANNELS{
@@ -59,14 +62,42 @@ public:
     }
 
     explicit GuiInterface() {
-#ifdef _WIN32
-        auto filepath = std::string(getenv("APPDATA")) + "/Aviateur/" CONFIG_FILE;
-#else ifdef __linux__
-        auto filepath = "~/aviateur/" CONFIG_FILE;
-#endif
+        // Windows crash dump
+        SetUnhandledExceptionFilter(UnhandledExceptionFilter);
+
+        // Redirect standard output to a file
+        freopen((GetAppDataDir() + std::string("last_run_log.txt")).c_str(), "w", stdout);
+
+        // Set up loggers
+        {
+            // Flint::Logger::set_default_level(Flint::Logger::Level::Info);
+            Flint::Logger::set_module_level("Flint", Flint::Logger::Level::Info);
+            Flint::Logger::set_module_level(LOGGER_MODULE, Flint::Logger::Level::Info);
+
+            auto logCallback = [](LogLevel level, std::string msg) {
+                switch (level) {
+                    case LogLevel::Info: {
+                        Flint::Logger::info(msg, LOGGER_MODULE);
+                    } break;
+                    case LogLevel::Debug: {
+                        Flint::Logger::debug(msg, LOGGER_MODULE);
+                    } break;
+                    case LogLevel::Warn: {
+                        Flint::Logger::warn(msg, LOGGER_MODULE);
+                    } break;
+                    case LogLevel::Error: {
+                        Flint::Logger::error(msg, LOGGER_MODULE);
+                    } break;
+                    default:;
+                }
+            };
+            logCallbacks.emplace_back(logCallback);
+        }
+
+        auto dir = GetAppDataDir();
 
         // Load config.
-        mINI::INIFile file(filepath);
+        mINI::INIFile file(dir);
         bool readSuccess = file.read(ini_);
 
         if (!readSuccess) {
@@ -92,27 +123,41 @@ public:
         return WFBReceiver::Instance().GetDongleList();
     }
 
+    static std::string GetAppDataDir() {
+#ifdef _WIN32
+        auto dir = std::string(getenv("APPDATA")) + "/Aviateur/";
+#else ifdef __linux__
+        auto dir = "~/aviateur/";
+#endif
+        return dir;
+    }
+
+    static std::string GetCaptureDir() {
+#ifdef _WIN32
+        auto dir = std::string(getenv("USERPROFILE")) + "/Videos/Aviateur Captures/";
+#else ifdef __linux__
+        auto dir = "~/pictures/aviateur captures/";
+#endif
+        return dir;
+    }
+
     static bool SaveConfig() {
         // For clearing obsolete entries.
         // Instance().ini_.clear();
 
         Instance().ini_[CONFIG_GUI][CONFIG_GUI_LANG] = Instance().locale_;
 
-#ifdef _WIN32
-        auto filepath = std::string(getenv("APPDATA")) + "/Aviateur/" ;
-#else ifdef __linux__
-        auto filepath = "~/aviateur/" ;
-#endif
+        auto dir = GetAppDataDir();
 
         try {
-            if (!std::filesystem::exists(filepath)) {
-                std::filesystem::create_directories(filepath);
+            if (!std::filesystem::exists(dir)) {
+                std::filesystem::create_directories(dir);
             }
         } catch (const std::exception &e) {
             std::cerr << e.what() << std::endl;
         }
 
-        mINI::INIFile file(filepath + std::string(CONFIG_FILE));
+        mINI::INIFile file(dir + std::string(CONFIG_FILE));
         bool writeSuccess = file.write(Instance().ini_, true);
 
         return writeSuccess;

@@ -192,22 +192,18 @@ std::string RealTimePlayer::captureJpeg() {
         return "";
     }
 
-#ifdef _WIN32
-    auto absolutePath = std::string(getenv("USERPROFILE")) + "/Videos/Aviateur Captures/";
-#else ifdef __linux__
-    auto absolutePath = "~/pictures/aviateur captures/";
-#endif
+    auto dir = GuiInterface::GetCaptureDir();
 
     try {
-        if (!std::filesystem::exists(absolutePath)) {
-            std::filesystem::create_directories(absolutePath);
+        if (!std::filesystem::exists(dir)) {
+            std::filesystem::create_directories(dir);
         }
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
 
     std::stringstream filePath;
-    filePath << absolutePath;
+    filePath << dir;
     filePath << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch())
                     .count()
@@ -226,22 +222,18 @@ bool RealTimePlayer::startRecord() {
         return false;
     }
 
-#ifdef _WIN32
-    auto absolutePath = std::string(getenv("USERPROFILE")) + "/Videos/Aviateur Captures/";
-#else ifdef __linux__
-    auto absolutePath = "~/pictures/aviateur captures/";
-#endif
+    auto dir = GuiInterface::GetCaptureDir();
 
     try {
-        if (!std::filesystem::exists(absolutePath)) {
-            std::filesystem::create_directories(absolutePath);
+        if (!std::filesystem::exists(dir)) {
+            std::filesystem::create_directories(dir);
         }
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
 
     std::stringstream filePath;
-    filePath << absolutePath;
+    filePath << dir;
     filePath << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch())
                     .count()

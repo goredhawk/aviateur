@@ -8,22 +8,15 @@
 #include "gui_interface.h"
 #include "wifi/WFBReceiver.h"
 
-constexpr auto LOGGER_MODULE = "Aviateur";
-
 static Flint::App* app;
 
 int main() {
-    // Redirect standard output to a file
-    //    freopen("last_run_log.txt", "w", stdout);
-
-    // Windows crash dump
-    // SetUnhandledExceptionFilter(UnhandledExceptionFilter);
-
-    // Flint::Logger::set_default_level(Flint::Logger::Level::Info);
-    Flint::Logger::set_module_level("Flint", Flint::Logger::Level::Info);
+    GuiInterface::Instance().PutLog(LogLevel::Info, "App started");
 
     app = new Flint::App({1280, 720});
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
+
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Flint app created");
 
     Flint::TranslationServer::get_singleton()->load_translations("assets/translations.csv");
 
@@ -32,27 +25,6 @@ int main() {
 
     // Initialize the default libusb context.
     int rc = libusb_init(nullptr);
-
-    Flint::Logger::set_module_level(LOGGER_MODULE, Flint::Logger::Level::Info);
-
-    auto logCallback = [](LogLevel level, std::string msg) {
-        switch (level) {
-            case LogLevel::Info: {
-                Flint::Logger::info(msg, LOGGER_MODULE);
-            } break;
-            case LogLevel::Debug: {
-                Flint::Logger::debug(msg, LOGGER_MODULE);
-            } break;
-            case LogLevel::Warn: {
-                Flint::Logger::warn(msg, LOGGER_MODULE);
-            } break;
-            case LogLevel::Error: {
-                Flint::Logger::error(msg, LOGGER_MODULE);
-            } break;
-            default:;
-        }
-    };
-    GuiInterface::Instance().logCallbacks.emplace_back(logCallback);
 
     auto hbox_container = std::make_shared<Flint::HBoxContainer>();
     hbox_container->set_separation(2);
@@ -98,6 +70,8 @@ int main() {
         };
         player_rect->fullscreen_button_->connect_signal("toggled", callback);
     }
+
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Entering app main loop");
 
     app->main_loop();
 
