@@ -4,7 +4,7 @@
 
 class TipLabel : public Flint::Label {
 public:
-    float display_time = 1;
+    float display_time = 1.5;
     float fade_time = 0.5;
 
     std::shared_ptr<Flint::Timer> display_timer;

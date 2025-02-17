@@ -3,7 +3,7 @@
 #include "../gui_interface.h"
 #include "app.h"
 
-class ControlPanel : public Flint::Panel {
+class ControlPanel : public Flint::Container {
 public:
     std::shared_ptr<Flint::MenuButton> dongle_menu_button_;
     std::shared_ptr<Flint::MenuButton> channel_button_;

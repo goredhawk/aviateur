@@ -4,7 +4,7 @@ void TipLabel::custom_ready() {
     set_font_size(48);
 
     auto style_box = Flint::StyleBox();
-    style_box.bg_color = Flint::ColorU(50, 50, 50, 100);
+    style_box.bg_color = Flint::ColorU(50, 50, 50, 200);
     style_box.corner_radius = 8;
     theme_background = style_box;
 

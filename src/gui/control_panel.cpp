@@ -1,5 +1,7 @@
 #include "control_panel.h"
 
+#include <resources/default_resource.h>
+
 #include "settings_tab.h"
 
 void ControlPanel::update_dongle_list() {
@@ -66,7 +68,13 @@ void ControlPanel::custom_ready() {
     keyPath = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY];
     codec = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC];
 
-    theme_panel_->border_width = 0;
+    auto default_theme = Flint::DefaultResource::get_singleton()->get_default_theme();
+    theme_bg_ = std::make_optional(default_theme->panel.styles["background"]);
+    theme_bg_.value().corner_radius = 0;
+    theme_bg_.value().border_width = 0;
+    theme_bg_->border_width = 0;
+
+    set_anchor_flag(Flint::AnchorFlag::RightWide);
 
     tab_container_ = std::make_shared<Flint::TabContainer>();
     add_child(tab_container_);
