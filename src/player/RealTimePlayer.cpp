@@ -109,9 +109,18 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
                     videoFrameQueue.push(frame);
                 }
                 // Decoder error.
+                catch (const SendPacketException &e) {
+                    GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
+                    GuiInterface::Instance().ShowTip(FTR("hw decoder error"));
+                }
+                // Read frame error, mostly due to a lost signal.
+                catch (const ReadFrameException &e) {
+                    GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
+                    GuiInterface::Instance().ShowTip(FTR("signal lost"));
+                }
+                // Break on other unknown errors.
                 catch (const std::exception &e) {
                     GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
-                    emitConnectionLost();
                     break;
                 }
             }

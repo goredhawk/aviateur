@@ -161,7 +161,8 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
         if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw std::runtime_error("av_read_frame failed: " + std::string(errStr));
+
+            throw ReadFrameException("av_read_frame failed: " + std::string(errStr));
         }
 
         // Calculate bitrate
@@ -318,7 +319,7 @@ bool FfmpegDecoder::DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame>
         if (ret < 0) {
             char errStr[AV_ERROR_MAX_STRING_SIZE];
             av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-            throw std::runtime_error("avcodec_send_packet failed: " + std::string(errStr));
+            throw SendPacketException("avcodec_send_packet failed: " + std::string(errStr));
         }
 
         if (hwDecoderEnabled) {
@@ -449,7 +450,7 @@ int FfmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *av_pkt, uint8_t
                     if (ret < 0) {
                         char errStr[AV_ERROR_MAX_STRING_SIZE];
                         av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-                        throw std::runtime_error("Decoding audio  failed: " + std::string(errStr));
+                        throw std::runtime_error("Decoding audio failed: " + std::string(errStr));
                     }
                     swrCtx = std::shared_ptr<SwrContext>(ptr, &freeSwrCtx);
                 }

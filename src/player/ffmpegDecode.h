@@ -7,6 +7,16 @@
 
 #include "ffmpegInclude.h"
 
+class ReadFrameException : public std::runtime_error {
+public:
+    ReadFrameException(std::string msg) : runtime_error(msg.c_str()) {}
+};
+
+class SendPacketException : public std::runtime_error {
+public:
+    SendPacketException(std::string msg) : runtime_error(msg.c_str()) {}
+};
+
 class FfmpegDecoder {
     friend class RealTimePlayer;
 
