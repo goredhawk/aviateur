@@ -200,25 +200,28 @@ void ControlPanel::custom_ready() {
 
             auto text_edit = std::make_shared<Flint::TextEdit>();
             text_edit->set_editable(false);
-            text_edit->set_text(keyPath);
+            text_edit->set_text(std::filesystem::path(keyPath).filename().string());
             text_edit->container_sizing.expand_h = true;
             text_edit->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
             hbox_container->add_child(text_edit);
 
             auto file_dialog = std::make_shared<Flint::FileDialog>();
             add_child(file_dialog);
-            file_dialog->set_default_path(std::filesystem::absolute(keyPath).string());
+
+            auto defaultKeyPath = std::filesystem::absolute(keyPath).string();
+            file_dialog->set_default_path(defaultKeyPath);
 
             auto select_button = std::make_shared<Flint::Button>();
             select_button->set_text(FTR("open"));
 
             std::weak_ptr file_dialog_weak = file_dialog;
             std::weak_ptr text_edit_weak = text_edit;
-            auto callback = [file_dialog_weak, text_edit_weak] {
+            auto callback = [this, file_dialog_weak, text_edit_weak] {
                 auto path = file_dialog_weak.lock()->show();
                 if (path.has_value()) {
                     std::filesystem::path p(path.value());
                     text_edit_weak.lock()->set_text(p.filename().string());
+                    keyPath = path.value();
                 }
             };
             select_button->connect_signal("pressed", callback);
