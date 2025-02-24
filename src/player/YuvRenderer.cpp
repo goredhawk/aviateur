@@ -231,8 +231,19 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
             mPrevFrameData = curFrameData;
         }
 
+        // Keep the cv frame alive until we call `submit_and_wait`
+        cv::Mat enhancedFrameY;
+
         if (mPrevFrameData->linesize[0]) {
-            encoder->write_texture(mTexY, {}, mPrevFrameData->data[0]);
+            const void* texYData = mPrevFrameData->data[0];
+
+            if (mNightImageEnhancement) {
+                enhancedFrameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, mPrevFrameData->data[0]);
+                cv::equalizeHist(enhancedFrameY, enhancedFrameY);
+                texYData = enhancedFrameY.data;
+            }
+
+            encoder->write_texture(mTexY, {}, texYData);
         }
         if (mPrevFrameData->linesize[1]) {
             encoder->write_texture(mTexU, {}, mPrevFrameData->data[1]);
@@ -255,15 +266,17 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
 
         mStabXform = Pathfinder::Mat3(1);
 
-        const void* textYData = curFrameData->data[0];
-        if (mNightImageEnhancement) {
-            cv::Mat frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
-            cv::equalizeHist(frameY, frameY);
-            textYData = frameY.data;
-        }
+        // Keep the cv frame alive until we call `submit_and_wait`
+        cv::Mat enhancedFrameY;
 
         if (curFrameData->linesize[0]) {
-            encoder->write_texture(mTexY, {}, textYData);
+            const void* texYData = curFrameData->data[0];
+            if (mNightImageEnhancement) {
+                enhancedFrameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
+                cv::equalizeHist(enhancedFrameY, enhancedFrameY);
+                texYData = enhancedFrameY.data;
+            }
+            encoder->write_texture(mTexY, {}, texYData);
         }
         if (curFrameData->linesize[1]) {
             encoder->write_texture(mTexU, {}, curFrameData->data[1]);
