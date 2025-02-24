@@ -90,9 +90,20 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
 
         GuiInterface::Instance().EmitDecoderReady(decoder->GetWidth(), decoder->GetHeight(), decoder->GetFps());
 
+        if (!isMuted && decoder->HasAudio()) {
+            enableAudio();
+        }
+
+        if (decoder->HasVideo()) {
+            onVideoInfoReady(decoder->GetWidth(), decoder->GetHeight(), decoder->GetVideoFrameFormat());
+        }
+
+        // Bitrate callback.
+        decoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
+
         hwEnabled = decoder->hwDecoderEnabled;
 
-        decodeThread = std::thread([this]() {
+        decodeThread = std::thread([this] {
             while (!playStop) {
                 try {
                     // Getting frame.
@@ -128,19 +139,6 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
 
         // Start decode thread.
         decodeThread.detach();
-
-        if (!isMuted && decoder->HasAudio()) {
-            enableAudio();
-        }
-
-        // emit onHasAudio(decoder->HasAudio());
-
-        if (decoder->HasVideo()) {
-            onVideoInfoReady(decoder->GetWidth(), decoder->GetHeight(), decoder->GetVideoFrameFormat());
-        }
-
-        // Bitrate callback.
-        decoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
     });
 
     // Start analysis thread.
