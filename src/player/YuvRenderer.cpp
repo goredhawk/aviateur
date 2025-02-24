@@ -255,8 +255,15 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
 
         mStabXform = Pathfinder::Mat3(1);
 
+        const void* textYData = curFrameData->data[0];
+        if (mNightImageEnhancement) {
+            cv::Mat frameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
+            cv::equalizeHist(frameY, frameY);
+            textYData = frameY.data;
+        }
+
         if (curFrameData->linesize[0]) {
-            encoder->write_texture(mTexY, {}, curFrameData->data[0]);
+            encoder->write_texture(mTexY, {}, textYData);
         }
         if (curFrameData->linesize[1]) {
             encoder->write_texture(mTexU, {}, curFrameData->data[1]);

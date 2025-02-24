@@ -30,6 +30,8 @@ public:
 
     bool mStabilize = false;
 
+    bool mNightImageEnhancement = false;
+
     Pathfinder::Mat3 mStabXform;
 
 protected:

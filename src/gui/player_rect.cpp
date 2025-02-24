@@ -185,6 +185,17 @@ void PlayerRect::custom_ready() {
     }
 
     {
+        auto night_enhancement_button_ = std::make_shared<Flint::CheckButton>();
+        night_enhancement_button_->set_text(FTR("night image enhancement"));
+        vbox->add_child(night_enhancement_button_);
+
+        auto callback = [this](bool toggled) {
+            player_->yuvRenderer_->mNightImageEnhancement = toggled;
+        };
+        night_enhancement_button_->connect_signal("toggled", callback);
+    }
+
+    {
         auto button = std::make_shared<Flint::CheckButton>();
         button->set_text(FTR("sw decoding"));
         vbox->add_child(button);
