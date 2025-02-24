@@ -2,8 +2,7 @@
 // Created by gaeta on 2024-03-31.
 //
 
-#ifndef LIBUSBDEMO_RXFRAME_H
-#define LIBUSBDEMO_RXFRAME_H
+#pragma once
 
 #include <array>
 #include <span>
@@ -124,5 +123,3 @@ public:
     std::vector<uint8_t> frameBody;
     uint32_t frameCheckSequence;
 };
-
-#endif // LIBUSBDEMO_RXFRAME_H

@@ -80,6 +80,11 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
         return false;
     }
 
+    if (vidPid.empty()) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Empty device ID!");
+        return false;
+    }
+
     // Get vid pid
     std::istringstream iss(vidPid);
     unsigned int wifiDeviceVid, wifiDevicePid;

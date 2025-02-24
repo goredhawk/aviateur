@@ -202,6 +202,10 @@ void YuvRenderer::updateTextureInfo(int width, int height, int format) {
 }
 
 void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData) {
+    if (mTexY == nullptr) {
+        return;
+    }
+
     auto encoder = mDevice->create_command_encoder("upload yuv data");
 
     if (mStabilize) {
