@@ -185,14 +185,35 @@ void PlayerRect::custom_ready() {
     }
 
     {
-        auto night_enhancement_button_ = std::make_shared<Flint::CheckButton>();
-        night_enhancement_button_->set_text(FTR("night image enhancement"));
-        vbox->add_child(night_enhancement_button_);
+        low_light_enhancement_button_simple_ = std::make_shared<Flint::CheckButton>();
+        low_light_enhancement_button_simple_->set_text(FTR("low light enhancement simple"));
+        vbox->add_child(low_light_enhancement_button_simple_);
 
         auto callback = [this](bool toggled) {
-            player_->yuvRenderer_->mNightImageEnhancement = toggled;
+            player_->yuvRenderer_->mLowLightEnhancementSimple = toggled;
+            if (toggled) {
+                if (low_light_enhancement_button_advanced_->get_pressed()) {
+                    low_light_enhancement_button_advanced_->press();
+                }
+            }
         };
-        night_enhancement_button_->connect_signal("toggled", callback);
+        low_light_enhancement_button_simple_->connect_signal("toggled", callback);
+    }
+
+    {
+        low_light_enhancement_button_advanced_ = std::make_shared<Flint::CheckButton>();
+        low_light_enhancement_button_advanced_->set_text(FTR("low light enhancement dnn"));
+        vbox->add_child(low_light_enhancement_button_advanced_);
+
+        auto callback = [this](bool toggled) {
+            player_->yuvRenderer_->mLowLightEnhancementAdvanced = toggled;
+            if (toggled) {
+                if (low_light_enhancement_button_simple_->get_pressed()) {
+                    low_light_enhancement_button_simple_->press();
+                }
+            }
+        };
+        low_light_enhancement_button_advanced_->connect_signal("toggled", callback);
     }
 
     {

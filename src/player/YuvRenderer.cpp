@@ -237,7 +237,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
         if (mPrevFrameData->linesize[0]) {
             const void* texYData = mPrevFrameData->data[0];
 
-            if (mNightImageEnhancement) {
+            if (mLowLightEnhancementSimple) {
                 enhancedFrameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, mPrevFrameData->data[0]);
                 cv::equalizeHist(enhancedFrameY, enhancedFrameY);
                 texYData = enhancedFrameY.data;
@@ -271,9 +271,24 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
 
         if (curFrameData->linesize[0]) {
             const void* texYData = curFrameData->data[0];
-            if (mNightImageEnhancement) {
-                enhancedFrameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
-                cv::equalizeHist(enhancedFrameY, enhancedFrameY);
+
+            if (mLowLightEnhancementSimple) {
+                cv::Mat originalFrameY =
+                    cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
+
+                cv::equalizeHist(originalFrameY, enhancedFrameY);
+
+                texYData = enhancedFrameY.data;
+            } else if (mLowLightEnhancementAdvanced) {
+                if (!mNet.has_value()) {
+                    mNet = PairLIE("assets/weights/pairlie_180x320.onnx");
+                }
+
+                cv::Mat originalFrameY =
+                    cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
+
+                enhancedFrameY = mNet->detect(originalFrameY);
+
                 texYData = enhancedFrameY.data;
             }
             encoder->write_texture(mTexY, {}, texYData);

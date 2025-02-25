@@ -37,6 +37,9 @@ public:
 
     std::shared_ptr<Flint::Button> video_stabilization_button_;
 
+    std::shared_ptr<Flint::Button> low_light_enhancement_button_simple_;
+    std::shared_ptr<Flint::Button> low_light_enhancement_button_advanced_;
+
     std::shared_ptr<Flint::Button> fullscreen_button_;
 
     std::shared_ptr<Flint::Button> record_button_;
