@@ -1,5 +1,7 @@
 #include "settings_tab.h"
 
+const std::string AVIATEUR_REVISION_NUM = "efd99f2306c6950ebd5f2df664ee512a1d71b94d";
+
 void SettingsContainer::custom_ready() {
     set_margin_all(8);
 
@@ -118,5 +120,20 @@ void SettingsContainer::custom_ready() {
             }
         };
         show_console_btn->connect_signal("toggled", callback);
+    }
+
+    {
+        auto copy_version_button = std::make_shared<Flint::Button>();
+
+        copy_version_button->container_sizing.expand_h = true;
+        copy_version_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        vbox_container->add_child(copy_version_button);
+        copy_version_button->set_text(FTR("copy version num"));
+
+        auto callback = [this] {
+            auto input_server = Flint::InputServer::get_singleton();
+            input_server->set_clipboard(0, AVIATEUR_REVISION_NUM);
+        };
+        copy_version_button->connect_signal("pressed", callback);
     }
 }

@@ -40,3 +40,4 @@ hw decoder error,Hardware decoder fails!\nTry use software decoding!,硬件解�
 signal lost,Signal lost!,信号丢失！,Сигнал потерян!
 low light enhancement simple,Low light enhancement (simple),低光增强（简单）,Улучшение при слабом освещении (простое)
 low light enhancement dnn,Low light enhancement (DNN),低光增强（DNN）,Улучшение при слабом освещении (DNN)
+copy version num,Copy version number,复制版本号,Скопировать номер версии
