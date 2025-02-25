@@ -1,6 +1,6 @@
 #include "settings_tab.h"
 
-const std::string AVIATEUR_REVISION_NUM = "efd99f2306c6950ebd5f2df664ee512a1d71b94d";
+const std::string AVIATEUR_REVISION_NUM = "476912f90fad60245031d1700b97e410611e2ab9";
 
 void SettingsContainer::custom_ready() {
     set_margin_all(8);
