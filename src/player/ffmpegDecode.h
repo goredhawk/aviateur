@@ -92,15 +92,15 @@ private:
 
     void CloseAudio();
 
-    int DecodeAudio(int nStreamIndex, const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
+    int DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
 
     bool DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame> &pOutFrame);
 
     void writeAudioBuff(uint8_t *aSample, size_t aSize);
 
-    std::function<void(const std::shared_ptr<AVPacket> &packet)> _gotPktCallback;
+    std::function<void(const std::shared_ptr<AVPacket> &packet)> gotPktCallback;
 
-    std::function<void(const std::shared_ptr<AVFrame> &frame)> _gotFrameCallback;
+    std::function<void(const std::shared_ptr<AVFrame> &frame)> gotFrameCallback;
 
     bool initHwDecoder(AVCodecContext *ctx, enum AVHWDeviceType type);
 

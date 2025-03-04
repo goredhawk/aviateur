@@ -186,8 +186,8 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
         // Handle video
         if (packet->stream_index == videoStreamIndex) {
             // 回调nalu
-            if (_gotPktCallback) {
-                _gotPktCallback(packet);
+            if (gotPktCallback) {
+                gotPktCallback(packet);
             }
 
             // 处理视频数据
@@ -200,8 +200,8 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
             }
 
             // 回调frame
-            if (_gotFrameCallback) {
-                _gotFrameCallback(pVideoYuv);
+            if (gotFrameCallback) {
+                gotFrameCallback(pVideoYuv);
             }
 
             break;
@@ -210,17 +210,16 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
         // Handle audio
         if (packet->stream_index == audioStreamIndex) {
             // 回调nalu
-            if (_gotPktCallback) {
-                _gotPktCallback(packet);
+            if (gotPktCallback) {
+                gotPktCallback(packet);
             }
 
             // 处理音频数据
             if (packet->dts != AV_NOPTS_VALUE) {
                 int audioFrameSize = MAX_AUDIO_PACKET;
                 std::shared_ptr<uint8_t> pFrameAudio = std::shared_ptr<uint8_t>(new uint8_t[audioFrameSize]);
-                // 解码音频祯
-                int nDecodedSize = DecodeAudio(audioStreamIndex, packet.get(), pFrameAudio.get(), audioFrameSize);
-                // 解码成功，解码数据写入音频缓存
+
+                int nDecodedSize = DecodeAudio(packet.get(), pFrameAudio.get(), audioFrameSize);
                 if (nDecodedSize > 0) {
                     writeAudioBuff(pFrameAudio.get(), nDecodedSize);
                 }
@@ -401,7 +400,7 @@ void FfmpegDecoder::CloseVideo() {
     if (pVideoCodecCtx) {
         avcodec_free_context(&pVideoCodecCtx);
         pVideoCodecCtx = nullptr;
-        videoStreamIndex = 0;
+        videoStreamIndex = -1;
     }
 }
 
@@ -411,11 +410,11 @@ void FfmpegDecoder::CloseAudio() {
     if (pAudioCodecCtx) {
         avcodec_free_context(&pAudioCodecCtx);
         pAudioCodecCtx = nullptr;
-        audioStreamIndex = 0;
+        audioStreamIndex = -1;
     }
 }
 
-int FfmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize) {
+int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize) {
     size_t decodedSize = 0;
 
     int packetSize = av_pkt->size;

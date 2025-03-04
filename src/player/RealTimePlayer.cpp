@@ -266,7 +266,7 @@ bool RealTimePlayer::startRecord() {
     }
 
     // 设置获得NALU回调
-    decoder->_gotPktCallback = [this](const std::shared_ptr<AVPacket> &packet) {
+    decoder->gotPktCallback = [this](const std::shared_ptr<AVPacket> &packet) {
         // 输入编码器
         mp4Encoder_->writePacket(packet, packet->stream_index == decoder->videoStreamIndex);
     };
@@ -279,7 +279,7 @@ std::string RealTimePlayer::stopRecord() const {
         return {};
     }
     mp4Encoder_->stop();
-    decoder->_gotPktCallback = nullptr;
+    decoder->gotPktCallback = nullptr;
 
     return mp4Encoder_->saveFilePath_;
 }
@@ -392,7 +392,7 @@ bool RealTimePlayer::startGifRecord() {
     }
 
     // 设置获得解码帧回调
-    decoder->_gotFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
+    decoder->gotFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
         if (!gifEncoder_) {
             return;
         }
@@ -414,7 +414,7 @@ bool RealTimePlayer::startGifRecord() {
 }
 
 std::string RealTimePlayer::stopGifRecord() const {
-    decoder->_gotFrameCallback = nullptr;
+    decoder->gotFrameCallback = nullptr;
     if (!gifEncoder_) {
         return "";
     }
