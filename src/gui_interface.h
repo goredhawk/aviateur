@@ -39,12 +39,6 @@ constexpr std::array CHANNELS{
 constexpr std::array CHANNEL_WIDTHS{
     "20",
     "40",
-    "80",
-    "160",
-    "80_80",
-    "5",
-    "10",
-    "MAX",
 };
 
 enum class LogLevel {

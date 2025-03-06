@@ -20,7 +20,7 @@ start,Start,开始,начинать
 stop,Stop,停止,остановить
 open,Open,打开,Открыть
 close,Close,关闭,Закрывать
-device id,Device ID,设备 ID,Устройство ID
+net card,Net card,网卡,Сетевая карта
 streaming,Streaming,串流,Потоковое
 on,On,开,вкл
 off,Off,关,выкл

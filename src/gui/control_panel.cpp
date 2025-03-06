@@ -97,7 +97,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<Flint::Label>();
-            label->set_text(FTR("device id"));
+            label->set_text(FTR("net card"));
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
