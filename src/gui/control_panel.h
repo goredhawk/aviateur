@@ -10,7 +10,8 @@ public:
     std::shared_ptr<Flint::MenuButton> channel_width_button_;
     std::shared_ptr<Flint::Button> refresh_dongle_button_;
 
-    std::string vidPid;
+    std::string net_card_name;
+    std::optional<DeviceId> selected_net_card;
     uint32_t channel = 0;
     uint32_t channelWidthMode = 0;
     std::string keyPath;
@@ -22,6 +23,8 @@ public:
     std::shared_ptr<Flint::TextEdit> url_edit_;
 
     std::shared_ptr<Flint::TabContainer> tab_container_;
+
+    std::vector<DeviceId> devices_;
 
     void update_dongle_list();
 

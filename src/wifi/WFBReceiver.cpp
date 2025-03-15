@@ -18,8 +18,8 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-std::vector<std::string> WFBReceiver::GetDongleList() {
-    std::vector<std::string> list;
+std::vector<DeviceId> WFBReceiver::GetDeviceList() {
+    std::vector<DeviceId> list;
 
     // Initialize libusb
     libusb_context *find_ctx;
@@ -39,25 +39,39 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
         if (libusb_get_device_descriptor(dev, &desc) == 0) {
             // Check if the device is using libusb driver
             if (desc.bDeviceClass == LIBUSB_CLASS_PER_INTERFACE) {
+                uint8_t bus_num = libusb_get_bus_number(dev);
+                uint8_t port_num = libusb_get_port_number(dev);
+
                 std::stringstream ss;
                 ss << std::setw(4) << std::setfill('0') << std::hex << desc.idVendor << ":";
                 ss << std::setw(4) << std::setfill('0') << std::hex << desc.idProduct;
-                list.push_back(ss.str());
+                ss << std::dec << " [" << (int)bus_num << ":" << (int)port_num << "]";
+
+                DeviceId dev_id = {
+                    .vendor_id = desc.idVendor,
+                    .product_id = desc.idProduct,
+                    .display_name = ss.str(),
+                    .bus_num = bus_num,
+                    .port_num = port_num,
+                };
+
+                list.push_back(dev_id);
             }
         }
     }
-    std::sort(list.begin(), list.end(), [](std::string &a, std::string &b) {
-        static std::vector<std::string> specialStrings = {"0b05:17d2", "0bda:8812", "0bda:881a"};
-        auto itA = std::find(specialStrings.begin(), specialStrings.end(), a);
-        auto itB = std::find(specialStrings.begin(), specialStrings.end(), b);
-        if (itA != specialStrings.end() && itB == specialStrings.end()) {
-            return true;
-        }
-        if (itB != specialStrings.end() && itA == specialStrings.end()) {
-            return false;
-        }
-        return a < b;
-    });
+
+    // std::sort(list.begin(), list.end(), [](std::string &a, std::string &b) {
+    //     static std::vector<std::string> specialStrings = {"0b05:17d2", "0bda:8812", "0bda:881a"};
+    //     auto itA = std::find(specialStrings.begin(), specialStrings.end(), a);
+    //     auto itB = std::find(specialStrings.begin(), specialStrings.end(), b);
+    //     if (itA != specialStrings.end() && itB == specialStrings.end()) {
+    //         return true;
+    //     }
+    //     if (itB != specialStrings.end() && itA == specialStrings.end()) {
+    //         return false;
+    //     }
+    //     return a < b;
+    // });
 
     // Free the list of devices
     libusb_free_device_list(devs, 1);
@@ -68,7 +82,7 @@ std::vector<std::string> WFBReceiver::GetDongleList() {
     return list;
 }
 
-bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelWidthMode, const std::string &kPath) {
+bool WFBReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWidthMode, const std::string &kPath) {
     GuiInterface::Instance().wifiFrameCount_ = 0;
     GuiInterface::Instance().wfbFrameCount_ = 0;
     GuiInterface::Instance().rtpPktCount_ = 0;
@@ -80,17 +94,6 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
         return false;
     }
 
-    if (vidPid.empty()) {
-        GuiInterface::Instance().PutLog(LogLevel::Error, "Empty device ID!");
-        return false;
-    }
-
-    // Get vid pid
-    std::istringstream iss(vidPid);
-    unsigned int wifiDeviceVid, wifiDevicePid;
-    char c;
-    iss >> std::hex >> wifiDeviceVid >> c >> wifiDevicePid;
-
     auto logger = std::make_shared<Logger>();
 
     int rc = libusb_init(&ctx);
@@ -101,14 +104,56 @@ bool WFBReceiver::Start(const std::string &vidPid, uint8_t channel, int channelW
 
     libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_ERROR);
 
-    devHandle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
+    // Get list of USB devices
+    libusb_device **devs;
+    ssize_t count = libusb_get_device_list(ctx, &devs);
+    if (count < 0) {
+        return false;
+    }
+
+    libusb_device *target_dev{};
+
+    // Iterate over devices
+    for (ssize_t i = 0; i < count; ++i) {
+        libusb_device *dev = devs[i];
+        libusb_device_descriptor desc{};
+        if (libusb_get_device_descriptor(dev, &desc) == 0) {
+            // Check if the device is using libusb driver
+            if (desc.bDeviceClass == LIBUSB_CLASS_PER_INTERFACE) {
+                int bus_num = libusb_get_bus_number(dev);
+                int port_num = libusb_get_port_number(dev);
+
+                if (desc.idVendor == deviceId.vendor_id && desc.idProduct == deviceId.product_id &&
+                    bus_num == deviceId.bus_num && port_num == deviceId.port_num) {
+                    target_dev = dev;
+                }
+            }
+        }
+    }
+
+    if (!target_dev) {
+        GuiInterface::Instance().PutLog(LogLevel::Error, "Invalid device ID!");
+        // Free the list of devices
+        libusb_free_device_list(devs, 1);
+        return false;
+    }
+
+    // This cannot handle multiple devices with same vendor_id and product_id.
+    // devHandle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
+    libusb_open(target_dev, &devHandle);
+
+    // Free the list of devices
+    libusb_free_device_list(devs, 1);
+
     if (devHandle == nullptr) {
         libusb_exit(ctx);
 
         GuiInterface::Instance().PutLog(LogLevel::Error,
-                                        "Cannot open device {:04x}:{:04x}",
-                                        wifiDeviceVid,
-                                        wifiDevicePid);
+                                        "Cannot open device {:04x}:{:04x} at [{:}:{:}]",
+                                        deviceId.vendor_id,
+                                        deviceId.product_id,
+                                        deviceId.bus_num,
+                                        deviceId.port_num);
         GuiInterface::Instance().ShowTip(FTR("invalid usb msg"));
         return false;
     }

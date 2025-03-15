@@ -116,8 +116,8 @@ public:
         SaveConfig();
     }
 
-    static std::vector<std::string> GetDongleList() {
-        return WFBReceiver::Instance().GetDongleList();
+    static std::vector<DeviceId> GetDeviceList() {
+        return WFBReceiver::GetDeviceList();
     }
 
     static std::string GetAppDataDir() {
@@ -160,12 +160,12 @@ public:
         return writeSuccess;
     }
 
-    static bool Start(const std::string &vidPid,
+    static bool Start(const DeviceId &deviceId,
                       int channel,
                       int channelWidthMode,
                       const std::string &keyPath,
                       const std::string &codec) {
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = vidPid;
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = deviceId.display_name;
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL] = std::to_string(channel);
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = std::to_string(channelWidthMode);
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY] = keyPath;
@@ -176,7 +176,7 @@ public:
 
         Instance().playerCodec = codec;
 
-        return WFBReceiver::Instance().Start(vidPid, channel, channelWidthMode, keyPath);
+        return WFBReceiver::Instance().Start(deviceId, channel, channelWidthMode, keyPath);
     }
 
     static bool Stop() {

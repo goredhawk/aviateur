@@ -7,20 +7,22 @@
 void ControlPanel::update_dongle_list() {
     auto menu = dongle_menu_button_->get_popup_menu().lock();
 
-    auto dongles = GuiInterface::GetDongleList();
+    devices_ = GuiInterface::GetDeviceList();
 
     menu->clear_items();
 
     bool previous_device_exists = false;
-    for (const auto &dongle : dongles) {
-        if (vidPid == dongle) {
+    for (const auto &d : devices_) {
+        if (net_card_name == d.display_name) {
             previous_device_exists = true;
+            selected_net_card = d;
         }
-        menu->create_item(dongle);
+        menu->create_item(d.display_name);
     }
 
     if (!previous_device_exists) {
-        vidPid = "";
+        net_card_name = "";
+        selected_net_card = {};
     }
 }
 
@@ -62,7 +64,7 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
 
 void ControlPanel::custom_ready() {
     auto &ini = GuiInterface::Instance().ini_;
-    vidPid = ini[CONFIG_ADAPTER][ADAPTER_DEVICE];
+    net_card_name = ini[CONFIG_ADAPTER][ADAPTER_DEVICE];
     channel = std::stoi(ini[CONFIG_ADAPTER][ADAPTER_CHANNEL]);
     channelWidthMode = std::stoi(ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE]);
     keyPath = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY];
@@ -108,9 +110,9 @@ void ControlPanel::custom_ready() {
 
             // Do this before setting dongle button text.
             update_dongle_list();
-            dongle_menu_button_->set_text(vidPid);
+            dongle_menu_button_->set_text(net_card_name);
 
-            auto callback = [this](uint32_t) { vidPid = dongle_menu_button_->get_selected_item_text(); };
+            auto callback = [this](uint32_t) { net_card_name = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
             refresh_dongle_button_ = std::make_shared<Flint::Button>();
@@ -238,8 +240,19 @@ void ControlPanel::custom_ready() {
                 bool start = play_button_->get_text() == FTR("start") + " (F5)";
 
                 if (start) {
-                    bool res = GuiInterface::Start(vidPid, channel, channelWidthMode, keyPath, codec);
-                    if (!res) {
+                    std::optional<DeviceId> target_device_id;
+                    for (auto &d : devices_) {
+                        if (net_card_name == d.display_name) {
+                            target_device_id = d;
+                        }
+                    }
+
+                    if (target_device_id.has_value()) {
+                        bool res = GuiInterface::Start(target_device_id.value(), channel, channelWidthMode, keyPath, codec);
+                        if (!res) {
+                            start = false;
+                        }
+                    } else {
                         start = false;
                     }
                 } else {
