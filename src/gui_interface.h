@@ -27,6 +27,8 @@
 #define CONFIG_GUI "gui"
 #define CONFIG_GUI_LANG "language"
 
+#define DEFAULT_PORT 52356
+
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Channels.
@@ -172,7 +174,8 @@ public:
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC] = codec;
 
         // Set port.
-        Instance().playerPort = GetFreePort();
+        Instance().playerPort = GetFreePort(DEFAULT_PORT);
+        Instance().PutLog(LogLevel::Info, "Using port: {}", Instance().playerPort);
 
         Instance().playerCodec = codec;
 
@@ -220,7 +223,8 @@ public:
 
     int NotifyRtpStream(int pt, uint16_t ssrc) {
         // Get free port.
-        std::string sdpFile = "sdp/sdp.sdp";
+        std::string sdpFile = "sdp/sdp" + std::to_string(playerPort) + ".sdp";
+
         BuildSdp(sdpFile, playerCodec, pt, playerPort);
 
         EmitRtpStream(sdpFile);
@@ -250,8 +254,56 @@ public:
     std::string GetPlayerCodec() const {
         return playerCodec;
     }
-    static int GetFreePort() {
-        return 52356;
+
+    static int GetFreePort(int start_port) {
+        // Declare some variables
+        WSADATA wsaData;
+
+        int free_port = 0;
+
+        int iResult = 0; // used to return function results
+
+        // the listening socket to be created
+        SOCKET soc = INVALID_SOCKET;
+
+        //----------------------
+        // Initialize Winsock
+        iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+        if (iResult != NO_ERROR) {
+            wprintf(L"Error at WSAStartup()\n");
+            return 0;
+        }
+
+        // Create a SOCKET for listening for incoming connection requests
+        soc = socket(AF_INET, SOCK_DGRAM, 0);
+        if (soc == INVALID_SOCKET) {
+            wprintf(L"socket function failed with error: %u\n", WSAGetLastError());
+            WSACleanup();
+            return 0;
+        }
+
+        for (int port = start_port; port < start_port + 200; ++port) {
+            // The sockaddr_in structure specifies the address family,
+            // IP address, and port for the socket that is being bound.
+            sockaddr_in sin;
+            sin.sin_family = AF_INET;
+            sin.sin_addr.s_addr = inet_addr("0.0.0.0");
+            sin.sin_port = htons(port);
+
+            // Bind the socket.
+            iResult = bind(soc, (sockaddr *)&sin, sizeof(sin));
+            if (iResult == SOCKET_ERROR) {
+                Instance().PutLog(LogLevel::Info, "bind failed with error {}", WSAGetLastError());
+            } else {
+                free_port = port;
+                break;
+            }
+        }
+
+        closesocket(soc);
+        WSACleanup();
+
+        return free_port;
     }
 
     void set_locale(std::string locale) {

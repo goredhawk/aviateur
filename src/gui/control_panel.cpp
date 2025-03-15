@@ -248,7 +248,8 @@ void ControlPanel::custom_ready() {
                     }
 
                     if (target_device_id.has_value()) {
-                        bool res = GuiInterface::Start(target_device_id.value(), channel, channelWidthMode, keyPath, codec);
+                        bool res =
+                            GuiInterface::Start(target_device_id.value(), channel, channelWidthMode, keyPath, codec);
                         if (!res) {
                             start = false;
                         }
