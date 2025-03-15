@@ -57,9 +57,12 @@ int main() {
     GuiInterface::Instance().wifiStopCallbacks.emplace_back(onWifiStop);
 
     {
+        player_rect->top_control_container = std::make_shared<Flint::HBoxContainer>();
+        player_rect->top_control_container->set_anchor_flag(Flint::AnchorFlag::TopLeft);
+        player_rect->add_child(player_rect->top_control_container);
+
         player_rect->fullscreen_button_ = std::make_shared<Flint::CheckButton>();
-        player_rect->add_child(player_rect->fullscreen_button_);
-        player_rect->fullscreen_button_->set_anchor_flag(Flint::AnchorFlag::TopLeft);
+        player_rect->top_control_container->add_child(player_rect->fullscreen_button_);
         player_rect->fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
 
         auto callback = [control_panel_weak](bool toggled) {
@@ -69,6 +72,18 @@ int main() {
             }
         };
         player_rect->fullscreen_button_->connect_signal("toggled", callback);
+
+        auto control_panel_button = std::make_shared<Flint::CheckButton>();
+        player_rect->top_control_container->add_child(control_panel_button);
+        control_panel_button->set_text(FTR("control panel"));
+        control_panel_button->press();
+
+        auto callback2 = [control_panel_weak](bool toggled) {
+            if (!control_panel_weak.expired()) {
+                control_panel_weak.lock()->set_visibility(toggled);
+            }
+        };
+        control_panel_button->connect_signal("toggled", callback2);
     }
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "Entering app main loop");
