@@ -7,7 +7,7 @@
 	url = https://github.com/nlohmann/json.git
 [submodule "3rd/devourer"]
 	path = 3rd/devourer
-	url = https://github.com/floppyhammer/devourer.git
+	url = https://github.com/OpenIPC/devourer.git
 [submodule "3rd/mINI"]
 	path = 3rd/mINI
 	url = https://github.com/metayeti/mINI.git
