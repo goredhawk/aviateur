@@ -2,6 +2,15 @@
 
 const std::string AVIATEUR_REVISION_NUM = "476912f90fad60245031d1700b97e410611e2ab9";
 
+void open_explorer(const std::string& dir) {
+#ifdef __WIN32
+    ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+#else
+    std::string cmd = "xdg-open \"" + dir + "\"";
+    system(cmd.c_str());
+#endif
+}
+
 void SettingsContainer::custom_ready() {
     set_margin_all(8);
 
@@ -53,7 +62,7 @@ void SettingsContainer::custom_ready() {
         lang_menu_button->connect_signal("item_selected", callback);
     }
 
-#ifdef __WIN32
+    // #ifdef __WIN32
 
     {
         auto open_capture_folder_button = std::make_shared<Flint::MenuButton>();
@@ -63,9 +72,7 @@ void SettingsContainer::custom_ready() {
         vbox_container->add_child(open_capture_folder_button);
         open_capture_folder_button->set_text(FTR("open capture folder"));
 
-        auto callback = [this]() {
-            ShellExecuteA(NULL, "open", GuiInterface::GetCaptureDir().c_str(), NULL, NULL, SW_SHOWDEFAULT);
-        };
+        auto callback = [this]() { open_explorer(GuiInterface::GetCaptureDir()); };
         open_capture_folder_button->connect_signal("pressed", callback);
     }
 
@@ -77,13 +84,11 @@ void SettingsContainer::custom_ready() {
         vbox_container->add_child(open_appdata_button);
         open_appdata_button->set_text(FTR("open appdata folder"));
 
-        auto callback = [this]() {
-            auto dir = GuiInterface::GetAppDataDir();
-            ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
-        };
+        auto callback = [this]() { open_explorer(GuiInterface::GetAppDataDir()); };
         open_appdata_button->connect_signal("pressed", callback);
     }
 
+#ifdef __WIN32
     {
         auto open_crash_dumps_button = std::make_shared<Flint::Button>();
 
@@ -99,7 +104,7 @@ void SettingsContainer::custom_ready() {
             auto dumps_dir = appdata_local + "\\CrashDumps";
 
             if (std::filesystem::exists(dumps_dir)) {
-                ShellExecuteA(NULL, "open", dumps_dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+                open_explorer(dumps_dir);
             }
         };
         open_crash_dumps_button->connect_signal("pressed", callback);

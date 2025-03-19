@@ -73,8 +73,8 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         return false;
     }
 
-    std::chrono::duration<double, std::chrono::seconds::period> duration = std::chrono::steady_clock::now() - startTime;
-    // 分析超时，退出，可能格式不正确
+    std::chrono::duration<double> duration = std::chrono::steady_clock::now() - startTime;
+    // Timeout
     if (duration.count() > timeout) {
         CloseInput();
         return false;
@@ -82,13 +82,12 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     pFormatCtx->interrupt_callback.callback = nullptr;
     pFormatCtx->interrupt_callback.opaque = nullptr;
 
-    // 打开视频/音频输入
     hasVideoStream = OpenVideo();
     hasAudioStream = OpenAudio();
 
     sourceIsOpened = true;
 
-    // 转换时间基
+    // Convert time base
     if (videoStreamIndex != -1) {
         videoFps = static_cast<float>(av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate));
         videoBaseTime = av_q2d(pFormatCtx->streams[videoStreamIndex]->time_base);
@@ -100,7 +99,7 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         audioBaseTime = av_q2d(pFormatCtx->streams[audioStreamIndex]->time_base);
     }
 
-    // 创建音频解码缓存
+    // Create audio buffer
     if (hasAudioStream) {
         audioFifoBuffer =
             av_fifo_alloc2(0, GetAudioFrameSamples() * GetAudioChannelCount() * 10, AV_FIFO_FLAG_AUTO_GROW);
@@ -185,21 +184,19 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
         // Handle video
         if (packet->stream_index == videoStreamIndex) {
-            // 回调nalu
+            // NALU callback
             if (gotPktCallback) {
                 gotPktCallback(packet);
             }
 
-            // 处理视频数据
             std::shared_ptr<AVFrame> pVideoYuv = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
 
-            // 解码视频祯
             bool isDecodeComplete = DecodeVideo(packet.get(), pVideoYuv);
             if (isDecodeComplete) {
                 res = pVideoYuv;
             }
 
-            // 回调frame
+            // Frame callback
             if (gotFrameCallback) {
                 gotFrameCallback(pVideoYuv);
             }
@@ -209,12 +206,10 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
         // Handle audio
         if (packet->stream_index == audioStreamIndex) {
-            // 回调nalu
             if (gotPktCallback) {
                 gotPktCallback(packet);
             }
 
-            // 处理音频数据
             if (packet->dts != AV_NOPTS_VALUE) {
                 int audioFrameSize = MAX_AUDIO_PACKET;
                 std::shared_ptr<uint8_t> pFrameAudio = std::shared_ptr<uint8_t>(new uint8_t[audioFrameSize]);

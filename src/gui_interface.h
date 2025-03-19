@@ -9,6 +9,11 @@
 #include <future>
 #include <nlohmann/json.hpp>
 
+#ifdef __linux__
+    #include <pwd.h>
+    #include <unistd.h>
+#endif
+
 #include "app.h"
 #include "wifi/WFBReceiver.h"
 
@@ -128,7 +133,9 @@ public:
 #ifdef _WIN32
         auto dir = std::string(getenv("APPDATA")) + "\\Aviateur\\";
 #else ifdef __linux__
-        auto dir = "~/aviateur/";
+        passwd *pw = getpwuid(getuid());
+        const char *home_dir = pw->pw_dir;
+        auto dir = std::string(home_dir) + "/aviateur/";
 #endif
         return dir;
     }
@@ -136,8 +143,10 @@ public:
     static std::string GetCaptureDir() {
 #ifdef _WIN32
         auto dir = std::string(getenv("USERPROFILE")) + "\\Videos\\Aviateur Captures\\";
-#else ifdef __linux__
-        auto dir = "~/pictures/aviateur captures/";
+#else
+        passwd *pw = getpwuid(getuid());
+        const char *home_dir = pw->pw_dir;
+        auto dir = std::string(home_dir) + "/Pictures/Aviateur Captures/";
 #endif
         return dir;
     }
