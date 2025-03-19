@@ -69,8 +69,10 @@ jobs:
 
       - name: Install dependency libraries (Linux)
         if: runner.os == 'Linux'
-        run:
-          sudo apt-get install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev
+        run: |
+          git submodule init
+          git submodule update
+          sudo apt-get install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
