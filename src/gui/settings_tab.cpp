@@ -53,6 +53,8 @@ void SettingsContainer::custom_ready() {
         lang_menu_button->connect_signal("item_selected", callback);
     }
 
+#ifdef __WIN32
+
     {
         auto open_capture_folder_button = std::make_shared<Flint::MenuButton>();
 
@@ -121,6 +123,7 @@ void SettingsContainer::custom_ready() {
         };
         show_console_btn->connect_signal("toggled", callback);
     }
+#endif
 
     {
         auto copy_version_button = std::make_shared<Flint::Button>();

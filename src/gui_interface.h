@@ -58,10 +58,12 @@ public:
     }
 
     explicit GuiInterface() {
+#ifdef __WIN32
         ShowWindow(GetConsoleWindow(), SW_HIDE); // SW_RESTORE to bring back
 
         // Windows crash dump
         SetUnhandledExceptionFilter(UnhandledExceptionFilter);
+#endif
 
         // Redirect standard output to a file
         // DO NOT USE WHEN DEPLOYING, AS IT WILL CRASH THE APP ON USER PCs.
@@ -256,6 +258,7 @@ public:
     }
 
     static int GetFreePort(int start_port) {
+#ifdef __WIN32
         // Declare some variables
         WSADATA wsaData;
 
@@ -304,6 +307,9 @@ public:
         WSACleanup();
 
         return free_port;
+#else
+        return start_port;
+#endif
     }
 
     void set_locale(std::string locale) {

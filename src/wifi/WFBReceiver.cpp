@@ -252,6 +252,10 @@ void WFBReceiver::handle80211Frame(const Packet &packet) {
     }
 }
 
+#ifdef __linux__
+#define INVALID_SOCKET (-1)
+#endif
+
 static unsigned long long sendFd = INVALID_SOCKET;
 static volatile bool playing = false;
 
@@ -311,17 +315,23 @@ void WFBReceiver::Stop() const {
 }
 
 WFBReceiver::WFBReceiver() {
+#ifdef __WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "WSAStartup failed");
         return;
     }
+#endif
+
     sendFd = socket(AF_INET, SOCK_DGRAM, 0);
 }
 
 WFBReceiver::~WFBReceiver() {
+#ifdef __WIN32
     closesocket(sendFd);
     sendFd = INVALID_SOCKET;
     WSACleanup();
+#endif
+
     Stop();
 }

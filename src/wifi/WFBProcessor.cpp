@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cinttypes>
+#include <cstring>
 #include <format>
 #include <stdexcept>
 #include <string>

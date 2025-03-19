@@ -6,7 +6,9 @@
 #define FPV_WFB_RTP_H
 
 #if defined(_WIN32)
-#pragma pack(push, 1)
+    #pragma pack(push, 1)
+#else
+    #include <arpa/inet.h>
 #endif // defined(_WIN32)
 
 class RtpHeader {
@@ -96,7 +98,9 @@ public:
         return getCsrcSize() + (ext ? (4 + getExtSize()) : 0);
     }
 
-    uint8_t *getPayloadData() { return &payload + getPayloadOffset(); }
+    uint8_t *getPayloadData() {
+        return &payload + getPayloadOffset();
+    }
 
     size_t getPaddingSize(size_t rtp_size) const {
         if (!padding) {
@@ -132,7 +136,7 @@ public:
 } PACKED;
 
 #if defined(_WIN32)
-#pragma pack(pop)
+    #pragma pack(pop)
 #endif // defined(_WIN32)
 
 #endif // FPV_WFB_RTP_H

@@ -40,7 +40,9 @@ cv::Mat PairLIE::detect(const cv::Mat& grayImg) {
     this->net.setInput(this->exposure_,
                        "exposure"); ////opencv-dnn多输入代码参考https://github.com/opencv/opencv/issues/19304
     std::vector<cv::Mat> outs;
+    #ifdef __WIN32
     net.enableWinograd(false); ////如果是opencv4.7，那就需要加上这一行
+    #endif
     this->net.forward(outs, this->net.getUnconnectedOutLayersNames());
 
     float* pdata = (float*)outs[0].data;

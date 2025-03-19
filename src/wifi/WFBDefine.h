@@ -5,14 +5,17 @@
 #ifndef WFB_DEFINE_H
 #define WFB_DEFINE_H
 
-#include <algorithm>
 #include <sodium.h>
 #include <sodium/crypto_box.h>
+
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 
 #undef min
 #undef max
+
+#ifdef __WIN32
 
 inline uint32_t htobe32(uint32_t host_32bits) {
     // 检查主机字节序是否为小端模式
@@ -21,8 +24,8 @@ inline uint32_t htobe32(uint32_t host_32bits) {
 
     if (is_little_endian) {
         // 如果是小端字节序，则转换为大端字节序
-        return ((host_32bits & 0x000000FF) << 24) | ((host_32bits & 0x0000FF00) << 8)
-            | ((host_32bits & 0x00FF0000) >> 8) | ((host_32bits & 0xFF000000) >> 24);
+        return ((host_32bits & 0x000000FF) << 24) | ((host_32bits & 0x0000FF00) << 8) |
+               ((host_32bits & 0x00FF0000) >> 8) | ((host_32bits & 0xFF000000) >> 24);
     } else {
         // 如果已经是大端字节序，则直接返回
         return host_32bits;
@@ -30,46 +33,48 @@ inline uint32_t htobe32(uint32_t host_32bits) {
 }
 
 inline uint64_t be64toh(uint64_t big_endian_64bits) {
-    // 如果本地字节序是小端，需要进行转换
-#if defined(_WIN32) || defined(_WIN64)
+        // 如果本地字节序是小端，需要进行转换
+    #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台
     return _byteswap_uint64(big_endian_64bits);
-#else
+    #else
     // 如果是其他平台，假设是大端或者已经有对应的函数实现
     return big_endian_64bits;
-#endif
+    #endif
 }
 
 // 定义 be32toh 函数，将大端 32 位整数转换为主机字节顺序
 inline uint32_t be32toh(uint32_t big_endian_32bits) {
-    // 如果本地字节序是小端，需要进行转换
-#if defined(_WIN32) || defined(_WIN64)
+        // 如果本地字节序是小端，需要进行转换
+    #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台，使用 _byteswap_ulong 函数
     return _byteswap_ulong(big_endian_32bits);
-#else
+    #else
     // 如果是其他平台，假设是大端或者已经有对应的函数实现
     return big_endian_32bits;
-#endif
+    #endif
 }
 
 // 定义 be16toh 函数，将大端 16 位整数转换为主机字节顺序
 inline uint16_t be16toh(uint16_t big_endian_16bits) {
-    // 如果本地字节序是小端，需要进行转换
-#if defined(_WIN32) || defined(_WIN64)
+        // 如果本地字节序是小端，需要进行转换
+    #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台，使用 _byteswap_ushort 函数
     return _byteswap_ushort(big_endian_16bits);
-#else
+    #else
     // 如果是其他平台，假设是大端或者已经有对应的函数实现
     return big_endian_16bits;
-#endif
+    #endif
 }
 
+#endif
+
 static uint8_t ieee80211_header[] = {
-    0x08, 0x01, 0x00, 0x00, // data frame, not protected, from STA to DS via an AP, duration not set
+    0x08, 0x01, 0x00, 0x00,             // data frame, not protected, from STA to DS via an AP, duration not set
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // receiver is broadcast
     0x57, 0x42, 0xaa, 0xbb, 0xcc, 0xdd, // last four bytes will be replaced by channel_id
     0x57, 0x42, 0xaa, 0xbb, 0xcc, 0xdd, // last four bytes will be replaced by channel_id
-    0x00, 0x00, // (seq_num << 4) + fragment_num
+    0x00, 0x00,                         // (seq_num << 4) + fragment_num
 };
 
 #define IEEE80211_RADIOTAP_MCS_HAVE_BW 0x01
@@ -93,16 +98,24 @@ static uint8_t ieee80211_header[] = {
 #define IEEE80211_RADIOTAP_MCS_STBC_3 3
 #define IEEE80211_RADIOTAP_MCS_STBC_SHIFT 5
 
-#define MCS_KNOWN                                                                                                      \
-    (IEEE80211_RADIOTAP_MCS_HAVE_MCS | IEEE80211_RADIOTAP_MCS_HAVE_BW | IEEE80211_RADIOTAP_MCS_HAVE_GI                 \
-     | IEEE80211_RADIOTAP_MCS_HAVE_STBC | IEEE80211_RADIOTAP_MCS_HAVE_FEC)
+#define MCS_KNOWN                                                                                        \
+    (IEEE80211_RADIOTAP_MCS_HAVE_MCS | IEEE80211_RADIOTAP_MCS_HAVE_BW | IEEE80211_RADIOTAP_MCS_HAVE_GI | \
+     IEEE80211_RADIOTAP_MCS_HAVE_STBC | IEEE80211_RADIOTAP_MCS_HAVE_FEC)
 
 static uint8_t radiotap_header[] __attribute__((unused)) = {
-    0x00,      0x00, // <-- radiotap version
-    0x0d,      0x00, // <- radiotap header length
-    0x00,      0x80, 0x08, 0x00, // <-- radiotap present flags:  RADIOTAP_TX_FLAGS + RADIOTAP_MCS
-    0x08,      0x00, // RADIOTAP_F_TX_NOACK
-    MCS_KNOWN, 0x00, 0x00 // bitmap, flags, mcs_index
+    0x00,
+    0x00, // <-- radiotap version
+    0x0d,
+    0x00, // <- radiotap header length
+    0x00,
+    0x80,
+    0x08,
+    0x00, // <-- radiotap present flags:  RADIOTAP_TX_FLAGS + RADIOTAP_MCS
+    0x08,
+    0x00, // RADIOTAP_F_TX_NOACK
+    MCS_KNOWN,
+    0x00,
+    0x00 // bitmap, flags, mcs_index
 };
 
 typedef struct {
@@ -119,11 +132,7 @@ static inline int modN(int x, int base) {
 
 class antennaItem {
 public:
-    antennaItem(void)
-        : count_all(0)
-        , rssi_sum(0)
-        , rssi_min(0)
-        , rssi_max(0) {}
+    antennaItem(void) : count_all(0), rssi_sum(0), rssi_min(0), rssi_max(0) {}
 
     void log_rssi(int8_t rssi) {
         if (count_all == 0) {
@@ -156,11 +165,11 @@ typedef struct {
 
 #pragma pack(push, 1)
 typedef struct {
-    uint64_t epoch; // Drop session packets from old epoch
+    uint64_t epoch;      // Drop session packets from old epoch
     uint32_t channel_id; // (link_id << 8) + port_number
-    uint8_t fec_type; // Now only supported type is WFB_FEC_VDM_RS
-    uint8_t k; // FEC k
-    uint8_t n; // FEC n
+    uint8_t fec_type;    // Now only supported type is WFB_FEC_VDM_RS
+    uint8_t k;           // FEC k
+    uint8_t n;           // FEC n
     uint8_t session_key[crypto_aead_chacha20poly1305_KEYBYTES];
 } wsession_data_t;
 #pragma pack(pop)
@@ -181,12 +190,12 @@ typedef struct {
 } wpacket_hdr_t;
 #pragma pack(pop)
 
-#define MAX_PAYLOAD_SIZE                                                                                               \
-    (MAX_PACKET_SIZE - sizeof(radiotap_header) - sizeof(ieee80211_header) - sizeof(wblock_hdr_t)                       \
-     - crypto_aead_chacha20poly1305_ABYTES - sizeof(wpacket_hdr_t))
-#define MAX_FEC_PAYLOAD                                                                                                \
-    (MAX_PACKET_SIZE - sizeof(radiotap_header) - sizeof(ieee80211_header) - sizeof(wblock_hdr_t)                       \
-     - crypto_aead_chacha20poly1305_ABYTES)
+#define MAX_PAYLOAD_SIZE                                                                           \
+    (MAX_PACKET_SIZE - sizeof(radiotap_header) - sizeof(ieee80211_header) - sizeof(wblock_hdr_t) - \
+     crypto_aead_chacha20poly1305_ABYTES - sizeof(wpacket_hdr_t))
+#define MAX_FEC_PAYLOAD                                                                            \
+    (MAX_PACKET_SIZE - sizeof(radiotap_header) - sizeof(ieee80211_header) - sizeof(wblock_hdr_t) - \
+     crypto_aead_chacha20poly1305_ABYTES)
 #define MAX_PACKET_SIZE 1510
 #define MAX_FORWARDER_PACKET_SIZE (MAX_PACKET_SIZE - sizeof(radiotap_header) - sizeof(ieee80211_header))
 

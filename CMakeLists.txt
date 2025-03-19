@@ -17,11 +17,24 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
 
-find_package(FFmpeg REQUIRED)
-find_package(unofficial-sodium CONFIG REQUIRED)
-find_package(OpenCV REQUIRED)
+if (WIN32)
+    pkg_check_modules(LIBUSB REQUIRED IMPORTED_TARGET libusb-1.0)
+
+    find_package(FFmpeg REQUIRED)
+    find_package(unofficial-sodium CONFIG REQUIRED)
+    find_package(OpenCV REQUIRED)
+else ()
+    pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+            libavformat
+            libavcodec
+            libswresample
+            libswscale
+            libavutil
+    )
+    pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
+    find_package(OpenCV REQUIRED)
+endif ()
 
 file(GLOB_RECURSE SRC_LIST
         src/*.cpp
@@ -49,11 +62,21 @@ target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
 add_subdirectory(3rd/mINI)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/mINI/src")
 
-target_link_libraries(${PROJECT_NAME}
-        ${FFMPEG_LIBRARIES}
-        PkgConfig::LIBUSB
-        unofficial-sodium::sodium
-        ${OpenCV_LIBS}
-        WiFiDriver
-        flint_gui
-)
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME}
+            ${FFMPEG_LIBRARIES}
+            PkgConfig::LIBUSB
+            unofficial-sodium::sodium
+            ${OpenCV_LIBS}
+            WiFiDriver
+            flint_gui
+    )
+else ()
+    target_link_libraries(${PROJECT_NAME}
+            PkgConfig::LIBAV
+            PkgConfig::LIBSODIUM
+            ${OpenCV_LIBS}
+            WiFiDriver
+            flint_gui
+    )
+endif ()

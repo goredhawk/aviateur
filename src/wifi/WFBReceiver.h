@@ -5,8 +5,11 @@
 #ifndef WFB_RECEIVER_H
 #define WFB_RECEIVER_H
 
-#include <libusb.h>
-
+#ifdef __WIN32
+    #include <libusb.h>
+#else
+    #include <libusb-1.0/libusb.h>
+#endif
 #include <string>
 #include <thread>
 #include <vector>
