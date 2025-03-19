@@ -1,14 +1,14 @@
 # Aviateur
 
-OpenIPC FPV ground station for Windows. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]).
+OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]).
 
 ![](tutorials/interface.jpg)
 
 Supports RTL8812AU Wi-Fi adapter only (for now).
 
 ### Usage
-1. Download [Zadig](https://zadig.akeo.ie/)
-2. Install the libusb driver for your adapter.
+1. (Only for Windows) Download [Zadig](https://zadig.akeo.ie/)
+2. (Only for Windows) Install the libusb driver for your adapter.
    Go *Options* → *List All Devices*.
    ![](tutorials/zadig1.jpg)
    Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
@@ -21,17 +21,15 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 
 ### Common run issues
 
-* If the application crashes at startup, try installing [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
+* If the application crashes at startup on Windows, try installing [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
 
 ### Latency test
 ![](tutorials/latency_test.jpg)
 
 ### TODOs
 - Ground side OSD
-- Night image enhancement
-- Linux client
 
-### How to build
+### How to build on Windows
 1. Install vcpkg.
    ```powershell
    git clone https://github.com/microsoft/vcpkg.git
@@ -57,7 +55,13 @@ Supports RTL8812AU Wi-Fi adapter only (for now).
 
 5. Open as a CMake project and build.
 
+### How to build on Linux
+
+(Needed to be updated)
+
 ### Common build issues
+
+On Windows
 
 ```
 CMake Error at C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.29/Modules/FindPackageHandleStandardArgs.cmake:230 (message): ...
