@@ -15,7 +15,7 @@
 #undef min
 #undef max
 
-#ifdef __WIN32
+#ifdef _WIN32
 
 inline uint32_t htobe32(uint32_t host_32bits) {
     // 检查主机字节序是否为小端模式

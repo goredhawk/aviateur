@@ -315,7 +315,7 @@ void WFBReceiver::Stop() const {
 }
 
 WFBReceiver::WFBReceiver() {
-#ifdef __WIN32
+#ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         GuiInterface::Instance().PutLog(LogLevel::Error, "WSAStartup failed");
@@ -327,7 +327,7 @@ WFBReceiver::WFBReceiver() {
 }
 
 WFBReceiver::~WFBReceiver() {
-#ifdef __WIN32
+#ifdef _WIN32
     closesocket(sendFd);
     sendFd = INVALID_SOCKET;
     WSACleanup();

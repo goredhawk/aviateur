@@ -3,7 +3,7 @@
 const std::string AVIATEUR_REVISION_NUM = "476912f90fad60245031d1700b97e410611e2ab9";
 
 void open_explorer(const std::string& dir) {
-#ifdef __WIN32
+#ifdef _WIN32
     ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 #else
     std::string cmd = "xdg-open \"" + dir + "\"";
@@ -62,7 +62,7 @@ void SettingsContainer::custom_ready() {
         lang_menu_button->connect_signal("item_selected", callback);
     }
 
-    // #ifdef __WIN32
+    // #ifdef _WIN32
 
     {
         auto open_capture_folder_button = std::make_shared<Flint::MenuButton>();
@@ -88,7 +88,7 @@ void SettingsContainer::custom_ready() {
         open_appdata_button->connect_signal("pressed", callback);
     }
 
-#ifdef __WIN32
+#ifdef _WIN32
     {
         auto open_crash_dumps_button = std::make_shared<Flint::Button>();
 

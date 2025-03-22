@@ -5,7 +5,7 @@
 #ifndef WFB_RECEIVER_H
 #define WFB_RECEIVER_H
 
-#ifdef __WIN32
+#ifdef _WIN32
     #include <libusb.h>
 #else
     #include <libusb-1.0/libusb.h>

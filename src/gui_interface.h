@@ -63,7 +63,7 @@ public:
     }
 
     explicit GuiInterface() {
-#ifdef __WIN32
+#ifdef _WIN32
         ShowWindow(GetConsoleWindow(), SW_HIDE); // SW_RESTORE to bring back
 
         // Windows crash dump
@@ -267,7 +267,7 @@ public:
     }
 
     static int GetFreePort(int start_port) {
-#ifdef __WIN32
+#ifdef _WIN32
         // Declare some variables
         WSADATA wsaData;
 
