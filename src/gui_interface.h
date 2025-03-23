@@ -55,6 +55,11 @@ enum class LogLevel {
     Error,
 };
 
+struct RxStatus {
+    uint8_t rssi[2];
+    int8_t snr[2];
+};
+
 class GuiInterface {
 public:
     static GuiInterface &Instance() {
@@ -337,6 +342,8 @@ public:
     std::string playerCodec;
 
     bool config_file_exists = true;
+
+    RxStatus rx_status_{};
 
     // Signals.
     std::vector<Flint::AnyCallable<void>> logCallbacks;

@@ -21,6 +21,8 @@ public:
 
     std::chrono::time_point<std::chrono::steady_clock> record_start_time;
 
+    std::shared_ptr<Flint::Timer> rx_status_update_timer;
+
     std::shared_ptr<Flint::CollapseContainer> collapse_panel_;
 
     std::shared_ptr<Flint::HBoxContainer> hud_container_;
@@ -30,6 +32,8 @@ public:
     std::shared_ptr<Flint::Label> bitrate_label_;
 
     std::shared_ptr<Flint::Label> hw_status_label_;
+
+    std::shared_ptr<Flint::Label> rx_status_label_;
 
     std::shared_ptr<Flint::Label> video_info_label_;
 

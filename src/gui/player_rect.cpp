@@ -110,6 +110,26 @@ void PlayerRect::custom_ready() {
     hud_container_->add_child(hw_status_label_);
     hw_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
 
+    rx_status_label_ = std::make_shared<Flint::Label>();
+    hud_container_->add_child(rx_status_label_);
+    rx_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+
+    rx_status_update_timer = std::make_shared<Flint::Timer>();
+    add_child(rx_status_update_timer);
+
+    auto callback = [this] {
+        std::stringstream ss;
+        ss << "RSSI: " << std::setw(2) << (int)GuiInterface::Instance().rx_status_.rssi[0] << "," << std::setw(2)
+           << (int)GuiInterface::Instance().rx_status_.rssi[1] << " | ";
+        ss << "SNR: " << std::setw(2) << (int)GuiInterface::Instance().rx_status_.snr[0] << "," << std::setw(2)
+           << (int)GuiInterface::Instance().rx_status_.snr[1];
+        rx_status_label_->set_text(ss.str());
+
+        rx_status_update_timer->start_timer(1);
+    };
+    rx_status_update_timer->connect_signal("timeout", callback);
+    rx_status_update_timer->start_timer(1);
+
     record_status_label_ = std::make_shared<Flint::Label>();
     hud_container_->add_child(record_status_label_);
     record_status_label_->container_sizing.expand_h = true;
