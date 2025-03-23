@@ -1,6 +1,6 @@
 #include "settings_tab.h"
 
-const std::string AVIATEUR_REVISION_NUM = "476912f90fad60245031d1700b97e410611e2ab9";
+const std::string AVIATEUR_VERSION = "0.1.0";
 
 void open_explorer(const std::string& dir) {
 #ifdef _WIN32
@@ -131,17 +131,11 @@ void SettingsContainer::custom_ready() {
 #endif
 
     {
-        auto copy_version_button = std::make_shared<Flint::Button>();
+        auto version_label = std::make_shared<Flint::Label>();
 
-        copy_version_button->container_sizing.expand_h = true;
-        copy_version_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
-        vbox_container->add_child(copy_version_button);
-        copy_version_button->set_text(FTR("copy version num"));
-
-        auto callback = [this] {
-            auto input_server = Flint::InputServer::get_singleton();
-            input_server->set_clipboard(0, AVIATEUR_REVISION_NUM);
-        };
-        copy_version_button->connect_signal("pressed", callback);
+        version_label->container_sizing.expand_h = true;
+        version_label->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        vbox_container->add_child(version_label);
+        version_label->set_text("Version " + AVIATEUR_VERSION);
     }
 }
