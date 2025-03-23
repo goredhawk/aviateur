@@ -2,8 +2,7 @@
 // Created by Talus on 2024/6/10.
 //
 
-#ifndef WFB_RECEIVER_H
-#define WFB_RECEIVER_H
+#pragma once
 
 #ifdef _WIN32
     #include <libusb.h>
@@ -25,12 +24,12 @@ struct DeviceId {
     uint8_t port_num;
 };
 
-class WFBReceiver {
+class WfbReceiver {
 public:
-    WFBReceiver();
-    ~WFBReceiver();
-    static WFBReceiver &Instance() {
-        static WFBReceiver wfb_receiver;
+    WfbReceiver();
+    ~WfbReceiver();
+    static WfbReceiver &Instance() {
+        static WfbReceiver wfb_receiver;
         return wfb_receiver;
     }
 
@@ -47,5 +46,3 @@ protected:
     std::unique_ptr<Rtl8812aDevice> rtlDevice;
     std::string keyPath;
 };
-
-#endif // WFB_RECEIVER_H

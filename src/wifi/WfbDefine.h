@@ -2,8 +2,7 @@
 // Created by Talus on 2024/6/12.
 //
 
-#ifndef WFB_DEFINE_H
-#define WFB_DEFINE_H
+#pragma once
 
 #include <sodium.h>
 #include <sodium/crypto_box.h>
@@ -33,7 +32,7 @@ inline uint32_t htobe32(uint32_t host_32bits) {
 }
 
 inline uint64_t be64toh(uint64_t big_endian_64bits) {
-        // 如果本地字节序是小端，需要进行转换
+    // 如果本地字节序是小端，需要进行转换
     #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台
     return _byteswap_uint64(big_endian_64bits);
@@ -45,7 +44,7 @@ inline uint64_t be64toh(uint64_t big_endian_64bits) {
 
 // 定义 be32toh 函数，将大端 32 位整数转换为主机字节顺序
 inline uint32_t be32toh(uint32_t big_endian_32bits) {
-        // 如果本地字节序是小端，需要进行转换
+    // 如果本地字节序是小端，需要进行转换
     #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台，使用 _byteswap_ulong 函数
     return _byteswap_ulong(big_endian_32bits);
@@ -57,7 +56,7 @@ inline uint32_t be32toh(uint32_t big_endian_32bits) {
 
 // 定义 be16toh 函数，将大端 16 位整数转换为主机字节顺序
 inline uint16_t be16toh(uint16_t big_endian_16bits) {
-        // 如果本地字节序是小端，需要进行转换
+    // 如果本地字节序是小端，需要进行转换
     #if defined(_WIN32) || defined(_WIN64)
     // 如果是 Windows 平台，使用 _byteswap_ushort 函数
     return _byteswap_ushort(big_endian_16bits);
@@ -214,5 +213,3 @@ typedef struct {
 
 #define SESSION_KEY_ANNOUNCE_MSEC 1000
 #define RX_ANT_MAX 4
-
-#endif // WFB_DEFINE_H

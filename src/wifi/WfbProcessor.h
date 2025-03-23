@@ -2,12 +2,11 @@
 // Created by Talus on 2024/6/12.
 //
 
-#ifndef WFB_PROCESSOR_H
-#define WFB_PROCESSOR_H
+#pragma once
 
 #include <functional>
 
-#include "WFBDefine.h"
+#include "WfbDefine.h"
 
 extern "C" {
 #include "fec.h"
@@ -70,5 +69,3 @@ private:
     // on data output
     DataCB dcb;
 };
-
-#endif // WFB_PROCESSOR_H

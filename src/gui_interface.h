@@ -15,7 +15,7 @@
 #endif
 
 #include "app.h"
-#include "wifi/WFBReceiver.h"
+#include "wifi/WfbReceiver.h"
 
 #define CONFIG_FILE "config.ini"
 
@@ -126,7 +126,7 @@ public:
     }
 
     static std::vector<DeviceId> GetDeviceList() {
-        return WFBReceiver::GetDeviceList();
+        return WfbReceiver::GetDeviceList();
     }
 
     static std::string GetAppDataDir() {
@@ -190,11 +190,11 @@ public:
 
         Instance().playerCodec = codec;
 
-        return WFBReceiver::Instance().Start(deviceId, channel, channelWidthMode, keyPath);
+        return WfbReceiver::Instance().Start(deviceId, channel, channelWidthMode, keyPath);
     }
 
     static bool Stop() {
-        WFBReceiver::Instance().Stop();
+        WfbReceiver::Instance().Stop();
         return true;
     }
 

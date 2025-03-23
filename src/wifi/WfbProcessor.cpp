@@ -2,7 +2,7 @@
 // Created by Talus on 2024/6/12.
 //
 
-#include "WFBProcessor.h"
+#include "WfbProcessor.h"
 
 #include <cassert>
 #include <cinttypes>

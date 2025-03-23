@@ -28,7 +28,7 @@ static const char *const Pp = "101110001";
  * multiplications.
  */
 
-static gf gf_exp[510]; /* index->poly form conversion table    */
+static gf gf_exp[510];  /* index->poly form conversion table    */
 static int gf_log[256]; /* Poly->index form conversion table    */
 static gf inverse[256]; /* inverse of field elem.               */
 /* inv[\alpha**i]=\alpha**(GF_SIZE-i-1) */
@@ -45,12 +45,12 @@ static gf modnn(int x) {
     return x;
 }
 
-#define SWAP(a, b, t)                                                                                                  \
-    {                                                                                                                  \
-        t tmp;                                                                                                         \
-        tmp = a;                                                                                                       \
-        a = b;                                                                                                         \
-        b = tmp;                                                                                                       \
+#define SWAP(a, b, t) \
+    {                 \
+        t tmp;        \
+        tmp = a;      \
+        a = b;        \
+        b = tmp;      \
     }
 
 /*
@@ -85,11 +85,9 @@ static gf gf_mul_table[256][256];
 static void _init_mul_table(void) {
     int i, j;
     for (i = 0; i < 256; i++)
-        for (j = 0; j < 256; j++)
-            gf_mul_table[i][j] = gf_exp[modnn(gf_log[i] + gf_log[j])];
+        for (j = 0; j < 256; j++) gf_mul_table[i][j] = gf_exp[modnn(gf_log[i] + gf_log[j])];
 
-    for (j = 0; j < 256; j++)
-        gf_mul_table[0][j] = gf_mul_table[j][0] = 0;
+    for (j = 0; j < 256; j++) gf_mul_table[0][j] = gf_mul_table[j][0] = 0;
 }
 
 #define NEW_GF_MATRIX(rows, cols) (gf *)malloc(rows *cols)
@@ -101,7 +99,7 @@ static void generate_gf(void) {
     int i;
     gf mask;
 
-    mask = 1; /* x ** 0 = 1 */
+    mask = 1;      /* x ** 0 = 1 */
     gf_exp[8] = 0; /* will be updated at the end of the 1st loop */
     /*
      * first, generate the (polynomial representation of) powers of \alpha,
@@ -116,8 +114,7 @@ static void generate_gf(void) {
          * If Pp[i] == 1 then \alpha ** i occurs in poly-repr
          * gf_exp[8] = \alpha ** 8
          */
-        if (Pp[i] == '1')
-            gf_exp[8] ^= mask;
+        if (Pp[i] == '1') gf_exp[8] ^= mask;
     }
     /*
      * now gf_exp[8] = \alpha ** 8 is complete, so can also
@@ -143,8 +140,7 @@ static void generate_gf(void) {
      */
     gf_log[0] = 255;
     /* set the extended gf_exp values for fast multiply */
-    for (i = 0; i < 255; i++)
-        gf_exp[i + 255] = gf_exp[i];
+    for (i = 0; i < 255; i++) gf_exp[i + 255] = gf_exp[i];
 
     /*
      * again special cases. 0 has no inverse. This used to
@@ -153,8 +149,7 @@ static void generate_gf(void) {
      */
     inverse[0] = 0;
     inverse[1] = 1;
-    for (i = 2; i <= 255; i++)
-        inverse[i] = gf_exp[255 - gf_log[i]];
+    for (i = 2; i <= 255; i++) inverse[i] = gf_exp[255 - gf_log[i]];
 }
 
 /*
@@ -168,9 +163,8 @@ static void generate_gf(void) {
  * The case c=0 is also optimized, whereas c=1 is not. These
  * calls are unfrequent in my typical apps so I did not bother.
  */
-#define addmul(dst, src, c, sz)                                                                                        \
-    if (c != 0)                                                                                                        \
-    _addmul1(dst, src, c, sz)
+#define addmul(dst, src, c, sz) \
+    if (c != 0) _addmul1(dst, src, c, sz)
 
 #define UNROLL 16 /* 1, 4, 8, 16 */
 static void _addmul1(register gf *restrict dst, const register gf *restrict src, gf c, size_t sz) {
@@ -185,13 +179,13 @@ static void _addmul1(register gf *restrict dst, const register gf *restrict src,
         GF_ADDMULC(dst[1], src[1]);
         GF_ADDMULC(dst[2], src[2]);
         GF_ADDMULC(dst[3], src[3]);
-#if (UNROLL > 4)
+    #if (UNROLL > 4)
         GF_ADDMULC(dst[4], src[4]);
         GF_ADDMULC(dst[5], src[5]);
         GF_ADDMULC(dst[6], src[6]);
         GF_ADDMULC(dst[7], src[7]);
-#endif
-#if (UNROLL > 8)
+    #endif
+    #if (UNROLL > 8)
         GF_ADDMULC(dst[8], src[8]);
         GF_ADDMULC(dst[9], src[9]);
         GF_ADDMULC(dst[10], src[10]);
@@ -200,7 +194,7 @@ static void _addmul1(register gf *restrict dst, const register gf *restrict src,
         GF_ADDMULC(dst[13], src[13]);
         GF_ADDMULC(dst[14], src[14]);
         GF_ADDMULC(dst[15], src[15]);
-#endif
+    #endif
     }
 #endif
     lim += UNROLL - 1;
@@ -219,8 +213,7 @@ static void _matmul(gf *a, gf *b, gf *c, unsigned n, unsigned k, unsigned m) {
             gf *pa = &a[row * k];
             gf *pb = &b[col];
             gf acc = 0;
-            for (i = 0; i < k; i++, pa++, pb += m)
-                acc ^= gf_mul(*pa, *pb);
+            for (i = 0; i < k; i++, pa++, pb += m) acc ^= gf_mul(*pa, *pb);
             c[row * m + col] = acc;
         }
     }
@@ -246,8 +239,7 @@ static void _invert_mat(gf *src, size_t k) {
     /*
      * ipiv marks elements already used as pivots.
      */
-    for (size_t i = 0; i < k; i++)
-        ipiv[i] = 0;
+    for (size_t i = 0; i < k; i++) ipiv[i] = 0;
 
     for (size_t col = 0; col < k; col++) {
         gf *pivot_row;
@@ -282,8 +274,7 @@ static void _invert_mat(gf *src, size_t k) {
          * optimizing.
          */
         if (irow != icol)
-            for (size_t ix = 0; ix < k; ix++)
-                SWAP(src[irow * k + ix], src[icol * k + ix], gf);
+            for (size_t ix = 0; ix < k; ix++) SWAP(src[irow * k + ix], src[icol * k + ix], gf);
         indxr[col] = irow;
         indxc[col] = icol;
         pivot_row = &src[icol * k];
@@ -296,8 +287,7 @@ static void _invert_mat(gf *src, size_t k) {
              */
             c = inverse[c];
             pivot_row[icol] = 1;
-            for (size_t ix = 0; ix < k; ix++)
-                pivot_row[ix] = gf_mul(c, pivot_row[ix]);
+            for (size_t ix = 0; ix < k; ix++) pivot_row[ix] = gf_mul(c, pivot_row[ix]);
         }
         /*
          * from all rows, remove multiples of the selected row
@@ -321,8 +311,7 @@ static void _invert_mat(gf *src, size_t k) {
     } /* done all columns */
     for (size_t col = k; col > 0; col--)
         if (indxr[col - 1] != indxc[col - 1])
-            for (size_t row = 0; row < k; row++)
-                SWAP(src[row * k + indxr[col - 1]], src[row * k + indxc[col - 1]], gf);
+            for (size_t row = 0; row < k; row++) SWAP(src[row * k + indxr[col - 1]], src[row * k + indxc[col - 1]], gf);
     free(indxc);
     free(indxr);
     free(ipiv);
@@ -369,8 +358,7 @@ void _invert_vdm(gf *src, unsigned k) {
     c[k - 1] = p[0]; /* really -p(0), but x = -x in GF(2^m) */
     for (i = 1; i < k; i++) {
         gf p_i = p[i]; /* see above comment */
-        for (j = k - 1 - (i - 1); j < k - 1; j++)
-            c[j] ^= gf_mul(p_i, c[j + 1]);
+        for (j = k - 1 - (i - 1); j < k - 1; j++) c[j] ^= gf_mul(p_i, c[j + 1]);
         c[k - 1] ^= p_i;
     }
 
@@ -385,8 +373,7 @@ void _invert_vdm(gf *src, unsigned k) {
             b[i - 1] = c[i] ^ gf_mul(xx, b[i]);
             t = gf_mul(xx, t) ^ b[i - 1];
         }
-        for (col = 0; col < k; col++)
-            src[col * k + row] = gf_mul(inverse[t], b[col]);
+        for (col = 0; col < k; col++) src[col * k + row] = gf_mul(inverse[t], b[col]);
     }
     free(c);
     free(b);
@@ -426,8 +413,7 @@ fec_t *fec_new(unsigned short k, unsigned short n) {
     assert(n <= 256);
     assert(k <= n);
 
-    if (fec_initialized == 0)
-        init_fec();
+    if (fec_initialized == 0) init_fec();
 
     retval = (fec_t *)malloc(sizeof(fec_t));
     retval->k = k;
@@ -440,11 +426,9 @@ fec_t *fec_new(unsigned short k, unsigned short n) {
      * The first row is special, cannot be computed with exp. table.
      */
     tmp_m[0] = 1;
-    for (col = 1; col < k; col++)
-        tmp_m[col] = 0;
+    for (col = 1; col < k; col++) tmp_m[col] = 0;
     for (p = tmp_m + k, row = 0; row < n - 1; row++, p += k)
-        for (col = 0; col < k; col++)
-            p[col] = gf_exp[modnn(row * col)];
+        for (col = 0; col < k; col++) p[col] = gf_exp[modnn(row * col)];
 
     /*
      * quick code to build systematic matrix: invert the top
@@ -457,8 +441,7 @@ fec_t *fec_new(unsigned short k, unsigned short n) {
      * the upper matrix is I so do not bother with a slow multiply
      */
     memset(retval->enc_matrix, '\0', k * k * sizeof(gf));
-    for (p = retval->enc_matrix, col = 0; col < k; col++, p += k + 1)
-        *p = 1;
+    for (p = retval->enc_matrix, col = 0; col < k; col++, p += k + 1) *p = 1;
     free(tmp_m);
 
     return retval;
@@ -467,7 +450,7 @@ fec_t *fec_new(unsigned short k, unsigned short n) {
 /* To make sure that we stay within cache in the inner loops of fec_encode().  (It would
    probably help to also do this for fec_decode(). */
 #ifndef STRIDE
-#define STRIDE 8192
+    #define STRIDE 8192
 #endif
 
 void fec_encode(const fec_t *code, const gf **src, gf **fecs, size_t sz) {
@@ -482,8 +465,7 @@ void fec_encode(const fec_t *code, const gf **src, gf **fecs, size_t sz) {
             fecnum = i + code->k;
             memset(fecs[i] + k, 0, stride);
             p = &(code->enc_matrix[fecnum * code->k]);
-            for (j = 0; j < code->k; j++)
-                addmul(fecs[i] + k, src[j] + k, p[j], stride);
+            for (j = 0; j < code->k; j++) addmul(fecs[i] + k, src[j] + k, p[j], stride);
         }
     }
 }
@@ -493,9 +475,10 @@ void fec_encode(const fec_t *code, const gf **src, gf **fecs, size_t sz) {
  *
  * @param matrix a space allocated for a k by k matrix
  */
-void build_decode_matrix_into_space(
-    const fec_t *restrict const code, const unsigned *const restrict index, const unsigned k,
-    gf *restrict const matrix) {
+void build_decode_matrix_into_space(const fec_t *restrict const code,
+                                    const unsigned *const restrict index,
+                                    const unsigned k,
+                                    gf *restrict const matrix) {
     unsigned char i;
     gf *p;
     for (i = 0, p = matrix; i < k; i++, p += k) {
@@ -521,8 +504,7 @@ void fec_decode(const fec_t *code, const gf **inpkts, gf **outpkts, const unsign
                                                                    required to be in the i'th element. */
         if (index[row] >= code->k) {
             memset(outpkts[outix], 0, sz);
-            for (col = 0; col < code->k; col++)
-                addmul(outpkts[outix], inpkts[col], m_dec[row * code->k + col], sz);
+            for (col = 0; col < code->k; col++) addmul(outpkts[outix], inpkts[col], m_dec[row * code->k + col], sz);
             outix++;
         }
     }

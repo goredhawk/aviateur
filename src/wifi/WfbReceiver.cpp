@@ -2,7 +2,7 @@
 // Created by Talus on 2024/6/10.
 //
 
-#include "WFBReceiver.h"
+#include "WfbReceiver.h"
 
 #include <iomanip>
 #include <mutex>
@@ -12,13 +12,13 @@
 #include "../gui_interface.h"
 #include "Rtp.h"
 #include "RxFrame.h"
-#include "WFBProcessor.h"
+#include "WfbProcessor.h"
 #include "WiFiDriver.h"
 #include "logger.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
-std::vector<DeviceId> WFBReceiver::GetDeviceList() {
+std::vector<DeviceId> WfbReceiver::GetDeviceList() {
     std::vector<DeviceId> list;
 
     // Initialize libusb
@@ -82,7 +82,7 @@ std::vector<DeviceId> WFBReceiver::GetDeviceList() {
     return list;
 }
 
-bool WFBReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWidthMode, const std::string &kPath) {
+bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWidthMode, const std::string &kPath) {
     GuiInterface::Instance().wifiFrameCount_ = 0;
     GuiInterface::Instance().wfbFrameCount_ = 0;
     GuiInterface::Instance().rtpPktCount_ = 0;
@@ -211,7 +211,7 @@ bool WFBReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
     return true;
 }
 
-void WFBReceiver::handle80211Frame(const Packet &packet) {
+void WfbReceiver::handle80211Frame(const Packet &packet) {
     GuiInterface::Instance().wifiFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
@@ -223,8 +223,11 @@ void WFBReceiver::handle80211Frame(const Packet &packet) {
     GuiInterface::Instance().wfbFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
-    static int8_t rssi[4] = {1, 1, 1, 1};
+    static int8_t rssi[2] = {1, 1};
     static uint8_t antenna[4] = {1, 1, 1, 1};
+
+    memcpy(GuiInterface::Instance().rx_status_.rssi, packet.RxAtrib.rssi, sizeof(int8_t) * 2);
+    memcpy(GuiInterface::Instance().rx_status_.snr, packet.RxAtrib.snr, sizeof(int8_t) * 2);
 
     static uint32_t link_id = 7669206; // sha1 hash of link_domain="default"
     static uint8_t video_radio_port = 0;
@@ -240,7 +243,7 @@ void WFBReceiver::handle80211Frame(const Packet &packet) {
         keyPath.c_str(),
         epoch,
         video_channel_id_f,
-        [](uint8_t *payload, uint16_t packet_size) { WFBReceiver::Instance().handleRtp(payload, packet_size); });
+        [](uint8_t *payload, uint16_t packet_size) { WfbReceiver::Instance().handleRtp(payload, packet_size); });
 
     std::lock_guard lock(agg_mutex);
     if (frame.MatchesChannelID(video_channel_id_be8)) {
@@ -249,11 +252,13 @@ void WFBReceiver::handle80211Frame(const Packet &packet) {
                                          0,
                                          antenna,
                                          rssi);
+    } else {
+        int a = 1;
     }
 }
 
 #ifdef __linux__
-#define INVALID_SOCKET (-1)
+    #define INVALID_SOCKET (-1)
 #endif
 
 static unsigned long long sendFd = INVALID_SOCKET;
@@ -266,7 +271,7 @@ inline bool isH264(const uint8_t *data) {
     return h264NalType == 24 || h264NalType == 28;
 }
 
-void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
+void WfbReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
     GuiInterface::Instance().rtpPktCount_++;
     GuiInterface::Instance().UpdateCount();
 
@@ -307,14 +312,14 @@ void WFBReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
            sizeof(serverAddr));
 }
 
-void WFBReceiver::Stop() const {
+void WfbReceiver::Stop() const {
     playing = false;
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
 }
 
-WFBReceiver::WFBReceiver() {
+WfbReceiver::WfbReceiver() {
 #ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
@@ -326,7 +331,7 @@ WFBReceiver::WFBReceiver() {
     sendFd = socket(AF_INET, SOCK_DGRAM, 0);
 }
 
-WFBReceiver::~WFBReceiver() {
+WfbReceiver::~WfbReceiver() {
 #ifdef _WIN32
     closesocket(sendFd);
     sendFd = INVALID_SOCKET;

@@ -305,7 +305,7 @@ void PlayerRect::stop_playing() {
         record_button_->press();
     }
 
-    // Fix crash in WFBReceiver destructor.
+    // Fix crash in WfbReceiver destructor.
     if (player_) {
         player_->stop();
     }

@@ -19,9 +19,9 @@ typedef struct {
 } fec_t;
 
 #if defined(_MSC_VER)
-// actually, some of the flavors (i.e. Enterprise) do support restrict
-// #define restrict __restrict
-#define restrict
+    // actually, some of the flavors (i.e. Enterprise) do support restrict
+    // #define restrict __restrict
+    #define restrict
 #endif
 
 /**
@@ -52,15 +52,15 @@ void fec_encode(const fec_t *code, const gf **src, gf **fecs, size_t sz);
 void fec_decode(const fec_t *code, const gf **inpkts, gf **outpkts, const unsigned *index, size_t sz);
 
 #if defined(_MSC_VER)
-#define alloca _alloca
+    #define alloca _alloca
 #else
-#ifdef __GNUC__
-#ifndef alloca
-#define alloca(x) __builtin_alloca(x)
-#endif
-#else
-#include <alloca.h>
-#endif
+    #ifdef __GNUC__
+        #ifndef alloca
+            #define alloca(x) __builtin_alloca(x)
+        #endif
+    #else
+        #include <alloca.h>
+    #endif
 #endif
 
 /**
