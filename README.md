@@ -1,10 +1,16 @@
 # Aviateur
 
+<p align="center">
+  <a href="https://github.com/OpenIPC/aviateur">
+    <img src="assets/logo.png" width="96" alt="Aviateur logo">
+  </a>
+</p>
+
 OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]).
 
 ![](tutorials/interface.jpg)
 
-Supports RTL8812AU Wi-Fi adapter only (for now).
+For now, only RTL8812AU Wi-Fi adapter is supported.
 
 ### Usage
 1. (Only for Windows) Download [Zadig](https://zadig.akeo.ie/)
