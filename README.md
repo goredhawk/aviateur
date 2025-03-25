@@ -10,9 +10,11 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 
 ![](tutorials/interface.jpg)
 
-For now, only RTL8812AU Wi-Fi adapter is supported.
+> [!NOTE]
+> For now, only RTL8812AU Wi-Fi adapter is supported.
 
 ### Usage
+
 1. (Only for Windows) Download [Zadig](https://zadig.akeo.ie/)
 2. (Only for Windows) Install the libusb driver for your adapter.
    Go *Options* → *List All Devices*.
@@ -27,22 +29,25 @@ For now, only RTL8812AU Wi-Fi adapter is supported.
 
 ### Common run issues
 
-* If the application crashes at startup on Windows, try installing [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version).
+* If the application crashes at startup on Windows, install [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version) first.
 
 ### Latency test
+
 ![](tutorials/latency_test.jpg)
 
 ### TODOs
+
 - Ground side OSD
 
 ### How to build on Windows
-1. Install vcpkg.
+
+1. Install vcpkg somewhere else.
    ```powershell
    git clone https://github.com/microsoft/vcpkg.git
    cd vcpkg
    .\bootstrap-vcpkg.bat
    ```
-   
+
 2. Install dependencies.
    ```powershell
    .\vcpkg integrate install
@@ -54,7 +59,6 @@ For now, only RTL8812AU Wi-Fi adapter is supported.
 
 4. Clone third-party library source.
    ```powershell
-   cd aviateur
    git submodule init
    git submodule update
    ```
@@ -63,7 +67,14 @@ For now, only RTL8812AU Wi-Fi adapter is supported.
 
 ### How to build on Linux
 
-(Needed to be updated)
+1. Install dependencies.
+   ```bash
+   git submodule init
+   git submodule update
+   sudo apt-get install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev
+   ```
+
+2. Open as a CMake project and build.
 
 ### Common build issues
 
@@ -74,4 +85,5 @@ CMake Error at C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/I
 ```
 
 This is because the pre-installed vcpkg from Visual Studio installer overrides the PKG_ROOT environment variable.
-To fix this, find `set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")` in CMakeLists.txt, replace `$ENV{VCPKG_ROOT}` with the vcpkg you cloned previously.
+To fix this, find `set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")` in CMakeLists.txt,
+replace `$ENV{VCPKG_ROOT}` with the vcpkg you cloned previously.

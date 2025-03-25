@@ -16,6 +16,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# To fix "error: call to undeclared library function 'memset' with type 'void *(void *, int, unsigned long)'".
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_C_STANDARD 90)
+    set(CMAKE_C_STANDARD_REQUIRED TRUE)
+endif ()
+
 find_package(PkgConfig REQUIRED)
 
 if (WIN32)
