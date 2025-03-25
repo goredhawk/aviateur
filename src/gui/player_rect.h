@@ -4,6 +4,8 @@
 #include "app.h"
 #include "tip_label.h"
 
+class SignalBar;
+
 class PlayerRect : public Flint::TextureRect {
 public:
     std::shared_ptr<RealTimePlayer> player_;
@@ -34,6 +36,8 @@ public:
     std::shared_ptr<Flint::Label> hw_status_label_;
 
     std::shared_ptr<Flint::Label> rx_status_label_;
+    std::shared_ptr<SignalBar> rssi_bar_;
+    std::shared_ptr<SignalBar> snr_bar_;
 
     std::shared_ptr<Flint::Label> video_info_label_;
 

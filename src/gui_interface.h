@@ -36,6 +36,10 @@
 
 constexpr auto LOGGER_MODULE = "Aviateur";
 
+const Flint::ColorU GREEN = Flint::ColorU(78, 135, 82);
+const Flint::ColorU RED = Flint::ColorU(201, 79, 79);
+const Flint::ColorU YELLOW = Flint::ColorU(255, 201, 14);
+
 /// Channels.
 constexpr std::array CHANNELS{
     1,  2,  3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  32,  36,  40,  44,  48,  52,  56,  60,  64,

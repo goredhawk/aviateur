@@ -2,15 +2,27 @@
 
 #include "../gui_interface.h"
 
+class SignalBar : public Flint::ProgressBar {
+    void custom_update(double dt) override {
+        if (value < 33.3) {
+            theme_progress->bg_color = RED;
+        }
+        if (value > 33.3 && value < 66.67) {
+            theme_progress->bg_color = YELLOW;
+        }
+        if (value > 66.67) {
+            theme_progress->bg_color = GREEN;
+        }
+    }
+};
+
 void PlayerRect::show_red_tip(std::string tip) {
-    auto red = Flint::ColorU(201, 79, 79);
-    tip_label_->set_text_style(Flint::TextStyle{red});
+    tip_label_->set_text_style(Flint::TextStyle{GREEN});
     tip_label_->show_tip(tip);
 }
 
 void PlayerRect::show_green_tip(std::string tip) {
-    auto green = Flint::ColorU(78, 135, 82);
-    tip_label_->set_text_style(Flint::TextStyle{green});
+    tip_label_->set_text_style(Flint::TextStyle{GREEN});
     tip_label_->show_tip(tip);
 }
 
@@ -110,25 +122,45 @@ void PlayerRect::custom_ready() {
     hud_container_->add_child(hw_status_label_);
     hw_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
 
-    rx_status_label_ = std::make_shared<Flint::Label>();
-    hud_container_->add_child(rx_status_label_);
-    rx_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+    auto rssi_label = std::make_shared<Flint::Label>();
+    hud_container_->add_child(rssi_label);
+    rssi_label->set_text("RSSI");
+    rssi_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+
+    rssi_bar_ = std::make_shared<SignalBar>();
+    hud_container_->add_child(rssi_bar_);
+    rssi_bar_->set_lerp_enabled(true);
+    rssi_bar_->set_custom_minimum_size({64, 16});
+    rssi_bar_->set_label_visibility(false);
+    rssi_bar_->container_sizing.expand_v = false;
+    rssi_bar_->container_sizing.flag_v = Flint::ContainerSizingFlag::ShrinkCenter;
+
+    auto snr_label = std::make_shared<Flint::Label>();
+    hud_container_->add_child(snr_label);
+    snr_label->set_text("SNR");
+    snr_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+
+    snr_bar_ = std::make_shared<SignalBar>();
+    hud_container_->add_child(snr_bar_);
+    snr_bar_->set_lerp_enabled(true);
+    snr_bar_->set_custom_minimum_size({64, 16});
+    snr_bar_->set_label_visibility(false);
+    snr_bar_->container_sizing.expand_v = false;
+    snr_bar_->container_sizing.flag_v = Flint::ContainerSizingFlag::ShrinkCenter;
 
     rx_status_update_timer = std::make_shared<Flint::Timer>();
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
-        std::stringstream ss;
-        ss << "RSSI: " << std::setw(2) << (int)GuiInterface::Instance().rx_status_.rssi[0] << "," << std::setw(2)
-           << (int)GuiInterface::Instance().rx_status_.rssi[1] << " | ";
-        ss << "SNR: " << std::setw(2) << (int)GuiInterface::Instance().rx_status_.snr[0] << "," << std::setw(2)
-           << (int)GuiInterface::Instance().rx_status_.snr[1];
-        rx_status_label_->set_text(ss.str());
+        rssi_bar_->set_value(
+            (GuiInterface::Instance().rx_status_.rssi[0] + GuiInterface::Instance().rx_status_.rssi[1]) / 2);
+        snr_bar_->set_value((GuiInterface::Instance().rx_status_.snr[0] + GuiInterface::Instance().rx_status_.snr[1]) /
+                            2);
 
-        rx_status_update_timer->start_timer(1);
+        rx_status_update_timer->start_timer(0.1);
     };
     rx_status_update_timer->connect_signal("timeout", callback);
-    rx_status_update_timer->start_timer(1);
+    rx_status_update_timer->start_timer(0.1);
 
     record_status_label_ = std::make_shared<Flint::Label>();
     hud_container_->add_child(record_status_label_);

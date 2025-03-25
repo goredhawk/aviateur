@@ -30,16 +30,14 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
     tab_container_->set_tab_disabled(!start_status);
 
     if (!start_status) {
-        auto red = Flint::ColorU(201, 79, 79);
-        play_button_->theme_normal.bg_color = red;
-        play_button_->theme_hovered.bg_color = red;
-        play_button_->theme_pressed.bg_color = red;
+        play_button_->theme_normal.bg_color = RED;
+        play_button_->theme_hovered.bg_color = RED;
+        play_button_->theme_pressed.bg_color = RED;
         play_button_->set_text(FTR("stop") + " (F5)");
     } else {
-        auto green = Flint::ColorU(78, 135, 82);
-        play_button_->theme_normal.bg_color = green;
-        play_button_->theme_hovered.bg_color = green;
-        play_button_->theme_pressed.bg_color = green;
+        play_button_->theme_normal.bg_color = GREEN;
+        play_button_->theme_hovered.bg_color = GREEN;
+        play_button_->theme_pressed.bg_color = GREEN;
         play_button_->set_text(FTR("start") + " (F5)");
     }
 }
@@ -48,16 +46,14 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
     tab_container_->set_tab_disabled(!start_status);
 
     if (!start_status) {
-        auto red = Flint::ColorU(201, 79, 79);
-        play_url_button_->theme_normal.bg_color = red;
-        play_url_button_->theme_hovered.bg_color = red;
-        play_url_button_->theme_pressed.bg_color = red;
+        play_url_button_->theme_normal.bg_color = RED;
+        play_url_button_->theme_hovered.bg_color = RED;
+        play_url_button_->theme_pressed.bg_color = RED;
         play_url_button_->set_text(FTR("close") + " (F5)");
     } else {
-        auto green = Flint::ColorU(78, 135, 82);
-        play_url_button_->theme_normal.bg_color = green;
-        play_url_button_->theme_hovered.bg_color = green;
-        play_url_button_->theme_pressed.bg_color = green;
+        play_url_button_->theme_normal.bg_color = GREEN;
+        play_url_button_->theme_hovered.bg_color = GREEN;
+        play_url_button_->theme_pressed.bg_color = GREEN;
         play_url_button_->set_text(FTR("start") + " (F5)");
     }
 }

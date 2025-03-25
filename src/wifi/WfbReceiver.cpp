@@ -226,6 +226,9 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
     static int8_t rssi[2] = {1, 1};
     static uint8_t antenna[4] = {1, 1, 1, 1};
 
+    memcpy(GuiInterface::Instance().rx_status_.rssi, packet.RxAtrib.rssi, sizeof(int8_t) * 2);
+    memcpy(GuiInterface::Instance().rx_status_.snr, packet.RxAtrib.snr, sizeof(int8_t) * 2);
+
     static uint32_t link_id = 7669206; // sha1 hash of link_domain="default"
     static uint8_t video_radio_port = 0;
     static uint64_t epoch = 0;
