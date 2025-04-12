@@ -68,7 +68,6 @@ int main() {
         auto callback = [control_panel_weak](bool toggled) {
             if (!control_panel_weak.expired()) {
                 app->set_fullscreen(toggled);
-                control_panel_weak.lock()->set_visibility(!toggled);
             }
         };
         player_rect->fullscreen_button_->connect_signal("toggled", callback);
