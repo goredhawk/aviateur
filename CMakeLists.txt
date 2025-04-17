@@ -59,8 +59,8 @@ endif ()
 add_subdirectory(3rd/devourer)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/devourer/src" "3rd/devourer/hal")
 
-add_subdirectory(3rd/flint_gui)
-target_include_directories(${PROJECT_NAME} PRIVATE "3rd/flint_gui/src")
+add_subdirectory(3rd/revector)
+target_include_directories(${PROJECT_NAME} PRIVATE "3rd/revector/src")
 
 add_subdirectory(3rd/json)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")

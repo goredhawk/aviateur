@@ -1,7 +1,3 @@
-[submodule "3rd/flint_gui"]
-	path = 3rd/flint_gui
-	url = https://github.com/floppyhammer/flint_gui.git
-	branch = master
 [submodule "3rd/json"]
 	path = 3rd/json
 	url = https://github.com/nlohmann/json.git
@@ -11,3 +7,6 @@
 [submodule "3rd/mINI"]
 	path = 3rd/mINI
 	url = https://github.com/metayeti/mINI.git
+[submodule "3rd/revector"]
+	path = 3rd/revector
+	url = https://github.com/floppyhammer/revector.git
