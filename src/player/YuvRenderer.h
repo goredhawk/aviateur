@@ -9,6 +9,7 @@
 #include <pathfinder/gpu/texture.h>
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "../feature/video_stabilizer.h"
