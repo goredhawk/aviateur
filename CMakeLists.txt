@@ -75,7 +75,7 @@ if (WIN32)
             unofficial-sodium::sodium
             ${OpenCV_LIBS}
             WiFiDriver
-            flint_gui
+            revector
     )
 else ()
     target_link_libraries(${PROJECT_NAME}
@@ -83,6 +83,6 @@ else ()
             PkgConfig::LIBSODIUM
             ${OpenCV_LIBS}
             WiFiDriver
-            flint_gui
+            revector
     )
 endif ()
