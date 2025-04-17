@@ -3,12 +3,12 @@
 #include "../gui_interface.h"
 #include "app.h"
 
-class ControlPanel : public Flint::Container {
+class ControlPanel : public revector::Container {
 public:
-    std::shared_ptr<Flint::MenuButton> dongle_menu_button_;
-    std::shared_ptr<Flint::MenuButton> channel_button_;
-    std::shared_ptr<Flint::MenuButton> channel_width_button_;
-    std::shared_ptr<Flint::Button> refresh_dongle_button_;
+    std::shared_ptr<revector::MenuButton> dongle_menu_button_;
+    std::shared_ptr<revector::MenuButton> channel_button_;
+    std::shared_ptr<revector::MenuButton> channel_width_button_;
+    std::shared_ptr<revector::Button> refresh_dongle_button_;
 
     std::string net_card_name;
     std::optional<DeviceId> selected_net_card;
@@ -17,12 +17,12 @@ public:
     std::string keyPath;
     std::string codec;
 
-    std::shared_ptr<Flint::Button> play_button_;
+    std::shared_ptr<revector::Button> play_button_;
 
-    std::shared_ptr<Flint::Button> play_url_button_;
-    std::shared_ptr<Flint::TextEdit> url_edit_;
+    std::shared_ptr<revector::Button> play_url_button_;
+    std::shared_ptr<revector::TextEdit> url_edit_;
 
-    std::shared_ptr<Flint::TabContainer> tab_container_;
+    std::shared_ptr<revector::TabContainer> tab_container_;
 
     std::vector<DeviceId> devices_;
 
@@ -34,5 +34,5 @@ public:
 
     void custom_ready() override;
 
-    void custom_input(Flint::InputEvent &event) override;
+    void custom_input(revector::InputEvent &event) override;
 };

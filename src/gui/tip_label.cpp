@@ -3,15 +3,15 @@
 void TipLabel::custom_ready() {
     set_font_size(48);
 
-    auto style_box = Flint::StyleBox();
-    style_box.bg_color = Flint::ColorU(50, 50, 50, 200);
+    auto style_box = revector::StyleBox();
+    style_box.bg_color = revector::ColorU(50, 50, 50, 200);
     style_box.corner_radius = 8;
     theme_background = style_box;
 
-    set_text_style(Flint::TextStyle{Flint::ColorU(201, 79, 79)});
+    set_text_style(revector::TextStyle{revector::ColorU(201, 79, 79)});
 
-    display_timer = std::make_shared<Flint::Timer>();
-    fade_timer = std::make_shared<Flint::Timer>();
+    display_timer = std::make_shared<revector::Timer>();
+    fade_timer = std::make_shared<revector::Timer>();
 
     add_child(display_timer);
     add_child(fade_timer);

@@ -66,42 +66,42 @@ void ControlPanel::custom_ready() {
     keyPath = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY];
     codec = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC];
 
-    auto default_theme = Flint::DefaultResource::get_singleton()->get_default_theme();
+    auto default_theme = revector::DefaultResource::get_singleton()->get_default_theme();
     theme_bg_ = std::make_optional(default_theme->panel.styles["background"]);
     theme_bg_.value().corner_radius = 0;
     theme_bg_.value().border_width = 0;
     theme_bg_->border_width = 0;
 
-    set_anchor_flag(Flint::AnchorFlag::RightWide);
+    set_anchor_flag(revector::AnchorFlag::RightWide);
 
-    tab_container_ = std::make_shared<Flint::TabContainer>();
+    tab_container_ = std::make_shared<revector::TabContainer>();
     add_child(tab_container_);
-    tab_container_->set_anchor_flag(Flint::AnchorFlag::FullRect);
+    tab_container_->set_anchor_flag(revector::AnchorFlag::FullRect);
 
     // Wi-Fi card tab
     {
-        auto margin_container = std::make_shared<Flint::MarginContainer>();
+        auto margin_container = std::make_shared<revector::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
         tab_container_->set_tab_title(0, FTR("wi-fi card"));
 
-        auto vbox_container = std::make_shared<Flint::VBoxContainer>();
+        auto vbox_container = std::make_shared<revector::VBoxContainer>();
         vbox_container->set_separation(8);
         margin_container->add_child(vbox_container);
 
         {
-            auto hbox_container = std::make_shared<Flint::HBoxContainer>();
+            auto hbox_container = std::make_shared<revector::HBoxContainer>();
             hbox_container->set_separation(8);
             vbox_container->add_child(hbox_container);
 
-            auto label = std::make_shared<Flint::Label>();
+            auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("net card"));
             hbox_container->add_child(label);
 
-            dongle_menu_button_ = std::make_shared<Flint::MenuButton>();
+            dongle_menu_button_ = std::make_shared<revector::MenuButton>();
 
             dongle_menu_button_->container_sizing.expand_h = true;
-            dongle_menu_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            dongle_menu_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(dongle_menu_button_);
 
             // Do this before setting dongle button text.
@@ -111,8 +111,8 @@ void ControlPanel::custom_ready() {
             auto callback = [this](uint32_t) { net_card_name = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
-            refresh_dongle_button_ = std::make_shared<Flint::Button>();
-            auto icon = std::make_shared<Flint::VectorImage>("assets/Refresh.svg");
+            refresh_dongle_button_ = std::make_shared<revector::Button>();
+            auto icon = std::make_shared<revector::VectorImage>("assets/Refresh.svg");
             refresh_dongle_button_->set_icon_normal(icon);
             refresh_dongle_button_->set_text("");
             hbox_container->add_child(refresh_dongle_button_);
@@ -122,16 +122,16 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            auto hbox_container = std::make_shared<Flint::HBoxContainer>();
+            auto hbox_container = std::make_shared<revector::HBoxContainer>();
             vbox_container->add_child(hbox_container);
 
-            auto label = std::make_shared<Flint::Label>();
+            auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("channel"));
             hbox_container->add_child(label);
 
-            channel_button_ = std::make_shared<Flint::MenuButton>();
+            channel_button_ = std::make_shared<revector::MenuButton>();
             channel_button_->container_sizing.expand_h = true;
-            channel_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            channel_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(channel_button_);
 
             {
@@ -153,16 +153,16 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            auto hbox_container = std::make_shared<Flint::HBoxContainer>();
+            auto hbox_container = std::make_shared<revector::HBoxContainer>();
             vbox_container->add_child(hbox_container);
 
-            auto label = std::make_shared<Flint::Label>();
+            auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("channel width"));
             hbox_container->add_child(label);
 
-            channel_width_button_ = std::make_shared<Flint::MenuButton>();
+            channel_width_button_ = std::make_shared<revector::MenuButton>();
             channel_width_button_->container_sizing.expand_h = true;
-            channel_width_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            channel_width_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(channel_width_button_);
 
             {
@@ -189,27 +189,27 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            auto hbox_container = std::make_shared<Flint::HBoxContainer>();
+            auto hbox_container = std::make_shared<revector::HBoxContainer>();
             vbox_container->add_child(hbox_container);
 
-            auto label = std::make_shared<Flint::Label>();
+            auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("key"));
             hbox_container->add_child(label);
 
-            auto text_edit = std::make_shared<Flint::TextEdit>();
+            auto text_edit = std::make_shared<revector::TextEdit>();
             text_edit->set_editable(false);
             text_edit->set_text(std::filesystem::path(keyPath).filename().string());
             text_edit->container_sizing.expand_h = true;
-            text_edit->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            text_edit->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(text_edit);
 
-            auto file_dialog = std::make_shared<Flint::FileDialog>();
+            auto file_dialog = std::make_shared<revector::FileDialog>();
             add_child(file_dialog);
 
             auto defaultKeyPath = std::filesystem::absolute(keyPath).string();
             file_dialog->set_default_path(defaultKeyPath);
 
-            auto select_button = std::make_shared<Flint::Button>();
+            auto select_button = std::make_shared<revector::Button>();
             select_button->set_text(FTR("open"));
 
             std::weak_ptr file_dialog_weak = file_dialog;
@@ -227,9 +227,9 @@ void ControlPanel::custom_ready() {
         }
 
         {
-            play_button_ = std::make_shared<Flint::Button>();
+            play_button_ = std::make_shared<revector::Button>();
             play_button_->container_sizing.expand_h = true;
-            play_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            play_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             update_adapter_start_button_looking(true);
 
             auto callback1 = [this] {
@@ -265,33 +265,33 @@ void ControlPanel::custom_ready() {
 
     // Local tab
     {
-        auto margin_container = std::make_shared<Flint::MarginContainer>();
+        auto margin_container = std::make_shared<revector::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
         tab_container_->set_tab_title(1, FTR("streaming"));
 
-        auto vbox_container = std::make_shared<Flint::VBoxContainer>();
+        auto vbox_container = std::make_shared<revector::VBoxContainer>();
         vbox_container->set_separation(8);
         margin_container->add_child(vbox_container);
 
-        auto hbox_container = std::make_shared<Flint::HBoxContainer>();
+        auto hbox_container = std::make_shared<revector::HBoxContainer>();
         vbox_container->add_child(hbox_container);
 
-        auto label = std::make_shared<Flint::Label>();
+        auto label = std::make_shared<revector::Label>();
         label->set_text("URL:");
         hbox_container->add_child(label);
 
-        url_edit_ = std::make_shared<Flint::TextEdit>();
+        url_edit_ = std::make_shared<revector::TextEdit>();
         url_edit_->set_editable(true);
         url_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL]);
         url_edit_->container_sizing.expand_h = true;
-        url_edit_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        url_edit_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         hbox_container->add_child(url_edit_);
 
         {
-            play_url_button_ = std::make_shared<Flint::Button>();
+            play_url_button_ = std::make_shared<revector::Button>();
             play_url_button_->container_sizing.expand_h = true;
-            play_url_button_->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+            play_url_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             update_url_start_button_looking(true);
 
             auto callback1 = [this] {
@@ -320,13 +320,13 @@ void ControlPanel::custom_ready() {
     }
 }
 
-void ControlPanel::custom_input(Flint::InputEvent &event) {
-    auto input_server = Flint::InputServer::get_singleton();
+void ControlPanel::custom_input(revector::InputEvent &event) {
+    auto input_server = revector::InputServer::get_singleton();
 
-    if (event.type == Flint::InputEventType::Key) {
+    if (event.type == revector::InputEventType::Key) {
         auto key_args = event.args.key;
 
-        if (key_args.key == Flint::KeyCode::F5) {
+        if (key_args.key == revector::KeyCode::F5) {
             if (key_args.pressed) {
                 if (tab_container_->get_current_tab().has_value()) {
                     if (tab_container_->get_current_tab().value() == 0) {

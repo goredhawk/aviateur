@@ -36,9 +36,9 @@
 
 constexpr auto LOGGER_MODULE = "Aviateur";
 
-const Flint::ColorU GREEN = Flint::ColorU(78, 135, 82);
-const Flint::ColorU RED = Flint::ColorU(201, 79, 79);
-const Flint::ColorU YELLOW = Flint::ColorU(255, 201, 14);
+const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
+const revector::ColorU RED = revector::ColorU(201, 79, 79);
+const revector::ColorU YELLOW = revector::ColorU(255, 201, 14);
 
 /// Channels.
 constexpr std::array CHANNELS{
@@ -85,23 +85,23 @@ public:
 
         // Set up loggers
         {
-            // Flint::Logger::set_default_level(Flint::Logger::Level::Info);
-            Flint::Logger::set_module_level("Flint", Flint::Logger::Level::Info);
-            Flint::Logger::set_module_level(LOGGER_MODULE, Flint::Logger::Level::Info);
+            // revector::Logger::set_default_level(revector::Logger::Level::Info);
+            revector::Logger::set_module_level("revector", revector::Logger::Level::Info);
+            revector::Logger::set_module_level(LOGGER_MODULE, revector::Logger::Level::Info);
 
             auto logCallback = [](LogLevel level, std::string msg) {
                 switch (level) {
                     case LogLevel::Info: {
-                        Flint::Logger::info(msg, LOGGER_MODULE);
+                        revector::Logger::info(msg, LOGGER_MODULE);
                     } break;
                     case LogLevel::Debug: {
-                        Flint::Logger::debug(msg, LOGGER_MODULE);
+                        revector::Logger::debug(msg, LOGGER_MODULE);
                     } break;
                     case LogLevel::Warn: {
-                        Flint::Logger::warn(msg, LOGGER_MODULE);
+                        revector::Logger::warn(msg, LOGGER_MODULE);
                     } break;
                     case LogLevel::Error: {
-                        Flint::Logger::error(msg, LOGGER_MODULE);
+                        revector::Logger::error(msg, LOGGER_MODULE);
                     } break;
                     default:;
                 }
@@ -332,7 +332,7 @@ public:
 
     void set_locale(std::string locale) {
         locale_ = locale;
-        Flint::TranslationServer::get_singleton()->set_locale(locale_);
+        revector::TranslationServer::get_singleton()->set_locale(locale_);
     }
 
     mINI::INIStructure ini_;
@@ -350,17 +350,17 @@ public:
     RxStatus rx_status_{};
 
     // Signals.
-    std::vector<Flint::AnyCallable<void>> logCallbacks;
-    std::vector<Flint::AnyCallable<void>> tipCallbacks;
-    std::vector<Flint::AnyCallable<void>> wifiStopCallbacks;
-    std::vector<Flint::AnyCallable<void>> wifiFrameCountCallbacks;
-    std::vector<Flint::AnyCallable<void>> wfbFrameCountCallbacks;
-    std::vector<Flint::AnyCallable<void>> rtpPktCountCallbacks;
-    std::vector<Flint::AnyCallable<void>> rtpStreamCallbacks;
-    std::vector<Flint::AnyCallable<void>> bitrateUpdateCallbacks;
-    std::vector<Flint::AnyCallable<void>> decoderReadyCallbacks;
+    std::vector<revector::AnyCallable<void>> logCallbacks;
+    std::vector<revector::AnyCallable<void>> tipCallbacks;
+    std::vector<revector::AnyCallable<void>> wifiStopCallbacks;
+    std::vector<revector::AnyCallable<void>> wifiFrameCountCallbacks;
+    std::vector<revector::AnyCallable<void>> wfbFrameCountCallbacks;
+    std::vector<revector::AnyCallable<void>> rtpPktCountCallbacks;
+    std::vector<revector::AnyCallable<void>> rtpStreamCallbacks;
+    std::vector<revector::AnyCallable<void>> bitrateUpdateCallbacks;
+    std::vector<revector::AnyCallable<void>> decoderReadyCallbacks;
 
-    std::vector<Flint::AnyCallable<void>> urlStreamShouldStopCallbacks;
+    std::vector<revector::AnyCallable<void>> urlStreamShouldStopCallbacks;
 
     void EmitLog(LogLevel level, std::string msg) {
         for (auto &callback : logCallbacks) {

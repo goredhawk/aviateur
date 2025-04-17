@@ -14,23 +14,23 @@ void open_explorer(const std::string& dir) {
 void SettingsContainer::custom_ready() {
     set_margin_all(8);
 
-    auto vbox_container = std::make_shared<Flint::VBoxContainer>();
+    auto vbox_container = std::make_shared<revector::VBoxContainer>();
     vbox_container->set_separation(8);
     add_child(vbox_container);
 
     {
-        auto hbox_container = std::make_shared<Flint::HBoxContainer>();
+        auto hbox_container = std::make_shared<revector::HBoxContainer>();
         hbox_container->set_separation(8);
         vbox_container->add_child(hbox_container);
 
-        auto label = std::make_shared<Flint::Label>();
+        auto label = std::make_shared<revector::Label>();
         label->set_text(FTR("lang") + ":");
         hbox_container->add_child(label);
 
-        auto lang_menu_button = std::make_shared<Flint::MenuButton>();
+        auto lang_menu_button = std::make_shared<revector::MenuButton>();
 
         lang_menu_button->container_sizing.expand_h = true;
-        lang_menu_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        lang_menu_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         hbox_container->add_child(lang_menu_button);
 
         if (GuiInterface::Instance().locale_ == "en") {
@@ -65,10 +65,10 @@ void SettingsContainer::custom_ready() {
     // #ifdef _WIN32
 
     {
-        auto open_capture_folder_button = std::make_shared<Flint::MenuButton>();
+        auto open_capture_folder_button = std::make_shared<revector::MenuButton>();
 
         open_capture_folder_button->container_sizing.expand_h = true;
-        open_capture_folder_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        open_capture_folder_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_capture_folder_button);
         open_capture_folder_button->set_text(FTR("open capture folder"));
 
@@ -77,10 +77,10 @@ void SettingsContainer::custom_ready() {
     }
 
     {
-        auto open_appdata_button = std::make_shared<Flint::Button>();
+        auto open_appdata_button = std::make_shared<revector::Button>();
 
         open_appdata_button->container_sizing.expand_h = true;
-        open_appdata_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        open_appdata_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_appdata_button);
         open_appdata_button->set_text(FTR("open appdata folder"));
 
@@ -90,10 +90,10 @@ void SettingsContainer::custom_ready() {
 
 #ifdef _WIN32
     {
-        auto open_crash_dumps_button = std::make_shared<Flint::Button>();
+        auto open_crash_dumps_button = std::make_shared<revector::Button>();
 
         open_crash_dumps_button->container_sizing.expand_h = true;
-        open_crash_dumps_button->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        open_crash_dumps_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_crash_dumps_button);
         open_crash_dumps_button->set_text(FTR("open crash dump folder"));
 
@@ -111,10 +111,10 @@ void SettingsContainer::custom_ready() {
     }
 
     {
-        auto show_console_btn = std::make_shared<Flint::CheckButton>();
+        auto show_console_btn = std::make_shared<revector::CheckButton>();
 
         show_console_btn->container_sizing.expand_h = true;
-        show_console_btn->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        show_console_btn->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(show_console_btn);
         show_console_btn->set_text(FTR("show console"));
         show_console_btn->set_toggle_mode(true);
@@ -131,10 +131,10 @@ void SettingsContainer::custom_ready() {
 #endif
 
     {
-        auto version_label = std::make_shared<Flint::Label>();
+        auto version_label = std::make_shared<revector::Label>();
 
         version_label->container_sizing.expand_h = true;
-        version_label->container_sizing.flag_h = Flint::ContainerSizingFlag::Fill;
+        version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(version_label);
         version_label->set_text("Version " + AVIATEUR_VERSION);
     }

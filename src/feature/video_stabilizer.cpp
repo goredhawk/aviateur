@@ -32,7 +32,7 @@ Trajectory Q(pstd, pstd, pstd); // process noise covariance
 Trajectory R(cstd, cstd, cstd); // measurement noise covariance
 
 cv::Mat VideoStabilizer::stabilize(cv::Mat prev, cv::Mat cur_grey) {
-    auto timestamp = Flint::Timestamp("Aviateur");
+    auto timestamp = revector::Timestamp("Aviateur");
 
     prev_grey = prev;
 

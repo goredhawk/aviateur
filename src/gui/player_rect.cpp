@@ -2,7 +2,7 @@
 
 #include "../gui_interface.h"
 
-class SignalBar : public Flint::ProgressBar {
+class SignalBar : public revector::ProgressBar {
     void custom_update(double dt) override {
         if (value < 33.3) {
             theme_progress->bg_color = RED;
@@ -17,28 +17,28 @@ class SignalBar : public Flint::ProgressBar {
 };
 
 void PlayerRect::show_red_tip(std::string tip) {
-    tip_label_->set_text_style(Flint::TextStyle{GREEN});
+    tip_label_->set_text_style(revector::TextStyle{GREEN});
     tip_label_->show_tip(tip);
 }
 
 void PlayerRect::show_green_tip(std::string tip) {
-    tip_label_->set_text_style(Flint::TextStyle{GREEN});
+    tip_label_->set_text_style(revector::TextStyle{GREEN});
     tip_label_->show_tip(tip);
 }
 
-void PlayerRect::custom_input(Flint::InputEvent &event) {
-    auto input_server = Flint::InputServer::get_singleton();
+void PlayerRect::custom_input(revector::InputEvent &event) {
+    auto input_server = revector::InputServer::get_singleton();
 
-    if (event.type == Flint::InputEventType::Key) {
+    if (event.type == revector::InputEventType::Key) {
         auto key_args = event.args.key;
 
-        if (key_args.key == Flint::KeyCode::F11) {
+        if (key_args.key == revector::KeyCode::F11) {
             if (key_args.pressed) {
                 fullscreen_button_->press();
             }
         }
 
-        if (playing_ && key_args.key == Flint::KeyCode::F10) {
+        if (playing_ && key_args.key == revector::KeyCode::F10) {
             if (key_args.pressed) {
                 record_button_->press();
             }
@@ -53,49 +53,49 @@ void PlayerRect::custom_ready() {
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
-    collapse_panel_ = std::make_shared<Flint::CollapseContainer>();
+    collapse_panel_ = std::make_shared<revector::CollapseContainer>();
     collapse_panel_->set_title(FTR("player control"));
     collapse_panel_->set_collapse(true);
-    collapse_panel_->set_color(Flint::ColorU(84, 138, 247));
-    collapse_panel_->set_anchor_flag(Flint::AnchorFlag::TopRight);
+    collapse_panel_->set_color(revector::ColorU(84, 138, 247));
+    collapse_panel_->set_anchor_flag(revector::AnchorFlag::TopRight);
     collapse_panel_->set_visibility(false);
     add_child(collapse_panel_);
 
-    auto vbox = std::make_shared<Flint::VBoxContainer>();
+    auto vbox = std::make_shared<revector::VBoxContainer>();
     collapse_panel_->add_child(vbox);
 
-    logo_ = std::make_shared<Flint::VectorImage>("assets/openipc-logo-white.svg");
+    logo_ = std::make_shared<revector::VectorImage>("assets/openipc-logo-white.svg");
     texture = logo_;
 
-    auto render_server = Flint::RenderServer::get_singleton();
+    auto render_server = revector::RenderServer::get_singleton();
     player_ = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
 
-    render_image_ = std::make_shared<Flint::RenderImage>(Pathfinder::Vec2I{1920, 1080});
+    render_image_ = std::make_shared<revector::RenderImage>(Pathfinder::Vec2I{1920, 1080});
 
     set_stretch_mode(StretchMode::KeepAspectCentered);
 
     tip_label_ = std::make_shared<TipLabel>();
-    tip_label_->set_anchor_flag(Flint::AnchorFlag::Center);
+    tip_label_->set_anchor_flag(revector::AnchorFlag::Center);
     tip_label_->set_visibility(false);
-    tip_label_->set_text_style(Flint::TextStyle{Flint::ColorU::red()});
+    tip_label_->set_text_style(revector::TextStyle{revector::ColorU::red()});
     add_child(tip_label_);
 
-    hud_container_ = std::make_shared<Flint::HBoxContainer>();
+    hud_container_ = std::make_shared<revector::HBoxContainer>();
     add_child(hud_container_);
     hud_container_->set_size({0, 48});
-    Flint::StyleBox box;
-    box.bg_color = Flint::ColorU(27, 27, 27, 27);
+    revector::StyleBox box;
+    box.bg_color = revector::ColorU(27, 27, 27, 27);
     box.border_width = 0;
     box.corner_radius = 0;
     hud_container_->set_theme_bg(box);
-    hud_container_->set_anchor_flag(Flint::AnchorFlag::BottomWide);
+    hud_container_->set_anchor_flag(revector::AnchorFlag::BottomWide);
     hud_container_->set_visibility(false);
     hud_container_->set_separation(16);
 
     {
-        video_info_label_ = std::make_shared<Flint::Label>();
+        video_info_label_ = std::make_shared<revector::Label>();
         hud_container_->add_child(video_info_label_);
-        video_info_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+        video_info_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
         video_info_label_->set_text("");
 
         auto onFpsUpdate = [this](uint32_t width, uint32_t height, float fps) {
@@ -106,26 +106,26 @@ void PlayerRect::custom_ready() {
         GuiInterface::Instance().decoderReadyCallbacks.emplace_back(onFpsUpdate);
     }
 
-    bitrate_label_ = std::make_shared<Flint::Label>();
+    bitrate_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(bitrate_label_);
     bitrate_label_->set_text(FTR("bit rate") + ": 0 bps");
-    bitrate_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+    bitrate_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
     {
-        display_fps_label_ = std::make_shared<Flint::Label>();
+        display_fps_label_ = std::make_shared<revector::Label>();
         hud_container_->add_child(display_fps_label_);
-        display_fps_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+        display_fps_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
         display_fps_label_->set_text(FTR("display fps") + ":");
     }
 
-    hw_status_label_ = std::make_shared<Flint::Label>();
+    hw_status_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(hw_status_label_);
-    hw_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+    hw_status_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
-    auto rssi_label = std::make_shared<Flint::Label>();
+    auto rssi_label = std::make_shared<revector::Label>();
     hud_container_->add_child(rssi_label);
     rssi_label->set_text("RSSI");
-    rssi_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+    rssi_label->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
     rssi_bar_ = std::make_shared<SignalBar>();
     hud_container_->add_child(rssi_bar_);
@@ -133,12 +133,12 @@ void PlayerRect::custom_ready() {
     rssi_bar_->set_custom_minimum_size({64, 16});
     rssi_bar_->set_label_visibility(false);
     rssi_bar_->container_sizing.expand_v = false;
-    rssi_bar_->container_sizing.flag_v = Flint::ContainerSizingFlag::ShrinkCenter;
+    rssi_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
 
-    auto snr_label = std::make_shared<Flint::Label>();
+    auto snr_label = std::make_shared<revector::Label>();
     hud_container_->add_child(snr_label);
     snr_label->set_text("SNR");
-    snr_label->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+    snr_label->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
     snr_bar_ = std::make_shared<SignalBar>();
     hud_container_->add_child(snr_bar_);
@@ -146,9 +146,9 @@ void PlayerRect::custom_ready() {
     snr_bar_->set_custom_minimum_size({64, 16});
     snr_bar_->set_label_visibility(false);
     snr_bar_->container_sizing.expand_v = false;
-    snr_bar_->container_sizing.flag_v = Flint::ContainerSizingFlag::ShrinkCenter;
+    snr_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
 
-    rx_status_update_timer = std::make_shared<Flint::Timer>();
+    rx_status_update_timer = std::make_shared<revector::Timer>();
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
@@ -162,17 +162,17 @@ void PlayerRect::custom_ready() {
     rx_status_update_timer->connect_signal("timeout", callback);
     rx_status_update_timer->start_timer(0.1);
 
-    record_status_label_ = std::make_shared<Flint::Label>();
+    record_status_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(record_status_label_);
     record_status_label_->container_sizing.expand_h = true;
-    record_status_label_->container_sizing.flag_h = Flint::ContainerSizingFlag::ShrinkEnd;
+    record_status_label_->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkEnd;
     record_status_label_->set_text("");
-    record_status_label_->set_text_style(Flint::TextStyle{Flint::ColorU::white()});
+    record_status_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
-    auto capture_button = std::make_shared<Flint::Button>();
+    auto capture_button = std::make_shared<revector::Button>();
     vbox->add_child(capture_button);
     capture_button->set_text(FTR("capture frame"));
-    auto icon = std::make_shared<Flint::VectorImage>("assets/CaptureImage.svg");
+    auto icon = std::make_shared<revector::VectorImage>("assets/CaptureImage.svg");
     capture_button->set_icon_normal(icon);
     auto capture_callback = [this] {
         auto output_file = player_->captureJpeg();
@@ -184,9 +184,9 @@ void PlayerRect::custom_ready() {
     };
     capture_button->connect_signal("pressed", capture_callback);
 
-    record_button_ = std::make_shared<Flint::Button>();
+    record_button_ = std::make_shared<revector::Button>();
     vbox->add_child(record_button_);
-    auto icon2 = std::make_shared<Flint::VectorImage>("assets/RecordVideo.svg");
+    auto icon2 = std::make_shared<revector::VectorImage>("assets/RecordVideo.svg");
     record_button_->set_icon_normal(icon2);
     record_button_->set_text(FTR("record mp4") + " (F10)");
 
@@ -223,7 +223,7 @@ void PlayerRect::custom_ready() {
     record_button_->connect_signal("pressed", record_callback);
 
     {
-        video_stabilization_button_ = std::make_shared<Flint::CheckButton>();
+        video_stabilization_button_ = std::make_shared<revector::CheckButton>();
         video_stabilization_button_->set_text(FTR("video stab"));
         vbox->add_child(video_stabilization_button_);
 
@@ -237,7 +237,7 @@ void PlayerRect::custom_ready() {
     }
 
     {
-        low_light_enhancement_button_simple_ = std::make_shared<Flint::CheckButton>();
+        low_light_enhancement_button_simple_ = std::make_shared<revector::CheckButton>();
         low_light_enhancement_button_simple_->set_text(FTR("low light enhancement simple"));
         vbox->add_child(low_light_enhancement_button_simple_);
 
@@ -253,7 +253,7 @@ void PlayerRect::custom_ready() {
     }
 
     {
-        low_light_enhancement_button_advanced_ = std::make_shared<Flint::CheckButton>();
+        low_light_enhancement_button_advanced_ = std::make_shared<revector::CheckButton>();
         low_light_enhancement_button_advanced_->set_text(FTR("low light enhancement dnn"));
         vbox->add_child(low_light_enhancement_button_advanced_);
 
@@ -269,7 +269,7 @@ void PlayerRect::custom_ready() {
     }
 
     {
-        auto button = std::make_shared<Flint::CheckButton>();
+        auto button = std::make_shared<revector::CheckButton>();
         button->set_text(FTR("sw decoding"));
         vbox->add_child(button);
 
@@ -310,7 +310,7 @@ void PlayerRect::custom_update(double dt) {
                                std::string(player_->isHardwareAccelerated() ? FTR("on") : FTR("off")));
 
     display_fps_label_->set_text(FTR("display fps") + ": " +
-                                 std::to_string(Flint::Engine::get_singleton()->get_fps_int()));
+                                 std::to_string(revector::Engine::get_singleton()->get_fps_int()));
 
     if (is_recording) {
         std::chrono::duration<double, std::chrono::seconds::period> duration =
@@ -337,7 +337,7 @@ void PlayerRect::custom_draw() {
     if (!playing_) {
         return;
     }
-    auto render_image = (Flint::RenderImage *)texture.get();
+    auto render_image = (revector::RenderImage *)texture.get();
     player_->yuvRenderer_->render(render_image->get_texture(), video_stabilization_button_->get_pressed());
 }
 

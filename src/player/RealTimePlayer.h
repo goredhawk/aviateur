@@ -65,20 +65,20 @@ public:
 
     // Signals
 
-    std::vector<Flint::AnyCallable<void>> connectionLostCallbacks;
+    std::vector<revector::AnyCallable<void>> connectionLostCallbacks;
     void emitConnectionLost();
 
     // void gotRecordVol(double vol);
-    Flint::AnyCallable<void> gotRecordVolume;
+    revector::AnyCallable<void> gotRecordVolume;
 
     // void onBitrate(long bitrate);
-    Flint::AnyCallable<void> onBitrateUpdate;
+    revector::AnyCallable<void> onBitrateUpdate;
 
     // void onMutedChanged(bool muted);
-    Flint::AnyCallable<void> onMutedChanged;
+    revector::AnyCallable<void> onMutedChanged;
 
     // void onHasAudio(bool has);
-    Flint::AnyCallable<void> onHasAudio;
+    revector::AnyCallable<void> onHasAudio;
 
 protected:
     std::shared_ptr<FfmpegDecoder> decoder;
