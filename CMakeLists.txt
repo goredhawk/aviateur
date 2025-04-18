@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 # To fix "error: call to undeclared library function 'memset' with type 'void *(void *, int, unsigned long)'".
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -67,6 +67,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
 
 add_subdirectory(3rd/mINI)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/mINI/src")
+
+file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 
 if (WIN32)
     target_link_libraries(${PROJECT_NAME}
