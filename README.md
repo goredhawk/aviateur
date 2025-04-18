@@ -71,7 +71,7 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
    ```bash
    git submodule init
    git submodule update
-   sudo apt-get install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev
+   sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev
    ```
 
 2. Open as a CMake project and build.
