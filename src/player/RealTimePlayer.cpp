@@ -1,5 +1,8 @@
 ﻿#include "RealTimePlayer.h"
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_audio.h>
+
 #include <future>
 #include <sstream>
 
@@ -18,6 +21,8 @@ RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::
         stop();
         play(url, forceSoftwareDecoding_);
     });
+
+    SDL_Init(SDL_INIT_AUDIO);
 }
 
 void RealTimePlayer::update(float dt) {
@@ -165,33 +170,37 @@ void RealTimePlayer::stop() {
         videoFrameQueue = std::queue<std::shared_ptr<AVFrame>>();
     }
 
-    // SDL_CloseAudio();
-
     if (decoder) {
         decoder->CloseInput();
         decoder.reset();
     }
+
+    disableAudio();
 }
 
 void RealTimePlayer::setMuted(bool muted) {
     if (!decoder->HasAudio()) {
         return;
     }
+
     if (!muted && decoder) {
         decoder->ClearAudioBuff();
-        // 初始化声音
+
         if (!enableAudio()) {
             return;
         }
     } else {
         disableAudio();
     }
+
     isMuted = muted;
     // emit onMutedChanged(muted);
 }
 
 RealTimePlayer::~RealTimePlayer() {
     stop();
+
+    SDL_Quit();
 }
 
 std::string RealTimePlayer::captureJpeg() {
@@ -306,6 +315,10 @@ bool RealTimePlayer::isHardwareAccelerated() const {
     return hwEnabled;
 }
 
+std::shared_ptr<FfmpegDecoder> RealTimePlayer::getDecoder() const {
+    return decoder;
+}
+
 void RealTimePlayer::emitConnectionLost() {
     for (auto &callback : connectionLostCallbacks) {
         try {
@@ -316,53 +329,44 @@ void RealTimePlayer::emitConnectionLost() {
     }
 }
 
+void SDLCALL audio_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
+    if (additional_amount > 0) {
+        Uint8 *data = SDL_stack_alloc(Uint8, additional_amount);
+        if (data) {
+            auto *player = static_cast<RealTimePlayer *>(userdata);
+            player->getDecoder()->ReadAudioBuff(data, additional_amount);
+
+            SDL_PutAudioStreamData(stream, data, additional_amount);
+            SDL_stack_free(data);
+        }
+    }
+}
+
 bool RealTimePlayer::enableAudio() {
     if (!decoder->HasAudio()) {
         return false;
     }
-    // 音频参数
-    // SDL_AudioSpec audioSpec;
-    // audioSpec.freq = decoder->GetAudioSampleRate();
-    // audioSpec.format = AUDIO_S16;
-    // audioSpec.channels = decoder->GetAudioChannelCount();
-    // audioSpec.silence = 1;
-    // audioSpec.samples = decoder->GetAudioFrameSamples();
-    // audioSpec.padding = 0;
-    // audioSpec.size = 0;
-    // audioSpec.userdata = this;
-    // // 音频样本读取回调
-    // audioSpec.callback = [](void *Thiz, Uint8 *stream, int len) {
-    //     auto *pThis = static_cast<RealTimePlayer *>(Thiz);
-    //     SDL_memset(stream, 0, len);
-    //     pThis->decoder->ReadAudioBuff(stream, len);
-    //     if (pThis->isMuted) {
-    //         SDL_memset(stream, 0, len);
-    //     }
-    // };
-    // // 关闭音频
-    // SDL_CloseAudio();
-    // // 开启声音
-    // if (SDL_OpenAudio(&audioSpec, nullptr) == 0) {
-    //     // 播放声音
-    //     SDL_PauseAudio(0);
-    // } else {
-    //     // emit onError("开启音频出错，如需听声音请插入音频外设\n" + std::string(SDL_GetError()), -1);
-    //     return false;
-    // }
+
+    const SDL_AudioSpec spec = {SDL_AUDIO_S16, decoder->GetAudioChannelCount(), decoder->GetAudioSampleRate()};
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audio_callback, this);
+    SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
+
     return true;
 }
 
 void RealTimePlayer::disableAudio() {
-    // SDL_CloseAudio();
+    if (stream) {
+        SDL_CloseAudioDevice(SDL_GetAudioStreamDevice(stream));
+        stream = nullptr;
+    }
 }
 
 bool RealTimePlayer::hasAudio() const {
     if (!decoder) {
         return false;
     }
-    // No audio for now.
-    // return decoder->HasAudio();
-    return false;
+
+    return decoder->HasAudio();
 }
 
 bool RealTimePlayer::startGifRecord() {

@@ -11,6 +11,8 @@
 #include "YuvRenderer.h"
 #include "ffmpegDecode.h"
 
+struct SDL_AudioStream;
+
 class RealTimePlayer {
 public:
     RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue);
@@ -63,6 +65,8 @@ public:
 
     bool isHardwareAccelerated() const;
 
+    std::shared_ptr<FfmpegDecoder> getDecoder() const;
+
     // Signals
 
     std::vector<revector::AnyCallable<void>> connectionLostCallbacks;
@@ -89,6 +93,8 @@ protected:
     volatile bool playStop = true;
 
     volatile bool isMuted = true;
+
+    SDL_AudioStream *stream;
 
     std::queue<std::shared_ptr<AVFrame>> videoFrameQueue;
 

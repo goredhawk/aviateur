@@ -68,6 +68,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
 add_subdirectory(3rd/mINI)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/mINI/src")
 
+add_subdirectory(3rd/SDL)
+target_include_directories(${PROJECT_NAME} PRIVATE "3rd/SDL/include")
+
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 
 if (WIN32)
@@ -78,6 +81,7 @@ if (WIN32)
             ${OpenCV_LIBS}
             WiFiDriver
             revector
+            SDL3::SDL3-static
     )
 else ()
     target_link_libraries(${PROJECT_NAME}
@@ -86,5 +90,6 @@ else ()
             ${OpenCV_LIBS}
             WiFiDriver
             revector
+            SDL3::SDL3-static
     )
 endif ()
