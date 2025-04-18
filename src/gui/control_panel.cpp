@@ -67,10 +67,10 @@ void ControlPanel::custom_ready() {
     codec = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC];
 
     auto default_theme = revector::DefaultResource::get_singleton()->get_default_theme();
-    theme_bg_ = std::make_optional(default_theme->panel.styles["background"]);
-    theme_bg_.value().corner_radius = 0;
-    theme_bg_.value().border_width = 0;
-    theme_bg_->border_width = 0;
+    theme_bg = std::make_optional(default_theme->panel.styles["background"]);
+    theme_bg.value().corner_radius = 0;
+    theme_bg.value().border_width = 0;
+    theme_bg->border_width = 0;
 
     set_anchor_flag(revector::AnchorFlag::RightWide);
 
