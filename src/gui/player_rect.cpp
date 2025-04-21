@@ -17,7 +17,7 @@ class SignalBar : public revector::ProgressBar {
 };
 
 void PlayerRect::show_red_tip(std::string tip) {
-    tip_label_->set_text_style(revector::TextStyle{GREEN});
+    tip_label_->set_text_style(revector::TextStyle{RED});
     tip_label_->show_tip(tip);
 }
 
