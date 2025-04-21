@@ -8,10 +8,13 @@
 
 OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]).
 
-![](tutorials/interface.jpg)
+![](tutorials/interface.png)
 
 > [!NOTE]
-> For now, only RTL8812AU Wi-Fi adapter is supported.
+> No AdaptiveLink support.
+
+> [!NOTE]
+> Only RTL8812AU Wi-Fi adapter is supported.
 
 ### Usage
 
@@ -65,7 +68,7 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 
 5. Open as a CMake project and build.
 
-### How to build on Linux
+### How to build on Linux (Ubuntu 24.04+)
 
 1. Install dependencies.
    ```bash
