@@ -94,7 +94,7 @@ protected:
 
     volatile bool isMuted = true;
 
-    SDL_AudioStream *stream;
+    SDL_AudioStream *stream{};
 
     std::queue<std::shared_ptr<AVFrame>> videoFrameQueue;
 
