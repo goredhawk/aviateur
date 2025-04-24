@@ -1,6 +1,7 @@
 ﻿#include "YuvRenderer.h"
 
 #include "libavutil/pixfmt.h"
+#include "resources/resource.h"
 
 std::string vertCode = R"(#version 310 es
 
@@ -222,7 +223,8 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
             mStabXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
             mStabXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
 
-            mStabXform = mStabXform.scale(Pathfinder::Vec2F(1.0f + (float)HORIZONTAL_BORDER_CROP / mTexY->get_size().x));
+            mStabXform =
+                mStabXform.scale(Pathfinder::Vec2F(1.0f + (float)HORIZONTAL_BORDER_CROP / mTexY->get_size().x));
         }
 
         mPreviousFrame = frameY.clone();
@@ -281,7 +283,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
                 texYData = enhancedFrameY.data;
             } else if (mLowLightEnhancementAdvanced) {
                 if (!mNet.has_value()) {
-                    mNet = PairLIE("assets/weights/pairlie_180x320.onnx");
+                    mNet = PairLIE(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
                 }
 
                 cv::Mat originalFrameY =

@@ -18,9 +18,9 @@ int main() {
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "revector app created");
 
-    revector::TranslationServer::get_singleton()->load_translations("assets/translations.csv");
+    revector::TranslationServer::get_singleton()->load_translations(revector::get_asset_dir("translations.csv"));
 
-    auto font = std::make_shared<revector::Font>("assets/NotoSansSC-Regular.ttf");
+    auto font = std::make_shared<revector::Font>(revector::get_asset_dir("NotoSansSC-Regular.ttf"));
     revector::DefaultResource::get_singleton()->set_default_font(font);
 
     // Initialize the default libusb context.

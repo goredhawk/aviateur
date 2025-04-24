@@ -48,7 +48,7 @@ file(GLOB_RECURSE SRC_LIST
         src/*.h
 )
 
-file(COPY gs.key assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
+file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 

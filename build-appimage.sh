@@ -8,7 +8,8 @@ make -j$(nproc)
 make install DESTDIR=AppDir
 
 cp ./assets/logo.png ./AppDir/usr/share/icons/hicolor/128x128/apps/aviateur.png
-cp -r ./appimage-build/assets/ ./appimage-build/AppDir/
+cp -r ./bin/assets ./AppDir
+cp -r ./bin/aviateur ./AppDir/usr/bin
 
 wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
 

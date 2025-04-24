@@ -112,7 +112,7 @@ void ControlPanel::custom_ready() {
             dongle_menu_button_->connect_signal("item_selected", callback);
 
             refresh_dongle_button_ = std::make_shared<revector::Button>();
-            auto icon = std::make_shared<revector::VectorImage>("assets/Refresh.svg");
+            auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("Refresh.svg"));
             refresh_dongle_button_->set_icon_normal(icon);
             refresh_dongle_button_->set_text("");
             hbox_container->add_child(refresh_dongle_button_);
@@ -206,8 +206,10 @@ void ControlPanel::custom_ready() {
             auto file_dialog = std::make_shared<revector::FileDialog>();
             add_child(file_dialog);
 
-            auto defaultKeyPath = std::filesystem::absolute(keyPath).string();
-            file_dialog->set_default_path(defaultKeyPath);
+            if (!keyPath.empty()) {
+                auto defaultKeyPath = std::filesystem::absolute(keyPath).string();
+                file_dialog->set_default_path(defaultKeyPath);
+            }
 
             auto select_button = std::make_shared<revector::Button>();
             select_button->set_text(FTR("open"));

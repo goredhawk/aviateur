@@ -64,7 +64,7 @@ void PlayerRect::custom_ready() {
     auto vbox = std::make_shared<revector::VBoxContainer>();
     collapse_panel_->add_child(vbox);
 
-    logo_ = std::make_shared<revector::VectorImage>("assets/openipc-logo-white.svg");
+    logo_ = std::make_shared<revector::VectorImage>(revector::get_asset_dir("openipc-logo-white.svg"));
     texture = logo_;
 
     auto render_server = revector::RenderServer::get_singleton();
@@ -172,7 +172,7 @@ void PlayerRect::custom_ready() {
     auto capture_button = std::make_shared<revector::Button>();
     vbox->add_child(capture_button);
     capture_button->set_text(FTR("capture frame"));
-    auto icon = std::make_shared<revector::VectorImage>("assets/CaptureImage.svg");
+    auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("CaptureImage.svg"));
     capture_button->set_icon_normal(icon);
     auto capture_callback = [this] {
         auto output_file = player_->captureJpeg();
@@ -186,7 +186,7 @@ void PlayerRect::custom_ready() {
 
     record_button_ = std::make_shared<revector::Button>();
     vbox->add_child(record_button_);
-    auto icon2 = std::make_shared<revector::VectorImage>("assets/RecordVideo.svg");
+    auto icon2 = std::make_shared<revector::VectorImage>(revector::get_asset_dir("RecordVideo.svg"));
     record_button_->set_icon_normal(icon2);
     record_button_->set_text(FTR("record mp4") + " (F10)");
 

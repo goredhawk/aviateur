@@ -119,7 +119,7 @@ public:
             ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = "";
             ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL] = "161";
             ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = "0";
-            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY] = "gs.key";
+            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY] = "";
             ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC] = "AUTO";
 
             ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = "udp://239.0.0.1:1234";
@@ -185,7 +185,7 @@ public:
     static bool Start(const DeviceId &deviceId,
                       int channel,
                       int channelWidthMode,
-                      const std::string &keyPath,
+                      std::string keyPath,
                       const std::string &codec) {
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = deviceId.display_name;
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL] = std::to_string(channel);
@@ -199,6 +199,11 @@ public:
 
         Instance().playerCodec = codec;
 
+        // If no custom key provided by the user, use the default key.
+        if (keyPath.empty()) {
+            keyPath = revector::get_asset_dir("gs.key");
+            Instance().PutLog(LogLevel::Info, "Using GS key: {}", keyPath);
+        }
         return WfbReceiver::Instance().Start(deviceId, channel, channelWidthMode, keyPath);
     }
 
