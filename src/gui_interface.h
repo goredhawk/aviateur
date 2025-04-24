@@ -141,7 +141,7 @@ public:
     static std::string GetAppDataDir() {
 #ifdef _WIN32
         auto dir = std::string(getenv("APPDATA")) + "\\Aviateur\\";
-#else ifdef __linux__
+#elif defined(__linux__)
         passwd *pw = getpwuid(getuid());
         const char *home_dir = pw->pw_dir;
         auto dir = std::string(home_dir) + "/aviateur/";
