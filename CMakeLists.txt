@@ -93,13 +93,3 @@ else ()
             SDL3::SDL3-static
     )
 endif ()
-
-install()
-
-set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/dist")
-include(InstallRequiredSystemLibraries)
-set(CPACK_PACKAGE_VERSION_MAJOR "${CMAKE_PROJECT_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${CMAKE_PROJECT_VERSION_MINOR}")
-set(CPACK_GENERATOR "TGZ")
-set(CPACK_SOURCE_GENERATOR "TGZ")
-include(CPack)
