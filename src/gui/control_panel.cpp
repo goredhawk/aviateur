@@ -78,12 +78,12 @@ void ControlPanel::custom_ready() {
     add_child(tab_container_);
     tab_container_->set_anchor_flag(revector::AnchorFlag::FullRect);
 
-    // Wi-Fi card tab
+    // Wi-Fi adapter tab
     {
         auto margin_container = std::make_shared<revector::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(0, FTR("wi-fi card"));
+        tab_container_->set_tab_title(0, FTR("wi-fi adapter"));
 
         auto vbox_container = std::make_shared<revector::VBoxContainer>();
         vbox_container->set_separation(8);
@@ -95,7 +95,7 @@ void ControlPanel::custom_ready() {
             vbox_container->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
-            label->set_text(FTR("net card"));
+            label->set_text(FTR("device"));
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<revector::MenuButton>();

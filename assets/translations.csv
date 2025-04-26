@@ -4,7 +4,7 @@ fullscreen,Fullscreen,全屏,Полноэкранный
 bit rate,Bit rate,码率,Битрейт
 display fps,Display FPS,显示帧率,Отображение FPS
 hw decoding,Hardware decoding,硬件解码,аппаратное декодирование
-wi-fi card,Wi-Fi card,网卡,Wi-Fi карта
+wi-fi adapter,Wi-Fi adapter,网卡,Wi-Fi адаптер
 capture frame,Capture frame,截图,кадр захвата
 player control,Player control,播放控制,контроль игрока
 record mp4,Record MP4,录制 MP4,Запись MP4
@@ -20,12 +20,12 @@ start,Start,开始,начинать
 stop,Stop,停止,остановить
 open,Open,打开,Открыть
 close,Close,关闭,Закрывать
-net card,Net card,网卡,Сетевая карта
 streaming,Streaming,串流,Потоковое
 on,On,开,вкл
 off,Off,关,выкл
 invalid usb msg,Invalid USB device!,无效的 USB 设备！,Недопустимое USB-устройство!
 wi-fi stopped msg, Wi-Fi stopped!,无线已停止！,Wi-Fi остановлен!
+device,Device,设备,Устройство
 capture fail,Failed to capture frame!,截图失败！,Не удалось захватить кадр
 frame saved,Frame saved to: ,截图保存至：,Кадр сохранен в:
 record fail,Recording failed!,录制失败！,Запись не удалась

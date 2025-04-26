@@ -151,7 +151,7 @@ public:
 
     static std::string GetCaptureDir() {
 #ifdef _WIN32
-        auto dir = std::string(getenv("USERPROFILE")) + "\\Videos\\Aviateur Captures\\";
+        auto dir = std::string(getenv("USERPROFILE")) + R"(\Videos\Aviateur Captures\)";
 #else
         passwd *pw = getpwuid(getuid());
         const char *home_dir = pw->pw_dir;
