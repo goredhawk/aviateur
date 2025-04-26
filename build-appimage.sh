@@ -7,6 +7,9 @@ make -j$(nproc)
 
 make install DESTDIR=AppDir
 
+# In case some basic directory structure is not created
+./linuxdeploy-x86_64.AppImage --appdir AppDir
+
 cp ./bin/assets/logo.png ./AppDir/usr/share/icons/hicolor/128x128/apps/aviateur.png
 cp -r ./bin/assets ./AppDir
 cp ./bin/aviateur ./AppDir/usr/bin/
