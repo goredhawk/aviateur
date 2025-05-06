@@ -4,13 +4,13 @@
 
 class SignalBar : public revector::ProgressBar {
     void custom_update(double dt) override {
-        if (value < 33.3) {
+        if (value < 0.333 * max_value) {
             theme_progress->bg_color = RED;
         }
-        if (value > 33.3 && value < 66.67) {
+        if (value > 0.333 * max_value && value < 0.6667 * max_value) {
             theme_progress->bg_color = YELLOW;
         }
-        if (value > 66.67) {
+        if (value > 0.6667 * max_value) {
             theme_progress->bg_color = GREEN;
         }
     }

@@ -154,6 +154,9 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
             throw std::runtime_error("AVFormatContext is null");
         }
 
+        auto timestamp = std::make_shared<revector::Timestamp>("Aviateur");
+        timestamp->set_enabled(false);
+
         std::shared_ptr<AVPacket> packet = std::shared_ptr<AVPacket>(av_packet_alloc(), &freePkt);
 
         int ret = av_read_frame(pFormatCtx, packet.get());
@@ -163,6 +166,8 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
             throw ReadFrameException("av_read_frame failed: " + std::string(errStr));
         }
+
+        timestamp->record("av_read_frame");
 
         // Calculate bitrate
         {
@@ -189,6 +194,8 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
                 gotPktCallback(packet);
             }
 
+            timestamp->record("gotPktCallback");
+
             std::shared_ptr<AVFrame> pVideoYuv = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
 
             bool isDecodeComplete = DecodeVideo(packet.get(), pVideoYuv);
@@ -196,10 +203,15 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
                 res = pVideoYuv;
             }
 
+            timestamp->record("DecodeVideo");
+
             // Frame callback
             if (gotFrameCallback) {
                 gotFrameCallback(pVideoYuv);
             }
+
+            timestamp->record("gotFrameCallback");
+            timestamp->print();
 
             break;
         }
