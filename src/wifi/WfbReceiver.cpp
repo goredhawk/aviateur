@@ -243,7 +243,7 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
         keyPath.c_str(),
         epoch,
         video_channel_id_f,
-        [](uint8_t *payload, uint16_t packet_size) { WfbReceiver::Instance().handleRtp(payload, packet_size); });
+        [](uint8_t *payload, uint16_t packet_size) { Instance().handleRtp(payload, packet_size); });
 
     std::lock_guard lock(agg_mutex);
     if (frame.MatchesChannelID(video_channel_id_be8)) {
@@ -261,7 +261,7 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
     #define INVALID_SOCKET (-1)
 #endif
 
-static unsigned long long sendFd = INVALID_SOCKET;
+static int socketFd = INVALID_SOCKET;
 static volatile bool playing = false;
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
@@ -303,13 +303,8 @@ void WfbReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
         GuiInterface::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
     }
 
-    // Send video to player.
-    sendto(sendFd,
-           reinterpret_cast<const char *>(payload),
-           packet_size,
-           0,
-           (sockaddr *)&serverAddr,
-           sizeof(serverAddr));
+    // Send payload via socket.
+    sendto(socketFd, payload, packet_size, 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
 }
 
 void WfbReceiver::Stop() const {
@@ -328,13 +323,13 @@ WfbReceiver::WfbReceiver() {
     }
 #endif
 
-    sendFd = socket(AF_INET, SOCK_DGRAM, 0);
+    socketFd = socket(AF_INET, SOCK_DGRAM, 0);
 }
 
 WfbReceiver::~WfbReceiver() {
 #ifdef _WIN32
-    closesocket(sendFd);
-    sendFd = INVALID_SOCKET;
+    closesocket(socketFd);
+    socketFd = INVALID_SOCKET;
     WSACleanup();
 #endif
 

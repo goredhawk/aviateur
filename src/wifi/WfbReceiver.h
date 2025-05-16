@@ -37,6 +37,8 @@ public:
     bool Start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
     void Stop() const;
     void handle80211Frame(const Packet &pkt);
+
+    /// Send RTP payloads via socket.
     void handleRtp(uint8_t *payload, uint16_t packet_size);
 
 protected:

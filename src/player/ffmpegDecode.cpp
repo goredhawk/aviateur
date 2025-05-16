@@ -129,9 +129,11 @@ bool FfmpegDecoder::CloseInput() {
 void freeFrame(AVFrame *f) {
     av_frame_free(&f);
 }
+
 void freePkt(AVPacket *f) {
     av_packet_free(&f);
 }
+
 void freeSwrCtx(SwrContext *s) {
     swr_free(&s);
 }
