@@ -304,7 +304,12 @@ void WfbReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
     }
 
     // Send payload via socket.
-    sendto(socketFd, payload, packet_size, 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
+    sendto(socketFd,
+           reinterpret_cast<const char *>(payload),
+           packet_size,
+           0,
+           (sockaddr *)&serverAddr,
+           sizeof(serverAddr));
 }
 
 void WfbReceiver::Stop() const {
