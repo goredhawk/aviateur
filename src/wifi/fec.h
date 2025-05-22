@@ -18,7 +18,9 @@ typedef struct {
     gf *enc_matrix;
 } fec_t;
 
-#if defined(_MSC_VER)
+#if defined(__clang__)
+    #define restrict __restrict
+#elif defined(_MSC_VER)
     // actually, some of the flavors (i.e. Enterprise) do support restrict
     // #define restrict __restrict
     #define restrict
