@@ -25,7 +25,7 @@ std::vector<DeviceId> WfbReceiver::GetDeviceList() {
     libusb_context *find_ctx;
     libusb_init(&find_ctx);
 
-    // Get list of USB devices
+    // Get a list of USB devices
     libusb_device **devs;
     ssize_t count = libusb_get_device_list(find_ctx, &devs);
     if (count < 0) {
@@ -35,6 +35,7 @@ std::vector<DeviceId> WfbReceiver::GetDeviceList() {
     // Iterate over devices
     for (ssize_t i = 0; i < count; ++i) {
         libusb_device *dev = devs[i];
+
         libusb_device_descriptor desc{};
         if (libusb_get_device_descriptor(dev, &desc) == 0) {
             // Check if the device is using libusb driver
@@ -104,7 +105,7 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
 
     libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_ERROR);
 
-    // Get list of USB devices
+    // Get a list of USB devices
     libusb_device **devs;
     ssize_t count = libusb_get_device_list(ctx, &devs);
     if (count < 0) {
@@ -135,10 +136,12 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
         GuiInterface::Instance().PutLog(LogLevel::Error, "Invalid device ID!");
         // Free the list of devices
         libusb_free_device_list(devs, 1);
+        libusb_exit(ctx);
+        ctx = nullptr;
         return false;
     }
 
-    // This cannot handle multiple devices with same vendor_id and product_id.
+    // This cannot handle multiple devices with the same vendor_id and product_id.
     // devHandle = libusb_open_device_with_vid_pid(ctx, wifiDeviceVid, wifiDevicePid);
     libusb_open(target_dev, &devHandle);
 
@@ -147,6 +150,7 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
 
     if (devHandle == nullptr) {
         libusb_exit(ctx);
+        ctx = nullptr;
 
         GuiInterface::Instance().PutLog(LogLevel::Error,
                                         "Cannot open device {:04x}:{:04x} at [{:}:{:}]",
@@ -166,6 +170,12 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
 
     rc = libusb_claim_interface(devHandle, 0);
     if (rc < 0) {
+        libusb_close(devHandle);
+        devHandle = nullptr;
+
+        libusb_exit(ctx);
+        ctx = nullptr;
+
         GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to claim interface");
         return false;
     }

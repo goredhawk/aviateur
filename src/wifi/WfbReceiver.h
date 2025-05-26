@@ -24,21 +24,26 @@ struct DeviceId {
     uint8_t port_num;
 };
 
+/// Receive packets from an adapter.
 class WfbReceiver {
 public:
     WfbReceiver();
     ~WfbReceiver();
+
     static WfbReceiver &Instance() {
         static WfbReceiver wfb_receiver;
         return wfb_receiver;
     }
 
     static std::vector<DeviceId> GetDeviceList();
+
     bool Start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
     void Stop() const;
+
+    /// Process a 802.11 frame
     void handle80211Frame(const Packet &pkt);
 
-    /// Send RTP payloads via socket.
+    /// Send a RTP payload via socket.
     void handleRtp(uint8_t *payload, uint16_t packet_size);
 
 protected:
