@@ -15,6 +15,7 @@
 #include "WfbProcessor.h"
 #include "WiFiDriver.h"
 #include "logger.h"
+#include "wfb-ng/rx.hpp"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -235,6 +236,8 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
 
     static int8_t rssi[2] = {1, 1};
     static uint8_t antenna[4] = {1, 1, 1, 1};
+    uint32_t freq = 0;
+    int8_t noise[4] = {1, 1, 1, 1};
 
     memcpy(GuiInterface::Instance().rx_status_.rssi, packet.RxAtrib.rssi, sizeof(int8_t) * 2);
     memcpy(GuiInterface::Instance().rx_status_.snr, packet.RxAtrib.snr, sizeof(int8_t) * 2);
@@ -249,11 +252,8 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
     static auto *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
 
     static std::mutex agg_mutex;
-    static std::unique_ptr<Aggregator> video_aggregator = std::make_unique<Aggregator>(
-        keyPath.c_str(),
-        epoch,
-        video_channel_id_f,
-        [](uint8_t *payload, uint16_t packet_size) { Instance().handleRtp(payload, packet_size); });
+    static std::unique_ptr<Aggregator> video_aggregator =
+        std::make_unique<AggregatorUNIX>(keyPath.c_str(), epoch, video_channel_id_f);
 
     std::lock_guard lock(agg_mutex);
     if (frame.MatchesChannelID(video_channel_id_be8)) {
@@ -261,7 +261,12 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                          0,
                                          antenna,
-                                         rssi);
+                                         rssi,
+                                         noise,
+                                         freq,
+                                         0,
+                                         0,
+                                         NULL);
     } else {
         int a = 1;
     }

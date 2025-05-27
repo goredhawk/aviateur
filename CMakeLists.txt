@@ -87,5 +87,6 @@ else ()
             WiFiDriver
             revector
             SDL3::SDL3-static
+            pcap
     )
 endif ()
