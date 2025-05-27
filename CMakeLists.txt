@@ -65,6 +65,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE "3rd/mINI/src")
 add_subdirectory(3rd/SDL)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/SDL/include")
 
+target_include_directories(${PROJECT_NAME} PRIVATE "src/wifi/wfb-ng/include")
+
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 
 if (WIN32)
