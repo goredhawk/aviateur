@@ -63,14 +63,20 @@ public:
     void stop_adaptive_link() {
         std::unique_lock lock(thread_mutex);
 
-        if (!link_quality_thread) return;
-        this->adaptive_link_should_stop = true;
+        if (!link_quality_thread) {
+            return;
+        }
+
+        adaptive_link_should_stop = true;
         destroy_thread(link_quality_thread);
     }
 
 private:
     void stopDevice() {
-        if (rtl_devices.find(current_fd) == rtl_devices.end()) return;
+        if (rtl_devices.find(current_fd) == rtl_devices.end()) {
+            return;
+        }
+
         auto dev = rtl_devices.at(current_fd).get();
         if (dev) {
             dev->should_stop = true;
@@ -86,8 +92,8 @@ private:
     uint32_t udp_channel_id_be;
 
     Logger_t log;
-    std::unique_ptr<std::thread> usb_event_thread{nullptr};
-    std::unique_ptr<std::thread> usb_tx_thread{nullptr};
+    std::unique_ptr<std::thread> usb_event_thread;
+    std::unique_ptr<std::thread> usb_tx_thread;
     uint32_t link_id{7669206};
     SignalQualityCalculator rssi_calculator;
 };

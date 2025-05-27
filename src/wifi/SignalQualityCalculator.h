@@ -23,15 +23,18 @@ public:
     SignalQualityCalculator() = default;
     ~SignalQualityCalculator() = default;
 
+    /// Add a new RSSI entry with current timestamp
     void add_rssi(uint8_t ant1, uint8_t ant2);
 
     void add_snr(int8_t ant1, int8_t ant2);
 
+    /// Add new FEC data entry with current timestamp
     void add_fec_data(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost);
 
+    /// Get fresh averages over the last second
     template <class T>
     float get_avg(const T &array) {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        std::lock_guard lock(m_mutex);
 
         // Remove old entries
         cleanup_old_rssi_data();
@@ -54,6 +57,7 @@ public:
         return avg;
     }
 
+    /// Calculate signal quality based on last-second RSSI and FEC data
     SignalQuality calculate_signal_quality();
 
     static SignalQualityCalculator &get_instance() {
@@ -62,6 +66,7 @@ public:
     }
 
 private:
+    /// Sum up FEC data over the last 1 second
     std::pair<uint32_t, uint32_t> get_accumulated_fec_data();
 
     // Helper methods to remove old entries

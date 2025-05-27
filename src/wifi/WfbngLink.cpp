@@ -62,7 +62,6 @@ void WfbngLink::initAgg() {
     uint8_t video_radio_port = 0;
     uint32_t video_channel_id_f = (link_id << 8) + video_radio_port;
     video_channel_id_be = htobe32(video_channel_id_f);
-    auto udsName = std::string("my_socket");
 
     video_aggregator = std::make_unique<AggregatorUDPv4>(client_addr, 5600, keyPath, epoch, video_channel_id_f, 0);
 
@@ -95,9 +94,9 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
         return r;
     }
 
-    // Open adapters
-    struct libusb_device_handle *dev_handle;
-    r = libusb_wrap_sys_device(ctx, (intptr_t)fd, &dev_handle);
+    // Open adapter
+    libusb_device_handle *dev_handle;
+    r = libusb_wrap_sys_device(ctx, fd, &dev_handle);
     if (r < 0) {
         libusb_exit(ctx);
         return r;
@@ -107,32 +106,37 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
         r = libusb_detach_kernel_driver(dev_handle, 0);
         printf("libusb_detach_kernel_driver: %d", r);
     }
+
     r = libusb_claim_interface(dev_handle, 0);
     printf("Creating driver and device for fd=%d", fd);
 
     rtl_devices.emplace(fd, wifi_driver->CreateRtlDevice(dev_handle));
     if (!rtl_devices.at(fd)) {
         printf("CreateRtlDevice error");
+        libusb_exit(ctx);
         return -1;
     }
 
-    uint8_t *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
-    uint8_t *udp_channel_id_be8 = reinterpret_cast<uint8_t *>(&udp_channel_id_be);
-    uint8_t *mavlink_channel_id_be8 = reinterpret_cast<uint8_t *>(&mavlink_channel_id_be);
+    auto *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
+    auto *udp_channel_id_be8 = reinterpret_cast<uint8_t *>(&udp_channel_id_be);
+    auto *mavlink_channel_id_be8 = reinterpret_cast<uint8_t *>(&mavlink_channel_id_be);
 
     try {
-        auto packetProcessor =
+        auto packetProcessorFn =
             [this, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8](const Packet &packet) {
                 RxFrame frame(packet.Data);
                 if (!frame.IsValidWfbFrame()) {
                     return;
                 }
+
                 int8_t rssi[4] = {(int8_t)packet.RxAtrib.rssi[0], (int8_t)packet.RxAtrib.rssi[1], 1, 1};
                 uint32_t freq = 0;
                 int8_t noise[4] = {1, 1, 1, 1};
                 uint8_t antenna[4] = {1, 1, 1, 1};
 
-                std::lock_guard<std::mutex> lock(agg_mutex);
+                std::lock_guard lock(agg_mutex);
+
+                // Video frame
                 if (frame.MatchesChannelID(video_channel_id_be8)) {
                     SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
                     SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
@@ -151,7 +155,9 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
                         video_aggregator->clear_stats();
                         should_clear_stats = false;
                     }
-                } else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
+                }
+                // Mavlink frame
+                else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
                     mavlink_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                                        packet.Data.size() - sizeof(ieee80211_header) - 4,
                                                        0,
@@ -162,7 +168,9 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
                                                        0,
                                                        0,
                                                        NULL);
-                } else if (frame.MatchesChannelID(udp_channel_id_be8)) {
+                }
+                // UDP frame
+                else if (frame.MatchesChannelID(udp_channel_id_be8)) {
                     udp_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                                    packet.Data.size() - sizeof(ieee80211_header) - 4,
                                                    0,
@@ -183,12 +191,13 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
             auto usb_event_thread_func = [ctx, this, fd] {
                 while (true) {
                     auto dev = this->rtl_devices.at(fd).get();
-                    if (dev == nullptr || dev->should_stop) break;
-                    struct timeval timeout = {0, 500000}; // 500ms timeout
+                    if (dev == nullptr || dev->should_stop) {
+                        break;
+                    }
+                    struct timeval timeout = {0, 500000}; // 500 ms timeout
                     int r = libusb_handle_events_timeout(ctx, &timeout);
                     if (r < 0) {
                         this->log->error("Error handling events: {}", r);
-                        // break;
                     }
                 }
             };
@@ -227,8 +236,8 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
             }
         }
 
-        auto bandWidth = (bw == 20 ? CHANNEL_WIDTH_20 : CHANNEL_WIDTH_40);
-        rtl_devices.at(fd)->Init(packetProcessor,
+        auto bandWidth = bw == 20 ? CHANNEL_WIDTH_20 : CHANNEL_WIDTH_40;
+        rtl_devices.at(fd)->Init(packetProcessorFn,
                                  SelectedChannel{
                                      .Channel = static_cast<uint8_t>(wifiChannel),
                                      .ChannelOffset = 0,
@@ -236,6 +245,7 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
                                  });
     } catch (const std::runtime_error &error) {
         printf("runtime_error: %s", error.what());
+
         auto dev = rtl_devices.at(fd).get();
         if (dev) {
             dev->should_stop = true;
@@ -245,6 +255,7 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
         destroy_thread(usb_tx_thread);
         destroy_thread(usb_event_thread);
         stop_adaptive_link();
+
         return -1;
     }
 
@@ -260,8 +271,12 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
     stop_adaptive_link();
 
     r = libusb_release_interface(dev_handle, 0);
-    printf("libusb_release_interface: %d", r);
+    if (r < 0) {
+        printf("libusb_release_interface failed: %d", r);
+    }
+
     libusb_exit(ctx);
+
     return 0;
 }
 
@@ -322,9 +337,7 @@ void WfbngLink::start_link_quality_thread(int fd) {
         }
         while (!this->adaptive_link_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
-#if defined(ANDROID_DEBUG_RSSI) || true
-            // __android_log_print(ANDROID_LOG_WARN, TAG, "quality %d", quality.quality);
-#endif
+
             time_t currentEpoch = time(nullptr);
             const auto map_range =
                 [](double value, double inputMin, double inputMax, double outputMin, double outputMax) {
@@ -332,6 +345,7 @@ void WfbngLink::start_link_quality_thread(int fd) {
                 };
             // map to 1000..2000
             quality.quality = map_range(quality.quality, -1024, 1024, 1000, 2000);
+
             {
                 uint32_t len;
                 char message[100];
@@ -355,14 +369,25 @@ void WfbngLink::start_link_quality_thread(int fd) {
                    packets)
                  */
 
+                // Change FEC
                 if (quality.lost_last_second > 2)
                     fec.bump(5);
                 else {
-                    if (quality.recovered_last_second > 30) fec.bump(5);
-                    if (quality.recovered_last_second > 24) fec.bump(3);
-                    if (quality.recovered_last_second > 22) fec.bump(2);
-                    if (quality.recovered_last_second > 18) fec.bump(1);
-                    if (quality.recovered_last_second < 18) fec.bump(0);
+                    if (quality.recovered_last_second > 30) {
+                        fec.bump(5);
+                    }
+                    if (quality.recovered_last_second > 24) {
+                        fec.bump(3);
+                    }
+                    if (quality.recovered_last_second > 22) {
+                        fec.bump(2);
+                    }
+                    if (quality.recovered_last_second > 18) {
+                        fec.bump(1);
+                    }
+                    if (quality.recovered_last_second < 18) {
+                        fec.bump(0);
+                    }
                 }
 
                 snprintf(message + sizeof(len),
@@ -380,7 +405,7 @@ void WfbngLink::start_link_quality_thread(int fd) {
                 len = strlen(message + sizeof(len));
                 len = htonl(len);
                 memcpy(message, &len, sizeof(len));
-                printf(" message %s", message + 4);
+                // printf(" message %s", message + sizeof(len));
                 ssize_t sent = sendto(sockfd,
                                       message,
                                       strlen(message + sizeof(len)) + sizeof(len),
@@ -421,12 +446,15 @@ void WfbNgLink_SetAdaptiveLinkEnabled(WfbngLink *link, bool enabled) {
 }
 
 void WfbNgLink_SetTxPower(WfbngLink *link, int power) {
-    if (link->adaptive_tx_power == power) return;
+    if (link->adaptive_tx_power == power) {
+        return;
+    }
 
     link->adaptive_tx_power = power;
-    if (link->current_fd != -1 && link->rtl_devices.find(link->current_fd) != link->rtl_devices.end()) {
+    if (link->current_fd != -1 && link->rtl_devices.contains(link->current_fd)) {
         link->rtl_devices.at(link->current_fd)->SetTxPower(power);
     }
+
     // If adaptive mode is enabled and the adaptive thread is not running, restart it.
     if (link->adaptive_link_enabled) {
         link->stop_adaptive_link();
