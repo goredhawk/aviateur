@@ -12,7 +12,9 @@
 #include "../gui_interface.h"
 #include "Rtp.h"
 #include "RxFrame.h"
+#include "TxFrame.h"
 #include "WfbProcessor.h"
+#include "WfbngLink.hpp"
 #include "WiFiDriver.h"
 #include "logger.h"
 #include "wfb-ng/rx.hpp"
@@ -181,6 +183,8 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
         return false;
     }
 
+    txFrame = std::make_shared<TxFrame>();
+
     usbThread = std::make_shared<std::thread>([=, this]() {
         WiFiDriver wifi_driver{logger};
         try {
@@ -195,6 +199,52 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
                     .ChannelOffset = 0,
                     .ChannelWidth = static_cast<ChannelWidth_t>(channelWidthMode),
                 });
+
+            // if (!usb_event_thread) {
+            // auto usb_event_thread_func = [ctx, this] {
+            //     while (true) {
+            //         if (devHandle == nullptr || devHandle->should_stop) {
+            //             break;
+            //         }
+            //         struct timeval timeout = {0, 500000}; // 500 ms timeout
+            //         int r = libusb_handle_events_timeout(ctx, &timeout);
+            //         if (r < 0) {
+            //             // this->log->error("Error handling events: {}", r);
+            //         }
+            //     }
+            // };
+            //
+            // init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func); });
+
+            std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
+            args->udp_port = 8001;
+            args->link_id = link_id;
+            args->keypair = keyPath;
+            args->stbc = true;
+            args->ldpc = true;
+            args->mcs_index = 0;
+            args->vht_mode = false;
+            args->short_gi = false;
+            args->bandwidth = 20;
+            args->k = 1;
+            args->n = 5;
+            args->radio_port = WFB_TX_PORT;
+
+            printf("radio link ID %d, radio PORT %d", args->link_id, args->radio_port);
+
+            if (!usb_tx_thread) {
+                init_thread(usb_tx_thread, [&]() {
+                    return std::make_unique<std::thread>([this, args] {
+                        txFrame->run(rtlDevice.get(), args.get());
+                        printf("usb_transfer thread should terminate");
+                    });
+                });
+            }
+
+            if (adaptive_link_enabled) {
+                stop_adaptive_link();
+                start_link_quality_thread();
+            }
         } catch (const std::runtime_error &e) {
             GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
         } catch (...) {
@@ -220,6 +270,148 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
     usbThread->detach();
 
     return true;
+}
+
+void WfbReceiver::start_link_quality_thread() {
+    auto thread_func = [this]() {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        const char *ip = "10.5.0.10";
+        int port = 9999;
+        int sockfd;
+        struct sockaddr_in server_addr;
+        // Create UDP socket
+        if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+            printf("Socket creation failed");
+            return;
+        }
+        int opt = 1;
+        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        memset(&server_addr, 0, sizeof(server_addr));
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(port);
+        if (inet_pton(AF_INET, ip, &server_addr.sin_addr) <= 0) {
+            printf("Invalid IP address");
+            close(sockfd);
+            return;
+        }
+        int sockfd2;
+        struct sockaddr_in server_addr2;
+        // Create UDP socket
+        if ((sockfd2 = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+            printf("Socket creation failed");
+            return;
+        }
+        int opt2 = 1;
+        setsockopt(sockfd2, SOL_SOCKET, SO_REUSEADDR, &opt2, sizeof(opt2));
+        memset(&server_addr2, 0, sizeof(server_addr2));
+        server_addr2.sin_family = AF_INET;
+        server_addr2.sin_port = htons(7755);
+        if (inet_pton(AF_INET, ip, &server_addr2.sin_addr) <= 0) {
+            printf("Invalid IP address");
+            close(sockfd);
+            return;
+        }
+        while (!this->adaptive_link_should_stop) {
+            auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
+
+            time_t currentEpoch = time(nullptr);
+            const auto map_range =
+                [](double value, double inputMin, double inputMax, double outputMin, double outputMax) {
+                    return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
+                };
+            // map to 1000..2000
+            quality.quality = map_range(quality.quality, -1024, 1024, 1000, 2000);
+
+            {
+                uint32_t len;
+                char message[100];
+
+                /**
+                     1741491090:1602:1602:1:0:-70:24:num_ants:pnlt:fec_change:code
+
+                     <gs_time>:<link_score>:<link_score>:<fec>:<lost>:<rssi_dB>:<snr_dB>:<num_ants>:<noise_penalty>:<fec_change>:<idr_request_code>
+
+                    gs_time: gs clock
+                    link_score: 1000 - 2000 sent twice (already including any penalty)
+                    link_score: 1000 - 2000 sent twice (already including any penalty)
+                    fec: instantaneus fec_rec (only used by old fec_rec_pntly now disabled by default)
+                    lost: instantaneus lost (not used)
+                    rssi_dB: best antenna rssi (for osd)
+                    snr_dB: best antenna snr_dB (for osd)
+                    num_ants: number of gs antennas (for osd)
+                    noise_penalty: penalty deducted from score due to noise (for osd)
+                    fec_change: int from 0 to 5 : how much to alter fec based on noise
+                    optional idr_request_code: 4 char unique code to request 1 keyframe (no need to send special extra
+                   packets)
+                 */
+
+                // Change FEC
+                if (quality.lost_last_second > 2)
+                    fec.bump(5);
+                else {
+                    if (quality.recovered_last_second > 30) {
+                        fec.bump(5);
+                    }
+                    if (quality.recovered_last_second > 24) {
+                        fec.bump(3);
+                    }
+                    if (quality.recovered_last_second > 22) {
+                        fec.bump(2);
+                    }
+                    if (quality.recovered_last_second > 18) {
+                        fec.bump(1);
+                    }
+                    if (quality.recovered_last_second < 18) {
+                        fec.bump(0);
+                    }
+                }
+
+                snprintf(message + sizeof(len),
+                         sizeof(message) - sizeof(len),
+                         "%ld:%d:%d:%d:%d:%d:%f:0:-1:%d:%s\n",
+                         static_cast<long>(currentEpoch),
+                         quality.quality,
+                         quality.quality,
+                         quality.recovered_last_second,
+                         quality.lost_last_second,
+                         quality.quality,
+                         quality.snr,
+                         fec.value(),
+                         quality.idr_code.c_str());
+                len = strlen(message + sizeof(len));
+                len = htonl(len);
+                memcpy(message, &len, sizeof(len));
+                // printf(" message %s", message + sizeof(len));
+                ssize_t sent = sendto(sockfd,
+                                      message,
+                                      strlen(message + sizeof(len)) + sizeof(len),
+                                      0,
+                                      (struct sockaddr *)&server_addr,
+                                      sizeof(server_addr));
+                if (sent < 0) {
+                    printf("Failed to send message");
+                    break;
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        close(sockfd);
+        this->adaptive_link_should_stop = false;
+    };
+
+    init_thread(link_quality_thread, [=]() { return std::make_unique<std::thread>(thread_func); });
+    rtlDevice->SetTxPower(adaptive_tx_power);
+}
+
+void WfbReceiver::stop_adaptive_link() {
+    std::unique_lock lock(thread_mutex);
+
+    if (!link_quality_thread) {
+        return;
+    }
+
+    adaptive_link_should_stop = true;
+    destroy_thread(link_quality_thread);
 }
 
 void WfbReceiver::handle80211Frame(const Packet &packet) {
@@ -251,9 +443,11 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
 
     static auto *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
 
+    std::string client_addr = "127.0.0.1";
+
     static std::mutex agg_mutex;
-    static std::unique_ptr<Aggregator> video_aggregator =
-        std::make_unique<Aggregator>(keyPath.c_str(), epoch, video_channel_id_f);
+    static std::unique_ptr<AggregatorUDPv4> video_aggregator =
+        std::make_unique<AggregatorUDPv4>(client_addr, 5600, keyPath.c_str(), epoch, video_channel_id_f, 0);
 
     std::lock_guard lock(agg_mutex);
     if (frame.MatchesChannelID(video_channel_id_be8)) {
@@ -267,8 +461,6 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
                                          0,
                                          0,
                                          NULL);
-    } else {
-        int a = 1;
     }
 }
 

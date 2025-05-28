@@ -4,8 +4,6 @@
 #include <mutex>
 
 class FecChangeController {
-    static constexpr const char *TAG = "FecChangeController";
-
 public:
     /// Query the current (possibly decayed) fec_change value.
     /// Call this as often as you like; the class handles its own timing.
@@ -24,8 +22,6 @@ public:
     void bump(int newValue) {
         std::lock_guard lock(mx_);
         if (newValue > val_) {
-            // __android_log_print(ANDROID_LOG_ERROR, TAG, "bumping FEC: %d", newValue);
-
             val_ = newValue;
             lastChange_ = Clock::now();
         }

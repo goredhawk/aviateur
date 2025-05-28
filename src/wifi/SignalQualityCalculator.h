@@ -7,9 +7,6 @@
 #include <utility>
 #include <vector>
 
-// Adjust as needed
-static const char *TAG = "SignalQualityCalculator";
-
 class SignalQualityCalculator {
 public:
     struct SignalQuality {

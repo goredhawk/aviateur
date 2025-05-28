@@ -14,8 +14,8 @@ extern "C" {
 #include "WiFiDriver.h"
 #include "wfb-ng/rx.hpp"
 
-const u8 wfb_tx_port = 160;
-const u8 wfb_rx_port = 32;
+constexpr u8 WFB_TX_PORT = 160;
+constexpr u8 WFB_RX_PORT = 32;
 
 class WfbngLink {
 public:

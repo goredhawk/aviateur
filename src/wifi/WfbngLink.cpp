@@ -74,7 +74,7 @@ void WfbngLink::initAgg() {
         std::make_unique<AggregatorUDPv4>(client_addr, mavlink_client_port, keyPath, epoch, mavlink_channel_id_f, 0);
 
     int udp_client_port = 8000;
-    uint8_t udp_radio_port = wfb_rx_port;
+    uint8_t udp_radio_port = WFB_RX_PORT;
     uint32_t udp_channel_id_f = (link_id << 8) + udp_radio_port;
     udp_channel_id_be = htobe32(udp_channel_id_f);
 
@@ -216,7 +216,7 @@ int WfbngLink::run(int wifiChannel, int bw, int fd) {
             args->bandwidth = 20;
             args->k = 1;
             args->n = 5;
-            args->radio_port = wfb_tx_port;
+            args->radio_port = WFB_TX_PORT;
 
             printf("radio link ID %d, radio PORT %d", args->link_id, args->radio_port);
 
@@ -360,12 +360,12 @@ void WfbngLink::start_link_quality_thread(int fd) {
                     link_score: 1000 - 2000 sent twice (already including any penalty)
                     fec: instantaneus fec_rec (only used by old fec_rec_pntly now disabled by default)
                     lost: instantaneus lost (not used)
-                    rssi_dB:  best antenna rssi (for osd)
+                    rssi_dB: best antenna rssi (for osd)
                     snr_dB: best antenna snr_dB (for osd)
                     num_ants: number of gs antennas (for osd)
                     noise_penalty: penalty deducted from score due to noise (for osd)
                     fec_change: int from 0 to 5 : how much to alter fec based on noise
-                    optional idr_request_code:  4 char unique code to request 1 keyframe (no need to send special extra
+                    optional idr_request_code: 4 char unique code to request 1 keyframe (no need to send special extra
                    packets)
                  */
 
