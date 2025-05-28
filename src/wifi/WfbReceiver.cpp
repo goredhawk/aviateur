@@ -447,7 +447,12 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
 
     static std::mutex agg_mutex;
     static std::unique_ptr<AggregatorUDPv4> video_aggregator =
-        std::make_unique<AggregatorUDPv4>(client_addr, 5600, keyPath.c_str(), epoch, video_channel_id_f, 0);
+        std::make_unique<AggregatorUDPv4>(client_addr,
+                                          GuiInterface::Instance().playerPort,
+                                          keyPath.c_str(),
+                                          epoch,
+                                          video_channel_id_f,
+                                          0);
 
     std::lock_guard lock(agg_mutex);
     if (frame.MatchesChannelID(video_channel_id_be8)) {
