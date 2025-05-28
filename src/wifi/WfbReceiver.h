@@ -62,14 +62,14 @@ protected:
     uint32_t link_id{7669206};
     std::recursive_mutex thread_mutex;
     std::shared_ptr<TxFrame> txFrame;
-    bool adaptive_link_enabled;
-    bool adaptive_link_should_stop{false};
-    int adaptive_tx_power;
+    bool adaptive_link_enabled = true;
+    bool adaptive_link_should_stop = false;
+    int adaptive_tx_power = 30;
     std::unique_ptr<std::thread> link_quality_thread;
     FecChangeController fec;
 
     void init_thread(std::unique_ptr<std::thread> &thread,
-                 const std::function<std::unique_ptr<std::thread>()> &init_func) {
+                     const std::function<std::unique_ptr<std::thread>()> &init_func) {
         std::unique_lock lock(thread_mutex);
         destroy_thread(thread);
         thread = init_func();
