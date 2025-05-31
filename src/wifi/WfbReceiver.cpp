@@ -259,21 +259,22 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
         try {
             rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
 
-            // if (!usb_event_thread) {
-            // auto usb_event_thread_func = [ctx, this] {
-            //     while (true) {
-            //         if (devHandle == nullptr || devHandle->should_stop) {
-            //             break;
-            //         }
-            //         struct timeval timeout = {0, 500000}; // 500 ms timeout
-            //         int r = libusb_handle_events_timeout(ctx, &timeout);
-            //         if (r < 0) {
-            //             // this->log->error("Error handling events: {}", r);
-            //         }
-            //     }
-            // };
-            //
-            // init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func); });
+            if (!usb_event_thread) {
+                auto usb_event_thread_func = [this] {
+                    while (true) {
+                        if (devHandle == nullptr) {
+                            break;
+                        }
+                        struct timeval timeout = {0, 500000}; // 500 ms timeout
+                        int r = libusb_handle_events_timeout(ctx, &timeout);
+                        if (r < 0) {
+                            // this->log->error("Error handling events: {}", r);
+                        }
+                    }
+                };
+
+                init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func); });
+            }
 
             std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
             args->udp_port = 8001;
@@ -346,6 +347,9 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
 void WfbReceiver::start_link_quality_thread() {
     auto thread_func = [this]() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        fec.setEnabled(true);
+
         const char *ip = "10.5.0.10";
         int port = 9999;
         int sockfd;
@@ -449,11 +453,10 @@ void WfbReceiver::start_link_quality_thread() {
                          quality.snr,
                          fec.value(),
                          quality.idr_code.c_str());
-                printf("FEC %d Quliaty %d\n", fec.value(), quality.quality);
                 len = strlen(message + sizeof(len));
                 len = htonl(len);
                 memcpy(message, &len, sizeof(len));
-                // printf(" message %s", message + sizeof(len));
+                printf("TX message: %s", message + sizeof(len));
                 ssize_t sent = sendto(sockfd,
                                       message,
                                       strlen(message + sizeof(len)) + sizeof(len),

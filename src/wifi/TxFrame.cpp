@@ -74,7 +74,7 @@ bool Transmitter::sendPacket(const uint8_t *buf, size_t size, uint8_t flags) {
     // Send this fragment
     sendBlockFragment(totalHdrSize + size);
 
-    // Track largest data size in block
+    // Track the largest data size in block
     maxPacketSize_ = std::max(maxPacketSize_, totalHdrSize + size);
     fragmentIndex_++;
 
