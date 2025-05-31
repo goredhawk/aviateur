@@ -21,6 +21,75 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+#ifdef __linux__
+    #define INVALID_SOCKET (-1)
+#endif
+
+static int socketFd = INVALID_SOCKET;
+static volatile bool playing = false;
+
+#define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
+
+inline bool isH264(const uint8_t *data) {
+    auto h264NalType = GET_H264_NAL_UNIT_TYPE(data);
+    return h264NalType == 24 || h264NalType == 28;
+}
+
+class AggregatorX : public AggregatorUDPv4 {
+public:
+    AggregatorX(const std::string &client_addr,
+                int client_port,
+                const std::string &keypair,
+                uint64_t epoch,
+                uint32_t channel_id,
+                int snd_buf_size)
+        : AggregatorUDPv4(client_addr, client_port, keypair, epoch, channel_id, snd_buf_size) {}
+
+protected:
+    void send_to_socket(const uint8_t *payload, uint16_t packet_size) override {
+        GuiInterface::Instance().rtpPktCount_++;
+        GuiInterface::Instance().UpdateCount();
+
+        // if (rtlDevice->should_stop) {
+        //     return;
+        // }
+        if (packet_size < 12) {
+            return;
+        }
+
+        // sockaddr_in serverAddr{};
+        // serverAddr.sin_family = AF_INET;
+        // serverAddr.sin_port = htons(GuiInterface::Instance().playerPort);
+        // serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+        auto *header = (RtpHeader *)payload;
+
+        if (!playing) {
+            playing = true;
+            if (GuiInterface::Instance().playerCodec == "AUTO") {
+                // Check H264 or h265
+                if (isH264(header->getPayloadData())) {
+                    GuiInterface::Instance().playerCodec = "H264";
+                } else {
+                    GuiInterface::Instance().playerCodec = "H265";
+                }
+                GuiInterface::Instance().PutLog(LogLevel::Debug, "Check codec " + GuiInterface::Instance().playerCodec);
+            }
+            GuiInterface::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
+        }
+
+        // Send payload via socket.
+        sendto(sockfd, reinterpret_cast<const char *>(payload), packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
+    }
+
+private:
+    AggregatorX(const AggregatorX &);
+    AggregatorX &operator=(const AggregatorX &);
+
+    // int sockfd;
+    // struct sockaddr_in saddr;
+};
+
 std::vector<DeviceId> WfbReceiver::GetDeviceList() {
     std::vector<DeviceId> list;
 
@@ -189,16 +258,6 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
         WiFiDriver wifi_driver{logger};
         try {
             rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
-            rtlDevice->Init(
-                [](const Packet &p) {
-                    Instance().handle80211Frame(p);
-                    GuiInterface::Instance().UpdateCount();
-                },
-                SelectedChannel{
-                    .Channel = channel,
-                    .ChannelOffset = 0,
-                    .ChannelWidth = static_cast<ChannelWidth_t>(channelWidthMode),
-                });
 
             // if (!usb_event_thread) {
             // auto usb_event_thread_func = [ctx, this] {
@@ -245,6 +304,18 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
                 stop_adaptive_link();
                 start_link_quality_thread();
             }
+
+            rtlDevice->Init(
+                [](const Packet &p) {
+                    Instance().handle80211Frame(p);
+                    GuiInterface::Instance().UpdateCount();
+                },
+                SelectedChannel{
+                    .Channel = channel,
+                    .ChannelOffset = 0,
+                    .ChannelWidth = static_cast<ChannelWidth_t>(channelWidthMode),
+                });
+
         } catch (const std::runtime_error &e) {
             GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
         } catch (...) {
@@ -378,6 +449,7 @@ void WfbReceiver::start_link_quality_thread() {
                          quality.snr,
                          fec.value(),
                          quality.idr_code.c_str());
+                printf("FEC %d Quliaty %d\n", fec.value(), quality.quality);
                 len = strlen(message + sizeof(len));
                 len = htonl(len);
                 memcpy(message, &len, sizeof(len));
@@ -443,19 +515,34 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
 
     static auto *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
 
+    int mavlink_client_port = 14550;
+    uint8_t mavlink_radio_port = 0x10;
+    uint32_t mavlink_channel_id_f = (link_id << 8) + mavlink_radio_port;
+    static uint32_t mavlink_channel_id_be = htobe32(mavlink_channel_id_f);
+    auto *mavlink_channel_id_be8 = reinterpret_cast<uint8_t *>(&mavlink_channel_id_be);
+
+    int udp_client_port = 8000;
+    uint8_t udp_radio_port = WFB_RX_PORT;
+    uint32_t udp_channel_id_f = (link_id << 8) + udp_radio_port;
+    static uint32_t udp_channel_id_be = htobe32(udp_channel_id_f);
+    auto *udp_channel_id_be8 = reinterpret_cast<uint8_t *>(&udp_channel_id_be);
+
     std::string client_addr = "127.0.0.1";
 
     static std::mutex agg_mutex;
-    static std::unique_ptr<AggregatorUDPv4> video_aggregator =
-        std::make_unique<AggregatorUDPv4>(client_addr,
-                                          GuiInterface::Instance().playerPort,
-                                          keyPath.c_str(),
-                                          epoch,
-                                          video_channel_id_f,
-                                          0);
+    static std::unique_ptr<AggregatorX> video_aggregator =
+        std::make_unique<AggregatorX>(client_addr,
+                                      GuiInterface::Instance().playerPort,
+                                      keyPath.c_str(),
+                                      epoch,
+                                      video_channel_id_f,
+                                      0);
 
     std::lock_guard lock(agg_mutex);
     if (frame.MatchesChannelID(video_channel_id_be8)) {
+        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
+        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
+
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                          0,
@@ -467,20 +554,14 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
                                          0,
                                          NULL);
     }
-}
-
-#ifdef __linux__
-    #define INVALID_SOCKET (-1)
-#endif
-
-static int socketFd = INVALID_SOCKET;
-static volatile bool playing = false;
-
-#define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
-
-inline bool isH264(const uint8_t *data) {
-    auto h264NalType = GET_H264_NAL_UNIT_TYPE(data);
-    return h264NalType == 24 || h264NalType == 28;
+    // MAVLink frame
+    else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a MAVLink frame, but we're unable to handle it!");
+    }
+    // UDP frame
+    else if (frame.MatchesChannelID(udp_channel_id_be8)) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a UDP frame, but we're unable to handle it!");
+    }
 }
 
 void WfbReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {

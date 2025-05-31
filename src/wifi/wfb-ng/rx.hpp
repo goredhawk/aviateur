@@ -252,6 +252,7 @@ private:
     AggregatorUDPv4(const AggregatorUDPv4&);
     AggregatorUDPv4& operator=(const AggregatorUDPv4&);
 
+protected:
     int sockfd;
     struct sockaddr_in saddr;
 };
