@@ -6,7 +6,7 @@
 //
 // #include <functional>
 //
-// #include "WfbDefine.h"
+// #include "WfbngDefine.h"
 //
 // extern "C" {
 // #include "fec.h"

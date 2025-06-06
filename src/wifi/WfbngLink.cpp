@@ -2,7 +2,7 @@
 // Created by Talus on 2024/6/10.
 //
 
-#include "WfbReceiver.h"
+#include "WfbngLink.h"
 
 #include <iomanip>
 #include <mutex>
@@ -14,7 +14,7 @@
 #include "RxFrame.h"
 #include "SignalQualityCalculator.h"
 #include "TxFrame.h"
-#include "WfbProcessor.h"
+#include "WfbngProcessor.h"
 #include "WiFiDriver.h"
 #include "logger.h"
 #include "wfb-ng/rx.hpp"
@@ -93,7 +93,7 @@ private:
     // struct sockaddr_in saddr;
 };
 
-std::vector<DeviceId> WfbReceiver::GetDeviceList() {
+std::vector<DeviceId> WfbngLink::GetDeviceList() {
     std::vector<DeviceId> list;
 
     // Initialize libusb
@@ -158,7 +158,7 @@ std::vector<DeviceId> WfbReceiver::GetDeviceList() {
     return list;
 }
 
-bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWidthMode, const std::string &kPath) {
+bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidthMode, const std::string &kPath) {
     GuiInterface::Instance().wifiFrameCount_ = 0;
     GuiInterface::Instance().wfbFrameCount_ = 0;
     GuiInterface::Instance().rtpPktCount_ = 0;
@@ -347,7 +347,7 @@ bool WfbReceiver::Start(const DeviceId &deviceId, uint8_t channel, int channelWi
     return true;
 }
 
-void WfbReceiver::start_link_quality_thread() {
+void WfbngLink::start_link_quality_thread() {
     auto thread_func = [this]() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -499,7 +499,7 @@ void WfbReceiver::start_link_quality_thread() {
     rtlDevice->SetTxPower(adaptive_tx_power);
 }
 
-void WfbReceiver::stop_adaptive_link() {
+void WfbngLink::stop_adaptive_link() {
     std::unique_lock lock(thread_mutex);
 
     if (!link_quality_thread) {
@@ -510,7 +510,7 @@ void WfbReceiver::stop_adaptive_link() {
     destroy_thread(link_quality_thread);
 }
 
-void WfbReceiver::handle80211Frame(const Packet &packet) {
+void WfbngLink::handle80211Frame(const Packet &packet) {
     GuiInterface::Instance().wifiFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
@@ -592,7 +592,7 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
     }
 }
 
-void WfbReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
+void WfbngLink::handleRtp(uint8_t *payload, uint16_t packet_size) {
     GuiInterface::Instance().rtpPktCount_++;
     GuiInterface::Instance().UpdateCount();
 
@@ -633,7 +633,7 @@ void WfbReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
            sizeof(serverAddr));
 }
 
-void WfbReceiver::Stop() const {
+void WfbngLink::Stop() const {
     playing = false;
 
     if (rtlDevice) {
@@ -641,7 +641,7 @@ void WfbReceiver::Stop() const {
     }
 }
 
-WfbReceiver::WfbReceiver() {
+WfbngLink::WfbngLink() {
 #ifdef _WIN32
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
@@ -653,7 +653,7 @@ WfbReceiver::WfbReceiver() {
     socketFd = socket(AF_INET, SOCK_DGRAM, 0);
 }
 
-WfbReceiver::~WfbReceiver() {
+WfbngLink::~WfbngLink() {
 #ifdef _WIN32
     closesocket(socketFd);
     socketFd = INVALID_SOCKET;

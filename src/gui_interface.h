@@ -15,7 +15,7 @@
 #endif
 
 #include "app.h"
-#include "wifi/WfbReceiver.h"
+#include "wifi/WfbngLink.h"
 
 #define CONFIG_FILE "config.ini"
 
@@ -135,7 +135,7 @@ public:
     }
 
     static std::vector<DeviceId> GetDeviceList() {
-        return WfbReceiver::GetDeviceList();
+        return WfbngLink::GetDeviceList();
     }
 
     static std::string GetAppDataDir() {
@@ -204,11 +204,11 @@ public:
             keyPath = revector::get_asset_dir("gs.key");
             Instance().PutLog(LogLevel::Info, "Using GS key: {}", keyPath);
         }
-        return WfbReceiver::Instance().Start(deviceId, channel, channelWidthMode, keyPath);
+        return WfbngLink::Instance().Start(deviceId, channel, channelWidthMode, keyPath);
     }
 
     static bool Stop() {
-        WfbReceiver::Instance().Stop();
+        WfbngLink::Instance().Stop();
         return true;
     }
 

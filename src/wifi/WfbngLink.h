@@ -28,13 +28,13 @@ struct DeviceId {
 };
 
 /// Receive packets from an adapter.
-class WfbReceiver {
+class WfbngLink {
 public:
-    WfbReceiver();
-    ~WfbReceiver();
+    WfbngLink();
+    ~WfbngLink();
 
-    static WfbReceiver &Instance() {
-        static WfbReceiver wfb_receiver;
+    static WfbngLink &Instance() {
+        static WfbngLink wfb_receiver;
         return wfb_receiver;
     }
 
