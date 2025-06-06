@@ -376,28 +376,6 @@ void WfbngLink::start_link_quality_thread() {
             return;
         }
 
-        int sockfd2;
-
-        // Create UDP socket
-        if ((sockfd2 = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-            printf("Socket creation failed");
-            return;
-        }
-
-        int opt2 = 1;
-        setsockopt(sockfd2, SOL_SOCKET, SO_REUSEADDR, &opt2, sizeof(opt2));
-
-        struct sockaddr_in server_addr2 = {};
-        memset(&server_addr2, 0, sizeof(server_addr2));
-        server_addr2.sin_family = AF_INET;
-        server_addr2.sin_port = htons(7755);
-
-        if (inet_pton(AF_INET, ip, &server_addr2.sin_addr) <= 0) {
-            printf("Invalid IP address");
-            close(sockfd);
-            return;
-        }
-
         while (!this->adaptive_link_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
 
@@ -568,9 +546,6 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
 
     // Video frame
     if (frame.MatchesChannelID(video_channel_id_be8)) {
-        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
-        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
-
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                          0,
@@ -581,6 +556,13 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
                                          0,
                                          0,
                                          NULL);
+
+        // Update signal quality
+        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
+        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
+        SignalQualityCalculator::get_instance().add_fec_data(video_aggregator->count_p_all,
+                                                             video_aggregator->count_p_fec_recovered,
+                                                             video_aggregator->count_p_lost);
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
