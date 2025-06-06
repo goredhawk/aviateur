@@ -198,7 +198,11 @@ void ControlPanel::custom_ready() {
 
             auto text_edit = std::make_shared<revector::TextEdit>();
             text_edit->set_editable(false);
-            text_edit->set_text(std::filesystem::path(keyPath).filename().string());
+            if (keyPath.empty()) {
+                text_edit->set_text("default");
+            } else {
+                text_edit->set_text(std::filesystem::path(keyPath).filename().string());
+            }
             text_edit->container_sizing.expand_h = true;
             text_edit->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(text_edit);
