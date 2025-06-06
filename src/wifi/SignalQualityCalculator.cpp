@@ -110,6 +110,8 @@ std::pair<uint32_t, uint32_t> SignalQualityCalculator::get_accumulated_fec_data(
     // Make sure we clean up old FEC data first
     cleanup_old_fec_data();
 
+    if (m_fec_data.empty()) return {300, 300};
+
     uint32_t p_recovered = 0;
     uint32_t p_all = 0;
     uint32_t p_lost = 0;
@@ -117,9 +119,6 @@ std::pair<uint32_t, uint32_t> SignalQualityCalculator::get_accumulated_fec_data(
         p_all += data.all;
         p_recovered += data.recovered;
         p_lost += data.lost;
-    }
-    if (p_all == 0) {
-        return {300, 300};
     }
     return {p_recovered, p_lost};
 }
