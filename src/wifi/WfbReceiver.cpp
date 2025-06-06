@@ -12,9 +12,9 @@
 #include "../gui_interface.h"
 #include "Rtp.h"
 #include "RxFrame.h"
+#include "SignalQualityCalculator.h"
 #include "TxFrame.h"
 #include "WfbProcessor.h"
-#include "WfbngLink.hpp"
 #include "WiFiDriver.h"
 #include "logger.h"
 #include "wfb-ng/rx.hpp"
@@ -25,10 +25,13 @@
     #define INVALID_SOCKET (-1)
 #endif
 
+#define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
+
 static int socketFd = INVALID_SOCKET;
 static volatile bool playing = false;
 
-#define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
+constexpr u8 WFB_TX_PORT = 160;
+constexpr u8 WFB_RX_PORT = 32;
 
 inline bool isH264(const uint8_t *data) {
     auto h264NalType = GET_H264_NAL_UNIT_TYPE(data);
@@ -353,50 +356,62 @@ void WfbReceiver::start_link_quality_thread() {
         const char *ip = "10.5.0.10";
         int port = 9999;
         int sockfd;
-        struct sockaddr_in server_addr;
+
         // Create UDP socket
         if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
             printf("Socket creation failed");
             return;
         }
+
         int opt = 1;
         setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        memset(&server_addr, 0, sizeof(server_addr));
+
+        struct sockaddr_in server_addr = {};
         server_addr.sin_family = AF_INET;
         server_addr.sin_port = htons(port);
+
         if (inet_pton(AF_INET, ip, &server_addr.sin_addr) <= 0) {
             printf("Invalid IP address");
             close(sockfd);
             return;
         }
+
         int sockfd2;
-        struct sockaddr_in server_addr2;
+
         // Create UDP socket
         if ((sockfd2 = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
             printf("Socket creation failed");
             return;
         }
+
         int opt2 = 1;
         setsockopt(sockfd2, SOL_SOCKET, SO_REUSEADDR, &opt2, sizeof(opt2));
+
+        struct sockaddr_in server_addr2 = {};
         memset(&server_addr2, 0, sizeof(server_addr2));
         server_addr2.sin_family = AF_INET;
         server_addr2.sin_port = htons(7755);
+
         if (inet_pton(AF_INET, ip, &server_addr2.sin_addr) <= 0) {
             printf("Invalid IP address");
             close(sockfd);
             return;
         }
+
         while (!this->adaptive_link_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
 
             time_t currentEpoch = time(nullptr);
+
             const auto map_range =
                 [](double value, double inputMin, double inputMax, double outputMin, double outputMax) {
                     return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
                 };
-            // map to 1000..2000
+
+            // Map to 1000..2000
             quality.quality = map_range(quality.quality, -1024, 1024, 1000, 2000);
 
+            // Prepare & send message
             {
                 uint32_t len;
                 char message[100];
@@ -453,10 +468,14 @@ void WfbReceiver::start_link_quality_thread() {
                          quality.snr,
                          fec.value(),
                          quality.idr_code.c_str());
+
+                // Put message length in the message header
                 len = strlen(message + sizeof(len));
                 len = htonl(len);
                 memcpy(message, &len, sizeof(len));
+
                 printf("TX message: %s", message + sizeof(len));
+
                 ssize_t sent = sendto(sockfd,
                                       message,
                                       strlen(message + sizeof(len)) + sizeof(len),
@@ -470,11 +489,13 @@ void WfbReceiver::start_link_quality_thread() {
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
+
         close(sockfd);
         this->adaptive_link_should_stop = false;
     };
 
     init_thread(link_quality_thread, [=]() { return std::make_unique<std::thread>(thread_func); });
+
     rtlDevice->SetTxPower(adaptive_tx_power);
 }
 
@@ -532,7 +553,6 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
 
     std::string client_addr = "127.0.0.1";
 
-    static std::mutex agg_mutex;
     static std::unique_ptr<AggregatorX> video_aggregator =
         std::make_unique<AggregatorX>(client_addr,
                                       GuiInterface::Instance().playerPort,
@@ -541,7 +561,12 @@ void WfbReceiver::handle80211Frame(const Packet &packet) {
                                       video_channel_id_f,
                                       0);
 
+    // The aggregator is static, so we need a mutex to modify it
+    // Considering to make it non-static
+    static std::mutex agg_mutex;
     std::lock_guard lock(agg_mutex);
+
+    // Video frame
     if (frame.MatchesChannelID(video_channel_id_be8)) {
         SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
         SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
@@ -610,6 +635,7 @@ void WfbReceiver::handleRtp(uint8_t *payload, uint16_t packet_size) {
 
 void WfbReceiver::Stop() const {
     playing = false;
+
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }

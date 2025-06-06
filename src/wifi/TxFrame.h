@@ -37,12 +37,6 @@ extern "C" {
 #include <memory>
 #include <unordered_map>
 
-//// For Android logging
-// #ifdef __ANDROID__
-// #include <android/log.h>
-// #define TAG "TxFrame"
-// #endif
-
 // //-------------------------------------------------------------
 // // Utility function to format strings (variadic).
 
@@ -216,7 +210,7 @@ using TxAntennaStat = std::unordered_map<uint64_t, TxAntennaItem>;
  * This transmitter can operate in single-output or "mirror" mode. In mirror mode,
  * it sends each packet through all raw sockets. In single-output mode, only one is selected.
  */
-class RawSocketTransmitter : public Transmitter {
+class RawSocketTransmitter final : public Transmitter {
 public:
     RawSocketTransmitter(int k,
                          int n,
@@ -293,7 +287,7 @@ private:
 //-------------------------------------------------------------
 /**
  * @class UsbTransmitter
- * @brief Transmitter that sends packets via an attached USB WiFi device (Rtl8812a).
+ * @brief Transmitter that sends packets via an attached USB Wi-Fi device (Rtl8812a).
  */
 class UsbTransmitter : public Transmitter {
 public:
