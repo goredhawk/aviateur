@@ -332,6 +332,9 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
 
+        destroy_thread(usb_tx_thread);
+        destroy_thread(usb_event_thread);
+
         libusb_close(devHandle);
         libusb_exit(ctx);
 
