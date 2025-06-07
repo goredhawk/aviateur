@@ -270,7 +270,7 @@ bool FfmpegDecoder::OpenVideo() {
                         const AVCodecHWConfig *config = avcodec_get_hw_config(codec, configIndex);
                         if (!config) {
                             hwDecoderEnabled = false;
-                            GuiInterface::Instance().PutLog(LogLevel::Error,
+                            GuiInterface::Instance().PutLog(LogLevel::Warn,
                                                             "AVCodecHWConfig is null, disabling hardware decoder");
                             break;
                         }
@@ -284,6 +284,11 @@ bool FfmpegDecoder::OpenVideo() {
                             GuiInterface::Instance().PutLog(LogLevel::Info, oss.str());
 
                             break;
+                        } else {
+                            hwDecoderEnabled = false;
+
+                            GuiInterface::Instance().PutLog(LogLevel::Warn,
+                                                            "Invalid AVCodecHWConfig, disabling hardware decoder");
                         }
                     }
                 }

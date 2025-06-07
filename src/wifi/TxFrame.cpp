@@ -763,21 +763,31 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     // UDP packet
                     uint8_t *packet = (uint8_t *)malloc(packet_size);
 
+                    static int packet_id = 0;
+
                     // IP header
                     struct iphdr *ip = (struct iphdr *)packet;
-                    ip->saddr = inet_addr("10.5.0.10");
+                    ip->saddr = inet_addr("127.0.0.1");
                     ip->daddr = inet_addr("10.5.0.10");
                     ip->ttl = 5;
+                    ip->ihl = (4 << 4) | (5);
+                    ip->tos = 0;
+                    ip->tot_len = htons(packet_size);
+                    ip->id = htons(packet_id++);
+                    ip->frag_off = 0;
+                    ip->ttl = 255;
+                    ip->protocol = IPPROTO_UDP;
+                    ip->check = 0; // Will be calculated later
 
                     // UDP header
                     struct udphdr *udp = (struct udphdr *)(packet + sizeof(struct iphdr));
                     udp->source = 9999;
                     udp->dest = 9999;
-                    udp->len = sizeof(struct udphdr);
+                    udp->len = sizeof(struct udphdr) + rsize;
                     udp->check = 0;
 
                     // Payload
-                    uint8_t *send_buff = (uint8_t *)(packet + sizeof(struct iphdr) + sizeof(struct udphdr));
+                    uint8_t *send_buff = packet + sizeof(struct iphdr) + sizeof(struct udphdr);
                     memcpy(send_buff, buf, rsize);
 
                     // Forward packet
