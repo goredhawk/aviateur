@@ -1,41 +1,44 @@
 #pragma once
-#include <vector>
 
-#include "Rtl8812aDevice.h"
+#ifdef __linux__
+
+    #include <vector>
+
+    #include "Rtl8812aDevice.h"
 
 // -- External C Libraries --
 
 extern "C" {
-#include "fec.h" // FEC library
+    #include "fec.h" // FEC library
 }
 
-#include "Rtl8812aDevice.h" // Rtl8812aDevice definition
-#include "wfb-ng/wifibroadcast.hpp"
+    #include "Rtl8812aDevice.h" // Rtl8812aDevice definition
+    #include "wfb-ng/wifibroadcast.hpp"
 
-// -- System / C++ Includes --
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <linux/if_ether.h>
-#include <linux/if_packet.h>
-#include <linux/random.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <poll.h>
-#include <sys/ioctl.h>
-#include <sys/resource.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+    // -- System / C++ Includes --
+    #include <arpa/inet.h>
+    #include <fcntl.h>
+    #include <linux/if_ether.h>
+    #include <linux/if_packet.h>
+    #include <linux/random.h>
+    #include <net/if.h>
+    #include <netinet/in.h>
+    #include <poll.h>
+    #include <sys/ioctl.h>
+    #include <sys/resource.h>
+    #include <sys/socket.h>
+    #include <sys/stat.h>
+    #include <sys/types.h>
+    #include <unistd.h>
 
-#include <algorithm>
-#include <cerrno>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <memory>
-#include <unordered_map>
+    #include <algorithm>
+    #include <cerrno>
+    #include <cstdint>
+    #include <cstdio>
+    #include <cstdlib>
+    #include <cstring>
+    #include <memory>
+    #include <unordered_map>
 
 // //-------------------------------------------------------------
 // // Utility function to format strings (variadic).
@@ -411,3 +414,5 @@ private:
      */
     static int open_udp_socket_for_rx(int port, int buf_size);
 };
+
+#endif

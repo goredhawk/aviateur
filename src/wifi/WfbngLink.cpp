@@ -1,8 +1,4 @@
-﻿//
-// Created by Talus on 2024/6/10.
-//
-
-#include "WfbngLink.h"
+﻿#include "WfbngLink.h"
 
 #include <iomanip>
 #include <mutex>
@@ -13,11 +9,13 @@
 #include "Rtp.h"
 #include "RxFrame.h"
 #include "SignalQualityCalculator.h"
-#include "TxFrame.h"
+#ifdef __linux__
+    #include "TxFrame.h"
+    #include "wfb-ng/rx.hpp"
+#endif
 #include "WfbngProcessor.h"
 #include "WiFiDriver.h"
 #include "logger.h"
-#include "wfb-ng/rx.hpp"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -38,6 +36,7 @@ inline bool isH264(const uint8_t *data) {
     return h264NalType == 24 || h264NalType == 28;
 }
 
+#ifdef __linux__
 class AggregatorX : public AggregatorUDPv4 {
 public:
     AggregatorX(const std::string &client_addr,
@@ -92,6 +91,7 @@ private:
     // int sockfd;
     // struct sockaddr_in saddr;
 };
+#endif
 
 std::vector<DeviceId> WfbngLink::GetDeviceList() {
     std::vector<DeviceId> list;
@@ -255,29 +255,32 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         return false;
     }
 
+#ifdef __linux__
     txFrame = std::make_shared<TxFrame>();
+#endif
 
     usbThread = std::make_shared<std::thread>([=, this]() {
         WiFiDriver wifi_driver{logger};
         try {
             rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
 
-            // if (!usb_event_thread) {
-            //     auto usb_event_thread_func = [this] {
-            //         while (true) {
-            //             if (devHandle == nullptr) {
-            //                 break;
-            //             }
-            //             struct timeval timeout = {0, 500000}; // 500 ms timeout
-            //             int r = libusb_handle_events_timeout(ctx, &timeout);
-            //             if (r < 0) {
-            //                 // this->log->error("Error handling events: {}", r);
-            //             }
-            //         }
-            //     };
-            //
-            //     init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func); });
-            // }
+#ifdef __linux__
+            if (!usb_event_thread) {
+                auto usb_event_thread_func = [this] {
+                    while (true) {
+                        if (devHandle == nullptr) {
+                            break;
+                        }
+                        struct timeval timeout = {0, 500000}; // 500 ms timeout
+                        int r = libusb_handle_events_timeout(ctx, &timeout);
+                        if (r < 0) {
+                            // this->log->error("Error handling events: {}", r);
+                        }
+                    }
+                };
+
+                init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func); });
+            }
 
             std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
             args->udp_port = 8001;
@@ -309,6 +312,8 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                 start_link_quality_thread();
             }
 
+#endif
+
             rtlDevice->Init(
                 [](const Packet &p) {
                     Instance().handle80211Frame(p);
@@ -331,10 +336,12 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
 
+#ifdef __linux__
         stop_adaptive_link();
-        txFrame->stop();
+        // txFrame->stop();
         destroy_thread(usb_tx_thread);
-        // destroy_thread(usb_event_thread);
+// destroy_thread(usb_event_thread);
+#endif
 
         libusb_close(devHandle);
         libusb_exit(ctx);
@@ -350,6 +357,8 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
     return true;
 }
+
+#ifdef __linux__
 
 void WfbngLink::start_link_quality_thread() {
     auto thread_func = [this]() {
@@ -492,6 +501,8 @@ void WfbngLink::stop_adaptive_link() {
     destroy_thread(link_quality_thread);
 }
 
+#endif
+
 void WfbngLink::handle80211Frame(const Packet &packet) {
     GuiInterface::Instance().wifiFrameCount_++;
     GuiInterface::Instance().UpdateCount();
@@ -535,6 +546,7 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
 
     std::string client_addr = "127.0.0.1";
 
+#ifdef __linux__
     static std::unique_ptr<AggregatorX> video_aggregator =
         std::make_unique<AggregatorX>(client_addr,
                                       GuiInterface::Instance().playerPort,
@@ -542,6 +554,13 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
                                       epoch,
                                       video_channel_id_f,
                                       0);
+#else
+    static std::unique_ptr<Aggregator> video_aggregator = std::make_unique<Aggregator>(
+        keyPath.c_str(),
+        epoch,
+        video_channel_id_f,
+        [](uint8_t *payload, uint16_t packet_size) { Instance().handleRtp(payload, packet_size); });
+#endif
 
     // The aggregator is static, so we need a mutex to modify it
     // Considering to make it non-static
@@ -550,6 +569,7 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
 
     // Video frame
     if (frame.MatchesChannelID(video_channel_id_be8)) {
+#ifdef __linux__
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                          0,
@@ -560,13 +580,13 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
                                          0,
                                          0,
                                          NULL);
-
-        // Update signal quality
-        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
-        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
-        SignalQualityCalculator::get_instance().add_fec_data(video_aggregator->count_p_all,
-                                                             video_aggregator->count_p_fec_recovered,
-                                                             video_aggregator->count_p_lost);
+#else
+        video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                                         packet.Data.size() - sizeof(ieee80211_header) - 4,
+                                         0,
+                                         antenna,
+                                         rssi);
+#endif
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
@@ -578,6 +598,7 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
     }
 }
 
+#ifdef _WIN32
 void WfbngLink::handleRtp(uint8_t *payload, uint16_t packet_size) {
     GuiInterface::Instance().rtpPktCount_++;
     GuiInterface::Instance().UpdateCount();
@@ -618,6 +639,7 @@ void WfbngLink::handleRtp(uint8_t *payload, uint16_t packet_size) {
            (sockaddr *)&serverAddr,
            sizeof(serverAddr));
 }
+#endif
 
 void WfbngLink::Stop() const {
     playing = false;

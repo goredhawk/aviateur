@@ -1,7 +1,3 @@
-//
-// Created by Talus on 2024/6/10.
-//
-
 #pragma once
 
 #ifdef _WIN32
@@ -17,7 +13,9 @@
 #include "FecChangeController.h"
 #include "FrameParser.h"
 #include "Rtl8812aDevice.h"
-#include "TxFrame.h"
+#ifdef __linux__
+    #include "TxFrame.h"
+#endif
 
 struct DeviceId {
     uint16_t vendor_id;
@@ -46,8 +44,10 @@ public:
     /// Process a 802.11 frame
     void handle80211Frame(const Packet &pkt);
 
+#ifdef _WIN32
     /// Send a RTP payload via socket.
     void handleRtp(uint8_t *payload, uint16_t packet_size);
+#endif
 
 protected:
     libusb_context *ctx{};
@@ -56,6 +56,7 @@ protected:
     std::unique_ptr<Rtl8812aDevice> rtlDevice;
     std::string keyPath;
 
+#ifdef __linux__
     // Alink
     std::unique_ptr<std::thread> usb_event_thread;
     std::unique_ptr<std::thread> usb_tx_thread;
@@ -85,4 +86,5 @@ protected:
     void start_link_quality_thread();
 
     void stop_adaptive_link();
+#endif
 };

@@ -1,7 +1,9 @@
-#include "TxFrame.h"
+#ifdef __linux__
 
-#include <linux/ip.h>
-#include <linux/udp.h>
+    #include "TxFrame.h"
+
+    #include <linux/ip.h>
+    #include <linux/udp.h>
 
 constexpr char *TAG = "TXFrame";
 
@@ -412,7 +414,7 @@ void UsbTransmitter::dumpStats(FILE *fp,
         uint64_t countAll = stats.countPacketsInjected + stats.countPacketsDropped;
         uint64_t avgLatency = (countAll == 0) ? 0 : (stats.latencySum / countAll);
 
-#ifdef __ANDROID__
+    #ifdef __ANDROID__
         __android_log_print(ANDROID_LOG_INFO,
                             TAG,
                             "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
@@ -423,17 +425,17 @@ void UsbTransmitter::dumpStats(FILE *fp,
                             stats.latencyMin,
                             avgLatency,
                             stats.latencyMax);
-#else
-        // fprintf(fp,
-        //         "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
-        //         ts,
-        //         kv.first,
-        //         stats.countPacketsInjected,
-        //         stats.countPacketsDropped,
-        //         stats.latencyMin,
-        //         avgLatency,
-        //         stats.latencyMax);
-#endif
+    #else
+            // fprintf(fp,
+            //         "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
+            //         ts,
+            //         kv.first,
+            //         stats.countPacketsInjected,
+            //         stats.countPacketsDropped,
+            //         stats.latencyMin,
+            //         avgLatency,
+            //         stats.latencyMax);
+    #endif
 
         injectedPackets += stats.countPacketsInjected;
         droppedPackets += stats.countPacketsDropped;
@@ -444,9 +446,9 @@ void UsbTransmitter::dumpStats(FILE *fp,
 
 void UsbTransmitter::injectPacket(const uint8_t *buf, size_t size) {
     if (!rtlDevice_ || rtlDevice_->should_stop) {
-#ifdef __ANDROID__
+    #ifdef __ANDROID__
         __android_log_print(ANDROID_LOG_DEBUG, TAG, "Main thread exited, cannot send packets");
-#endif
+    #endif
         throw std::runtime_error("USB Transmitter: main thread exit, should stop");
     }
 
@@ -479,9 +481,9 @@ void UsbTransmitter::injectPacket(const uint8_t *buf, size_t size) {
 
     bool result = static_cast<bool>(rtlDevice_->send_packet(buffer.get(), totalSize));
 
-#ifdef __ANDROID__
-//    __android_log_print(ANDROID_LOG_DEBUG, TAG, "send_packet res:%d", result);
-#endif
+    #ifdef __ANDROID__
+    //    __android_log_print(ANDROID_LOG_DEBUG, TAG, "send_packet res:%d", result);
+    #endif
 
     uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;
     antennaStat_[key].logLatency(get_time_us() - startUs, result, static_cast<uint32_t>(size));
@@ -599,9 +601,9 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
     while (true) {
         if (shouldStop_) {
-#ifdef __ANDROID__
+    #ifdef __ANDROID__
             __android_log_print(ANDROID_LOG_DEBUG, TAG, "TxFrame: stopping main loop");
-#endif
+    #endif
             break;
         }
 
@@ -630,7 +632,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
         curTs = get_time_ms();
         if (curTs >= logSendTs) {
             transmitter->dumpStats(stdout, curTs, countPInjected, countPDropped, countBInjected);
-#ifdef __ANDROID__
+    #ifdef __ANDROID__
             __android_log_print(ANDROID_LOG_INFO,
                                 TAG,
                                 "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
@@ -642,19 +644,19 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                                 countBInjected,
                                 countPDropped,
                                 countPTruncated);
-#else
-            // std::fprintf(stdout,
-            //              "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
-            //              curTs,
-            //              countPFecTimeouts,
-            //              countPIncoming,
-            //              countBIncoming,
-            //              countPInjected,
-            //              countBInjected,
-            //              countPDropped,
-            //              countPTruncated);
-            // std::fflush(stdout);
-#endif
+    #else
+                // std::fprintf(stdout,
+                //              "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
+                //              curTs,
+                //              countPFecTimeouts,
+                //              countPIncoming,
+                //              countBIncoming,
+                //              countPInjected,
+                //              countBInjected,
+                //              countPDropped,
+                //              countPTruncated);
+                // std::fflush(stdout);
+    #endif
 
             if (countPDropped) {
                 std::fprintf(stderr, "%u packets dropped\n", countPDropped);
@@ -702,9 +704,9 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
                 while (true) {
                     if (shouldStop_) {
-#ifdef __ANDROID__
+    #ifdef __ANDROID__
                         __android_log_print(ANDROID_LOG_DEBUG, TAG, "TxFrame: stopping in POLLIN loop");
-#endif
+    #endif
                         break;
                     }
 
@@ -934,19 +936,19 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
         // std::printf("%" PRIu64 "\tLISTEN_UDP\t%d\n", get_time_ms(), bindPort);
     }
 
-#ifdef __ANDROID__
+    #ifdef __ANDROID__
     __android_log_print(ANDROID_LOG_INFO, TAG, "Listening on UDP port: %d", bindPort);
-#else
+    #else
     std::fprintf(stderr, "Listening on UDP port: %d\n", bindPort);
-#endif
+    #endif
     rxFds.push_back(udpFd);
 
     if (arg->udp_port == 0) {
-#ifdef __ANDROID__
+    #ifdef __ANDROID__
         __android_log_print(ANDROID_LOG_INFO, TAG, "Listening on UDP port: %d", bindPort);
-#else
+    #else
         std::fprintf(stderr, "Listening on UDP port: %d\n", bindPort);
-#endif
+    #endif
     }
 
     try {
@@ -979,10 +981,12 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
         // Start polling loop
         dataSource(transmitter, rxFds, arg->fec_timeout, arg->mirror, arg->log_interval);
     } catch (const std::runtime_error &ex) {
-#ifdef __ANDROID__
+    #ifdef __ANDROID__
         __android_log_print(ANDROID_LOG_ERROR, TAG, "Error in TxFrame::run: %s", ex.what());
-#else
+    #else
         std::fprintf(stderr, "Error in TxFrame::run: %s\n", ex.what());
-#endif
+    #endif
     }
 }
+
+#endif

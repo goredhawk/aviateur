@@ -15,6 +15,8 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#ifdef __linux__
+
 #include "wifibroadcast.hpp"
 
 #include <arpa/inet.h>
@@ -146,3 +148,5 @@ int open_unix_socket_for_rx(const char *socket_path, int rcv_buf_size, int socke
     }
     return fd;
 }
+
+#endif

@@ -17,6 +17,8 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#ifdef __linux__
+
 #include <assert.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -1089,3 +1091,5 @@ void network_loop(int srv_port, unique_ptr<BaseAggregator> &agg, int log_interva
         }
     }
 }
+
+#endif
