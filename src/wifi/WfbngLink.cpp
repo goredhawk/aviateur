@@ -26,7 +26,7 @@
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)
 
 static int socketFd = INVALID_SOCKET;
-static volatile bool playing = false;
+static std::atomic playing = false;
 
 constexpr u8 WFB_TX_PORT = 160;
 constexpr u8 WFB_RX_PORT = 32;
@@ -265,22 +265,23 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
 
 #ifdef __linux__
-            if (!usb_event_thread) {
-                auto usb_event_thread_func = [this] {
-                    while (true) {
-                        if (devHandle == nullptr) {
-                            break;
-                        }
-                        struct timeval timeout = {0, 500000}; // 500 ms timeout
-                        int r = libusb_handle_events_timeout(ctx, &timeout);
-                        if (r < 0) {
-                            // this->log->error("Error handling events: {}", r);
-                        }
-                    }
-                };
-
-                init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func); });
-            }
+            // if (!usb_event_thread) {
+            //     auto usb_event_thread_func = [this] {
+            //         while (true) {
+            //             if (devHandle == nullptr) {
+            //                 break;
+            //             }
+            //             struct timeval timeout = {0, 500000}; // 500 ms timeout
+            //             int r = libusb_handle_events_timeout(ctx, &timeout);
+            //             if (r < 0) {
+            //                 // this->log->error("Error handling events: {}", r);
+            //             }
+            //         }
+            //     };
+            //
+            //     init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func);
+            //     });
+            // }
 
             std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
             args->udp_port = 8001;
@@ -338,7 +339,7 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
 #ifdef __linux__
         stop_adaptive_link();
-        // txFrame->stop();
+        txFrame->stop();
         destroy_thread(usb_tx_thread);
 // destroy_thread(usb_event_thread);
 #endif
@@ -580,6 +581,13 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
                                          0,
                                          0,
                                          NULL);
+
+        // Update signal quality
+        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
+        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
+        SignalQualityCalculator::get_instance().add_fec_data(video_aggregator->count_p_all,
+                                                             video_aggregator->count_p_fec_recovered,
+                                                             video_aggregator->count_p_lost);
 #else
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
