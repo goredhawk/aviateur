@@ -765,13 +765,13 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
                     // IP header
                     struct iphdr *ip = (struct iphdr *)packet;
-                    ip->saddr = inet_addr("127.0.0.1");
+                    ip->saddr = inet_addr("10.5.0.10");
                     ip->daddr = inet_addr("10.5.0.10");
                     ip->ttl = 5;
 
                     // UDP header
                     struct udphdr *udp = (struct udphdr *)(packet + sizeof(struct iphdr));
-                    udp->source = 5950;
+                    udp->source = 9999;
                     udp->dest = 9999;
                     udp->len = sizeof(struct udphdr);
                     udp->check = 0;

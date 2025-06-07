@@ -262,22 +262,22 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         try {
             rtlDevice = wifi_driver.CreateRtlDevice(devHandle);
 
-            if (!usb_event_thread) {
-                auto usb_event_thread_func = [this] {
-                    while (true) {
-                        if (devHandle == nullptr) {
-                            break;
-                        }
-                        struct timeval timeout = {0, 500000}; // 500 ms timeout
-                        int r = libusb_handle_events_timeout(ctx, &timeout);
-                        if (r < 0) {
-                            // this->log->error("Error handling events: {}", r);
-                        }
-                    }
-                };
-
-                init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func); });
-            }
+            // if (!usb_event_thread) {
+            //     auto usb_event_thread_func = [this] {
+            //         while (true) {
+            //             if (devHandle == nullptr) {
+            //                 break;
+            //             }
+            //             struct timeval timeout = {0, 500000}; // 500 ms timeout
+            //             int r = libusb_handle_events_timeout(ctx, &timeout);
+            //             if (r < 0) {
+            //                 // this->log->error("Error handling events: {}", r);
+            //             }
+            //         }
+            //     };
+            //
+            //     init_thread(usb_event_thread, [=]() { return std::make_unique<std::thread>(usb_event_thread_func); });
+            // }
 
             std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
             args->udp_port = 8001;
@@ -319,7 +319,6 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
                     .ChannelOffset = 0,
                     .ChannelWidth = static_cast<ChannelWidth_t>(channelWidthMode),
                 });
-
         } catch (const std::runtime_error &e) {
             GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
         } catch (...) {
@@ -333,8 +332,9 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
 
         stop_adaptive_link();
+        txFrame->stop();
         destroy_thread(usb_tx_thread);
-        destroy_thread(usb_event_thread);
+        // destroy_thread(usb_event_thread);
 
         libusb_close(devHandle);
         libusb_exit(ctx);
@@ -357,8 +357,8 @@ void WfbngLink::start_link_quality_thread() {
 
         fec.setEnabled(true);
 
-        const char *ip = "10.5.0.10";
-        int port = 9999;
+        const char *ip = "127.0.0.1";
+        int port = 8001;
         int sockfd;
 
         // Create UDP socket
