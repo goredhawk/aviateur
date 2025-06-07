@@ -1,5 +1,8 @@
 #include "TxFrame.h"
 
+#include <linux/ip.h>
+#include <linux/udp.h>
+
 constexpr char *TAG = "TXFrame";
 
 //-------------------------------------------------------------
@@ -754,8 +757,33 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         sessionKeyAnnounceTs = nowTs + SESSION_KEY_ANNOUNCE_MSEC;
                     }
 
+                    // UDP packet size
+                    size_t packet_size = sizeof(struct iphdr) + sizeof(struct udphdr) + rsize;
+
+                    // UDP packet
+                    uint8_t *packet = (uint8_t *)malloc(packet_size);
+
+                    // IP header
+                    struct iphdr *ip = (struct iphdr *)packet;
+                    ip->saddr = inet_addr("127.0.0.1");
+                    ip->daddr = inet_addr("10.5.0.10");
+                    ip->ttl = 5;
+
+                    // UDP header
+                    struct udphdr *udp = (struct udphdr *)(packet + sizeof(struct iphdr));
+                    udp->source = 5950;
+                    udp->dest = 9999;
+                    udp->len = sizeof(struct udphdr);
+                    udp->check = 0;
+
+                    // Payload
+                    uint8_t *send_buff = (uint8_t *)(packet + sizeof(struct iphdr) + sizeof(struct udphdr));
+                    memcpy(send_buff, buf, rsize);
+
                     // Forward packet
-                    transmitter->sendPacket(buf, static_cast<size_t>(rsize), 0);
+                    transmitter->sendPacket(packet, packet_size, 0);
+
+                    free(packet);
 
                     // If we've hit a log boundary inside the same poll, break to flush stats
                     if (nowTs >= logSendTs) {
