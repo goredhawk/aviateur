@@ -297,13 +297,13 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             args->n = 5;
             args->radio_port = WFB_TX_PORT;
 
-            printf("radio link ID %d, radio PORT %d", args->link_id, args->radio_port);
+            printf("Radio link ID %d, radio port %d\n", args->link_id, args->radio_port);
 
             if (!usb_tx_thread) {
                 init_thread(usb_tx_thread, [&]() {
                     return std::make_unique<std::thread>([this, args] {
                         txFrame->run(rtlDevice.get(), args.get());
-                        printf("usb_transfer thread should terminate");
+                        GuiInterface::Instance().PutLog(LogLevel::Info, "USB TX thread should stop");
                     });
                 });
             }
@@ -335,12 +335,11 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             GuiInterface::Instance().PutLog(LogLevel::Error, "Failed to release interface");
         }
 
-        GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
-
 #ifdef __linux__
         stop_adaptive_link();
         txFrame->stop();
         destroy_thread(usb_tx_thread);
+        GuiInterface::Instance().PutLog(LogLevel::Info, "USB TX thread stopped");
 // destroy_thread(usb_event_thread);
 #endif
 
@@ -353,6 +352,9 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
         usbThread.reset();
 
         GuiInterface::Instance().EmitWifiStopped();
+        playing = false;
+
+        GuiInterface::Instance().PutLog(LogLevel::Info, "USB thread stopped");
     });
     usbThread->detach();
 
@@ -650,8 +652,6 @@ void WfbngLink::handleRtp(uint8_t *payload, uint16_t packet_size) {
 #endif
 
 void WfbngLink::Stop() const {
-    playing = false;
-
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
