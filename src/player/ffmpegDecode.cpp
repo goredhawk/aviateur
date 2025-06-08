@@ -483,7 +483,7 @@ int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size
                     int samples = swr_convert(swrCtx.get(),
                                               &pDest,
                                               audioFrame->nb_samples,
-                                              (const uint8_t **)audioFrame->data,
+                                              audioFrame->data,
                                               audioFrame->nb_samples);
                     size_t sizeToDecode =
                         samples * pAudioCodecCtx->ch_layout.nb_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);

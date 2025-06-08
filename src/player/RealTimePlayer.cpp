@@ -22,7 +22,9 @@ RealTimePlayer::RealTimePlayer(std::shared_ptr<Pathfinder::Device> device, std::
         play(url, forceSoftwareDecoding_);
     });
 
-    SDL_Init(SDL_INIT_AUDIO);
+    if (!SDL_Init(SDL_INIT_AUDIO)) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn, "SDL init audio failed!");
+    }
 }
 
 void RealTimePlayer::update(float dt) {
@@ -170,12 +172,13 @@ void RealTimePlayer::stop() {
         videoFrameQueue = std::queue<std::shared_ptr<AVFrame>>();
     }
 
+    // Do this before closing input.
+    disableAudio();
+
     if (decoder) {
         decoder->CloseInput();
         decoder.reset();
     }
-
-    disableAudio();
 }
 
 void RealTimePlayer::setMuted(bool muted) {
