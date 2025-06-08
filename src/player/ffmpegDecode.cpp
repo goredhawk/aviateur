@@ -528,6 +528,14 @@ int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size
 void FfmpegDecoder::writeAudioBuff(uint8_t *aSample, size_t aSize) {
     std::lock_guard lck(abBuffMtx);
 
+    size_t free_space = av_fifo_can_write(audioFifoBuffer);
+    if (free_space < aSize) {
+        // Drop old data.
+        std::vector<uint8_t> tmp;
+        tmp.resize(aSize);
+        av_fifo_read(audioFifoBuffer, tmp.data(), aSize);
+    }
+
     int ret = av_fifo_write(audioFifoBuffer, aSample, aSize);
     if (ret < 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "av_fifo_write failed!");
