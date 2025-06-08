@@ -4,6 +4,7 @@
 
     #include <linux/ip.h>
     #include <linux/udp.h>
+    #include <net/ethernet.h>
 
 constexpr char *TAG = "TXFrame";
 
@@ -783,17 +784,24 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         sessionKeyAnnounceTs = nowTs + SESSION_KEY_ANNOUNCE_MSEC;
                     }
 
-                    // IP packet size
-                    size_t packet_size = sizeof(struct iphdr) + sizeof(struct udphdr) + rsize;
+                    // Total packet size
+                    size_t packet_size =
+                        sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct udphdr) + rsize;
 
-                    // IP packet
+                    // Ether packet
                     uint8_t *packet = (uint8_t *)malloc(packet_size);
+
+                    // Ether header
+                    struct ether_header *eth = (struct ether_header *)packet;
+                    memcpy(eth->ether_dhost, "\x22\x22\x33\x44\x55\x66", 6); // Fake
+                    memcpy(eth->ether_shost, "\x11\x22\x33\x44\x55\x66", 6); // Fake
+                    eth->ether_type = htons(ETHERTYPE_IP);
 
                     static int packet_id = 0;
 
                     // IP header
-                    struct iphdr *ip = (struct iphdr *)packet;
-                    ip->saddr = inet_addr("127.0.0.1");
+                    struct iphdr *ip = (struct iphdr *)packet + sizeof(struct ether_header);
+                    ip->saddr = inet_addr("192.168.1.100"); // Fake src IP
                     ip->daddr = inet_addr("10.5.0.10");
                     ip->ihl = 5;
                     ip->version = 4;
@@ -801,22 +809,24 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     ip->tot_len = htons(packet_size);
                     ip->id = htons(packet_id++);
                     ip->frag_off = 0;
-                    ip->ttl = 255;
+                    ip->ttl = 64;
                     ip->protocol = IPPROTO_UDP;
                     ip->check = 0; // Will be calculated later
 
                     // UDP header
-                    struct udphdr *udp = (struct udphdr *)(packet + sizeof(struct iphdr));
-                    udp->source = htons(9999);
+                    struct udphdr *udp = (struct udphdr *)(packet + sizeof(struct ether_header) + sizeof(struct iphdr));
+                    udp->source = htons(54321);
                     udp->dest = htons(9999);
                     udp->len = htons(sizeof(struct udphdr) + rsize);
-                    udp->check = 0;
+                    udp->check = 0; // Optional
 
                     // Payload
-                    uint8_t *payload_buf = packet + sizeof(struct iphdr) + sizeof(struct udphdr);
+                    uint8_t *payload_buf =
+                        packet + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct udphdr);
                     memcpy(payload_buf, buf, rsize);
 
-                    ip->check = calculateChecksum((unsigned short *)packet, sizeof(struct iphdr));
+                    ip->check = calculateChecksum((unsigned short *)(packet + sizeof(struct ether_header)),
+                                                  sizeof(struct iphdr) + sizeof(struct udphdr) + rsize);
 
                     // Forward packet
                     transmitter->sendPacket(packet, packet_size, 0);
