@@ -101,8 +101,8 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     // Create audio buffer
     if (hasAudioStream) {
-        audioFifoBuffer =
-            av_fifo_alloc2(0, GetAudioFrameSamples() * GetAudioChannelCount() * 10, AV_FIFO_FLAG_AUTO_GROW);
+        size_t count = GetAudioFrameSamples() * GetAudioChannelCount() * 10;
+        audioFifoBuffer = av_fifo_alloc2(count, sizeof(uint8_t), AV_FIFO_FLAG_AUTO_GROW);
     }
 
     return true;
@@ -483,12 +483,10 @@ int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size
                     int samples = swr_convert(swrCtx.get(),
                                               &pDest,
                                               audioFrame->nb_samples,
-                                              audioFrame->data,
+                                              (const uint8_t **)audioFrame->data,
                                               audioFrame->nb_samples);
                     size_t sizeToDecode =
                         samples * pAudioCodecCtx->ch_layout.nb_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
-
-                    memcpy(pDest, audioFrame->data[0], sizeToDecode);
 
                     decodedSize += sizeToDecode;
                 } else {
@@ -530,22 +528,23 @@ int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size
 void FfmpegDecoder::writeAudioBuff(uint8_t *aSample, size_t aSize) {
     std::lock_guard lck(abBuffMtx);
 
-    if (av_fifo_can_write(audioFifoBuffer) < aSize) {
-        std::vector<uint8_t> tmp;
-        tmp.resize(aSize);
-        av_fifo_read(audioFifoBuffer, tmp.data(), aSize);
+    int ret = av_fifo_write(audioFifoBuffer, aSample, aSize);
+    if (ret < 0) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn, "av_fifo_write failed!");
     }
-    av_fifo_write(audioFifoBuffer, aSample, aSize);
 }
 
-size_t FfmpegDecoder::ReadAudioBuff(uint8_t *aSample, size_t aSize) {
+int FfmpegDecoder::ReadAudioBuff(uint8_t *aSample, size_t aSize) {
     std::lock_guard lck(abBuffMtx);
 
-    if (av_fifo_elem_size(audioFifoBuffer) < aSize) {
-        return 0;
+    size_t available_size = av_fifo_can_read(audioFifoBuffer);
+    if (available_size < aSize) {
+        // Not enough to read.
+        return false;
     }
-    av_fifo_read(audioFifoBuffer, aSample, aSize);
-    return aSize;
+    int ret = av_fifo_read(audioFifoBuffer, aSample, aSize);
+
+    return ret >= 0;
 }
 
 void FfmpegDecoder::ClearAudioBuff() {

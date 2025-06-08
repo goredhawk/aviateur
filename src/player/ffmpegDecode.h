@@ -56,7 +56,7 @@ public:
         return hasVideoStream;
     }
 
-    size_t ReadAudioBuff(uint8_t *aSample, size_t aSize);
+    int ReadAudioBuff(uint8_t *aSample, size_t aSize);
 
     void ClearAudioBuff();
 

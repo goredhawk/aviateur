@@ -337,10 +337,13 @@ void SDLCALL audio_callback(void *userdata, SDL_AudioStream *stream, int additio
         Uint8 *data = SDL_stack_alloc(Uint8, additional_amount);
         if (data) {
             auto *player = static_cast<RealTimePlayer *>(userdata);
-            player->getDecoder()->ReadAudioBuff(data, additional_amount);
 
-            SDL_PutAudioStreamData(stream, data, additional_amount);
-            SDL_stack_free(data);
+            int ret = player->getDecoder()->ReadAudioBuff(data, additional_amount);
+
+            if (ret) {
+                SDL_PutAudioStreamData(stream, data, additional_amount);
+                SDL_stack_free(data);
+            }
         }
     }
 }
