@@ -92,7 +92,7 @@ protected:
 
     volatile bool playStop = true;
 
-    volatile bool isMuted = true;
+    volatile bool isMuted = false;
 
     SDL_AudioStream *stream{};
 

@@ -233,6 +233,7 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
                     writeAudioBuff(pFrameAudio.get(), nDecodedSize);
                 }
             }
+
             if (!HasVideo()) {
                 return res;
             }
@@ -431,77 +432,96 @@ void FfmpegDecoder::CloseAudio() {
 int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize) {
     size_t decodedSize = 0;
 
-    int packetSize = av_pkt->size;
-    const uint8_t *pPacketData = av_pkt->data;
+    int ret = avcodec_send_packet(pAudioCodecCtx, av_pkt);
+    if (ret < 0) {
+        char errStr[AV_ERROR_MAX_STRING_SIZE];
+        av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
+        throw SendPacketException("avcodec_send_packet failed: " + std::string(errStr));
+    }
 
-    while (packetSize > 0) {
-        size_t sizeToDecode = nOutBufferSize;
+    while (true) {
         uint8_t *pDest = pOutBuffer + decodedSize;
+        if ((nOutBufferSize - decodedSize) < 0) {
+            break;
+        }
+
         AVFrame *audioFrame = av_frame_alloc();
         if (!audioFrame) {
             throw std::runtime_error("Failed to allocate audio frame");
         }
 
-        int packetDecodedSize = avcodec_receive_frame(pAudioCodecCtx, audioFrame);
+        bool shouldBreakLoop = false;
 
-        if (packetDecodedSize >= 0) {
-            if (audioFrame->format != AV_SAMPLE_FMT_S16) {
-                // Convert frame to AV_SAMPLE_FMT_S16 if needed
-                if (!swrCtx) {
-                    SwrContext *ptr = nullptr;
-                    swr_alloc_set_opts2(&ptr,
-                                        &pAudioCodecCtx->ch_layout,
-                                        AV_SAMPLE_FMT_S16,
-                                        pAudioCodecCtx->sample_rate,
-                                        &pAudioCodecCtx->ch_layout,
-                                        static_cast<AVSampleFormat>(audioFrame->format),
-                                        pAudioCodecCtx->sample_rate,
-                                        0,
-                                        nullptr);
+        ret = avcodec_receive_frame(pAudioCodecCtx, audioFrame);
 
-                    auto ret = swr_init(ptr);
-                    if (ret < 0) {
-                        char errStr[AV_ERROR_MAX_STRING_SIZE];
-                        av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
-                        throw std::runtime_error("Decoding audio failed: " + std::string(errStr));
+        switch (ret) {
+            case 0: {
+                if (audioFrame->format != AV_SAMPLE_FMT_S16) {
+                    // Convert frame to AV_SAMPLE_FMT_S16 if needed
+                    if (!swrCtx) {
+                        SwrContext *ptr = nullptr;
+                        swr_alloc_set_opts2(&ptr,
+                                            &pAudioCodecCtx->ch_layout,
+                                            AV_SAMPLE_FMT_S16,
+                                            pAudioCodecCtx->sample_rate,
+                                            &pAudioCodecCtx->ch_layout,
+                                            static_cast<AVSampleFormat>(audioFrame->format),
+                                            pAudioCodecCtx->sample_rate,
+                                            0,
+                                            nullptr);
+
+                        auto ret = swr_init(ptr);
+                        if (ret < 0) {
+                            char errStr[AV_ERROR_MAX_STRING_SIZE];
+                            av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
+                            throw std::runtime_error("Decoding audio failed: " + std::string(errStr));
+                        }
+                        swrCtx = std::shared_ptr<SwrContext>(ptr, &freeSwrCtx);
                     }
-                    swrCtx = std::shared_ptr<SwrContext>(ptr, &freeSwrCtx);
-                }
 
-                // Convert audio frame to S16 format
-                int samples = swr_convert(swrCtx.get(),
-                                          &pDest,
-                                          audioFrame->nb_samples,
-                                          (const uint8_t **)audioFrame->data,
-                                          audioFrame->nb_samples);
-                sizeToDecode =
-                    samples * pAudioCodecCtx->ch_layout.nb_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
-            } else {
-                // Copy S16 audio data directly
-                sizeToDecode = av_samples_get_buffer_size(nullptr,
-                                                          pAudioCodecCtx->ch_layout.nb_channels,
-                                                          audioFrame->nb_samples,
-                                                          AV_SAMPLE_FMT_S16,
-                                                          1);
-                memcpy(pDest, audioFrame->data[0], sizeToDecode);
-            }
+                    // Convert audio frame to S16 format
+                    int samples = swr_convert(swrCtx.get(),
+                                              &pDest,
+                                              audioFrame->nb_samples,
+                                              (const uint8_t **)audioFrame->data,
+                                              audioFrame->nb_samples);
+                    size_t sizeToDecode =
+                        samples * pAudioCodecCtx->ch_layout.nb_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
+
+                    memcpy(pDest, audioFrame->data[0], sizeToDecode);
+
+                    decodedSize += sizeToDecode;
+                } else {
+                    // Copy S16 audio data directly
+                    size_t sizeToDecode = av_samples_get_buffer_size(nullptr,
+                                                                     pAudioCodecCtx->ch_layout.nb_channels,
+                                                                     audioFrame->nb_samples,
+                                                                     AV_SAMPLE_FMT_S16,
+                                                                     1);
+                    memcpy(pDest, audioFrame->data[0], sizeToDecode);
+
+                    decodedSize += sizeToDecode;
+                }
+            } break;
+            case AVERROR(EAGAIN): {
+                shouldBreakLoop = true;
+            } break;
+            case AVERROR_EOF: {
+                shouldBreakLoop = true;
+            } break;
+            case AVERROR_INVALIDDATA: {
+                shouldBreakLoop = true;
+            } break;
+            default: {
+                shouldBreakLoop = true;
+            } break;
         }
 
         av_frame_free(&audioFrame);
 
-        if (packetDecodedSize < 0) {
-            decodedSize = 0;
+        if (shouldBreakLoop) {
             break;
         }
-
-        packetSize -= packetDecodedSize;
-        pPacketData += packetDecodedSize;
-
-        if (sizeToDecode <= 0) {
-            continue;
-        }
-
-        decodedSize += sizeToDecode;
     }
 
     return decodedSize;
