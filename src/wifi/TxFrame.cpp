@@ -795,7 +795,6 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     struct iphdr *ip = (struct iphdr *)packet;
                     ip->saddr = inet_addr("127.0.0.1");
                     ip->daddr = inet_addr("10.5.0.10");
-                    ip->ttl = 255;
                     ip->ihl = 5;
                     ip->version = 4;
                     ip->tos = 0;
