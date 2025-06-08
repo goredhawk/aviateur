@@ -59,11 +59,6 @@ enum class LogLevel {
     Error,
 };
 
-struct RxStatus {
-    uint8_t rssi[2];
-    int8_t snr[2];
-};
-
 class GuiInterface {
 public:
     static GuiInterface &Instance() {
@@ -352,7 +347,7 @@ public:
 
     bool config_file_exists = true;
 
-    RxStatus rx_status_{};
+    int link_quality_ = 0;
 
     // Signals.
     std::vector<revector::AnyCallable<void>> logCallbacks;

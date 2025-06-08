@@ -122,40 +122,24 @@ void PlayerRect::custom_ready() {
     hud_container_->add_child(hw_status_label_);
     hw_status_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
-    auto rssi_label = std::make_shared<revector::Label>();
-    hud_container_->add_child(rssi_label);
-    rssi_label->set_text("RSSI");
-    rssi_label->set_text_style(revector::TextStyle{revector::ColorU::white()});
+    auto lq_label = std::make_shared<revector::Label>();
+    hud_container_->add_child(lq_label);
+    lq_label->set_text("LQ");
+    lq_label->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
-    rssi_bar_ = std::make_shared<SignalBar>();
-    hud_container_->add_child(rssi_bar_);
-    rssi_bar_->set_lerp_enabled(true);
-    rssi_bar_->set_custom_minimum_size({64, 16});
-    rssi_bar_->set_label_visibility(false);
-    rssi_bar_->container_sizing.expand_v = false;
-    rssi_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
-
-    auto snr_label = std::make_shared<revector::Label>();
-    hud_container_->add_child(snr_label);
-    snr_label->set_text("SNR");
-    snr_label->set_text_style(revector::TextStyle{revector::ColorU::white()});
-
-    snr_bar_ = std::make_shared<SignalBar>();
-    hud_container_->add_child(snr_bar_);
-    snr_bar_->set_lerp_enabled(true);
-    snr_bar_->set_custom_minimum_size({64, 16});
-    snr_bar_->set_label_visibility(false);
-    snr_bar_->container_sizing.expand_v = false;
-    snr_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
+    lq_bar_ = std::make_shared<SignalBar>();
+    hud_container_->add_child(lq_bar_);
+    lq_bar_->set_lerp_enabled(true);
+    lq_bar_->set_custom_minimum_size({64, 16});
+    lq_bar_->set_label_visibility(false);
+    lq_bar_->container_sizing.expand_v = false;
+    lq_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
 
     rx_status_update_timer = std::make_shared<revector::Timer>();
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
-        rssi_bar_->set_value(
-            (GuiInterface::Instance().rx_status_.rssi[0] + GuiInterface::Instance().rx_status_.rssi[1]) / 2);
-        snr_bar_->set_value((GuiInterface::Instance().rx_status_.snr[0] + GuiInterface::Instance().rx_status_.snr[1]) /
-                            2);
+        lq_bar_->set_value(GuiInterface::Instance().link_quality_);
 
         rx_status_update_timer->start_timer(0.1);
     };

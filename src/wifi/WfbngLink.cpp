@@ -392,15 +392,15 @@ void WfbngLink::start_link_quality_thread() {
             return;
         }
 
+        const auto map_range = [](double value, double inputMin, double inputMax, double outputMin, double outputMax) {
+            return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
+        };
+
         while (!this->adaptive_link_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
+            GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
 
             time_t currentEpoch = time(nullptr);
-
-            const auto map_range =
-                [](double value, double inputMin, double inputMax, double outputMin, double outputMax) {
-                    return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
-                };
 
             // Map to 1000..2000
             quality.quality = map_range(quality.quality, -1024, 1024, 1000, 2000);
@@ -523,9 +523,6 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
     uint32_t freq = 0;
     int8_t noise[4] = {1, 1, 1, 1};
 
-    memcpy(GuiInterface::Instance().rx_status_.rssi, packet.RxAtrib.rssi, sizeof(int8_t) * 2);
-    memcpy(GuiInterface::Instance().rx_status_.snr, packet.RxAtrib.snr, sizeof(int8_t) * 2);
-
     static uint32_t link_id = 7669206; // sha1 hash of link_domain="default"
     static uint8_t video_radio_port = 0;
     static uint64_t epoch = 0;
@@ -572,6 +569,10 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
 
     // Video frame
     if (frame.MatchesChannelID(video_channel_id_be8)) {
+        // Update signal quality
+        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
+        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
+
 #ifdef __linux__
         video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
@@ -584,9 +585,6 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
                                          0,
                                          NULL);
 
-        // Update signal quality
-        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
-        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
         SignalQualityCalculator::get_instance().add_fec_data(video_aggregator->count_p_all,
                                                              video_aggregator->count_p_fec_recovered,
                                                              video_aggregator->count_p_lost);
@@ -596,7 +594,11 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
                                          0,
                                          antenna,
                                          rssi);
+
+        auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
+        GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
 #endif
+
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
