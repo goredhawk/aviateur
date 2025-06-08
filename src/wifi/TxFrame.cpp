@@ -557,6 +557,30 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
     return fd;
 }
 
+// Function to calculate the checksum of a buffer (used for IP (psuedo) and UDP header)
+unsigned short calculateChecksum(unsigned short *buffer, size_t size) {
+    unsigned long checksum = 0;
+    // Add each 16 bit word in the buffer to the checksum
+    while (size > 1) {
+        checksum += *buffer;            // Add the current 16-bit word to the checksum
+        buffer++;                       // Move to the next 16-bit word
+        size -= sizeof(unsigned short); // Decrease size by 2 bytes
+    }
+
+    // If there's byte left, add it
+    if (size == 1) {
+        checksum += *(unsigned char *)buffer; // Add the last byte
+    }
+
+    // Handle carry; if the checksum is greater than 16 bits (0xFFFF), we have overflow
+    while (checksum >> 16) {
+        checksum = (checksum & 0xFFFF) + (checksum >> 16); // Add the overflow bits to the lower 16 bits
+    }
+
+    // Flip all the bits
+    return (unsigned short)(~checksum);
+}
+
 void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                          std::vector<int> &rxFds,
                          int fecTimeout,
@@ -759,10 +783,10 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         sessionKeyAnnounceTs = nowTs + SESSION_KEY_ANNOUNCE_MSEC;
                     }
 
-                    // UDP packet size
+                    // IP packet size
                     size_t packet_size = sizeof(struct iphdr) + sizeof(struct udphdr) + rsize;
 
-                    // UDP packet
+                    // IP packet
                     uint8_t *packet = (uint8_t *)malloc(packet_size);
 
                     static int packet_id = 0;
@@ -771,8 +795,9 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     struct iphdr *ip = (struct iphdr *)packet;
                     ip->saddr = inet_addr("127.0.0.1");
                     ip->daddr = inet_addr("10.5.0.10");
-                    ip->ttl = 5;
-                    ip->ihl = (4 << 4) | (5);
+                    ip->ttl = 255;
+                    ip->ihl = 5;
+                    ip->version = 4;
                     ip->tos = 0;
                     ip->tot_len = htons(packet_size);
                     ip->id = htons(packet_id++);
@@ -783,14 +808,16 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
                     // UDP header
                     struct udphdr *udp = (struct udphdr *)(packet + sizeof(struct iphdr));
-                    udp->source = 9999;
-                    udp->dest = 9999;
-                    udp->len = sizeof(struct udphdr) + rsize;
+                    udp->source = htons(9999);
+                    udp->dest = htons(9999);
+                    udp->len = htons(sizeof(struct udphdr) + rsize);
                     udp->check = 0;
 
                     // Payload
-                    uint8_t *send_buff = packet + sizeof(struct iphdr) + sizeof(struct udphdr);
-                    memcpy(send_buff, buf, rsize);
+                    uint8_t *payload_buf = packet + sizeof(struct iphdr) + sizeof(struct udphdr);
+                    memcpy(payload_buf, buf, rsize);
+
+                    ip->check = calculateChecksum((unsigned short *)packet, sizeof(struct iphdr));
 
                     // Forward packet
                     transmitter->sendPacket(packet, packet_size, 0);
