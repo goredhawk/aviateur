@@ -52,6 +52,15 @@ constexpr std::array CHANNEL_WIDTHS{
     "40",
 };
 
+/// Alink TX powers.
+constexpr std::array ALINK_TX_POWERS{
+    "1",
+    "10",
+    "20",
+    "30",
+    "40",
+};
+
 enum class LogLevel {
     Info,
     Debug,
@@ -205,6 +214,14 @@ public:
     static bool Stop() {
         WfbngLink::Instance().Stop();
         return true;
+    }
+
+    static void EnableAlink(bool enable) {
+        WfbngLink::Instance().enable_alink(enable);
+    }
+
+    static void SetAlinkTxPower(int power) {
+        WfbngLink::Instance().set_alink_tx_power(power);
     }
 
     static void BuildSdp(const std::string &filePath, const std::string &codec, int payloadType, int port) {

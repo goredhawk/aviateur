@@ -232,6 +232,60 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(select_button);
         }
 
+#ifdef __linux__
+        {
+            auto alink_con = std::make_shared<revector::CollapseContainer>();
+            alink_con->set_title("Adaptive Link");
+            alink_con->set_collapse(true);
+            alink_con->set_color(revector::ColorU(84, 138, 247));
+
+            auto vbox_container2 = std::make_shared<revector::HBoxContainer>();
+            alink_con->add_child(vbox_container2);
+
+            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            hbox_container->container_sizing.expand_h = true;
+            hbox_container->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            vbox_container2->add_child(hbox_container);
+
+            auto label = std::make_shared<revector::Label>();
+            label->set_text("TX Power");
+            hbox_container->add_child(label);
+
+            tx_pwr_btn_ = std::make_shared<revector::MenuButton>();
+            tx_pwr_btn_->container_sizing.expand_h = true;
+            tx_pwr_btn_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            hbox_container->add_child(tx_pwr_btn_);
+
+            auto tx_pwr_menu = tx_pwr_btn_->get_popup_menu();
+            auto callback = [this](uint32_t) {
+                // Set tx power
+                auto selected = tx_pwr_btn_->get_selected_item_index();
+                if (selected.has_value()) {
+                    auto power = std::stoi(ALINK_TX_POWERS[selected.value()]);
+                    GuiInterface::SetAlinkTxPower(power);
+                }
+            };
+            tx_pwr_btn_->connect_signal("item_selected", callback);
+
+            for (auto power : ALINK_TX_POWERS) {
+                tx_pwr_menu.lock()->create_item(power);
+            }
+            tx_pwr_btn_->select_item(2);
+
+            auto alink_button = std::make_shared<revector::CheckButton>();
+            alink_button->set_text("Adaptive Link");
+            alink_button->set_pressed(true);
+            auto callback2 = [this, alink_con](bool toggled) {
+                GuiInterface::EnableAlink(toggled);
+                alink_con->set_visibility(toggled);
+            };
+            alink_button->connect_signal("toggled", callback2);
+            vbox_container->add_child(alink_button);
+
+            vbox_container->add_child(alink_con);
+        }
+#endif
+
         {
             play_button_ = std::make_shared<revector::Button>();
             play_button_->container_sizing.expand_h = true;

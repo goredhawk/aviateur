@@ -41,6 +41,10 @@ public:
     bool Start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
     void Stop() const;
 
+    void enable_alink(bool enable);
+
+    void set_alink_tx_power(int tx_power);
+
     /// Process a 802.11 frame
     void handle80211Frame(const Packet &pkt);
 

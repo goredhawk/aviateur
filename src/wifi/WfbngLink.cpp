@@ -364,6 +364,8 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 #ifdef __linux__
 
 void WfbngLink::start_link_quality_thread() {
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Start alink thread");
+
     auto thread_func = [this]() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -494,6 +496,8 @@ void WfbngLink::start_link_quality_thread() {
 }
 
 void WfbngLink::stop_adaptive_link() {
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Stop alink thread");
+
     std::unique_lock lock(thread_mutex);
 
     if (!link_quality_thread) {
@@ -656,6 +660,37 @@ void WfbngLink::handleRtp(uint8_t *payload, uint16_t packet_size) {
 void WfbngLink::Stop() const {
     if (rtlDevice) {
         rtlDevice->should_stop = true;
+    }
+}
+
+void WfbngLink::enable_alink(bool enable) {
+    if (adaptive_link_enabled == enable) {
+        return;
+    }
+
+    adaptive_link_enabled = enable;
+    adaptive_link_should_stop = !enable;
+
+    // Enable alink during playing.
+    if (adaptive_link_enabled && link_quality_thread) {
+        start_link_quality_thread();
+    }
+}
+
+void WfbngLink::set_alink_tx_power(int tx_power) {
+    if (tx_power <= 0) {
+        GuiInterface::Instance().PutLog(LogLevel::Warn, "Invalid alink tx power!");
+        return;
+    }
+    adaptive_tx_power = tx_power;
+
+    // Change alink tx power during playing.
+    if (adaptive_link_enabled && link_quality_thread) {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power (live): {}", tx_power);
+
+        rtlDevice->SetTxPower(adaptive_tx_power);
+    } else {
+        GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }
 }
 
