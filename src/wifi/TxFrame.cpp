@@ -852,10 +852,11 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
     // Attempt to create a UDP listening socket
     std::vector<int> rxFds;
     int bindPort = arg->udp_port;
-    int udpFd = TxFrame::open_udp_socket_for_rx(bindPort, arg->rcv_buf);
+    int udpFd = open_udp_socket_for_rx(bindPort, arg->rcv_buf);
 
+    // No valid port is provided
     if (arg->udp_port == 0) {
-        // ephemeral port
+        // Ephemeral port
         struct sockaddr_in saddr;
         socklen_t saddrLen = sizeof(saddr);
         if (getsockname(udpFd, reinterpret_cast<struct sockaddr *>(&saddr), &saddrLen) != 0) {
@@ -882,7 +883,7 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
             transmitter = std::make_shared<UdpTransmitter>(arg->k,
                                                            arg->n,
                                                            arg->keypair,
-                                                           "127.0.0.1",
+                                                           arg->debug_ip,
                                                            arg->debug_port,
                                                            arg->epoch,
                                                            channelId);

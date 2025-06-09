@@ -342,7 +342,7 @@ struct TxArgs {
     uint8_t radio_port = 0;
     uint32_t link_id = 0x0;
     uint64_t epoch = 0;
-    int udp_port = 5600;
+    int udp_port = 5600; // Port to receive data
     int log_interval = 1000;
 
     int bandwidth = 20;
@@ -351,6 +351,7 @@ struct TxArgs {
     int ldpc = 0;
     int mcs_index = 1;
     int vht_nss = 1;
+    std::string debug_ip = "127.0.0.1"; // Send packets to an IP:PORT for debugging
     int debug_port = 0;
     int fec_timeout = 20;
     int rcv_buf = 0;
