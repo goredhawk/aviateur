@@ -2,6 +2,9 @@
 
     #include "TxFrame.h"
 
+    #include <linux/ip.h>
+    #include <linux/udp.h>
+
     #include <cinttypes>
 
 //-------------------------------------------------------------
@@ -537,7 +540,21 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
 
     return fd;
 }
+uint16_t inet_csum(const void *buf, size_t hdr_len) {
+    unsigned long sum = 0;
+    const uint16_t *ip1;
 
+    ip1 = (const uint16_t *)buf;
+    while (hdr_len > 1) {
+        sum += *ip1++;
+        if (sum & 0x80000000) sum = (sum & 0xFFFF) + (sum >> 16);
+        hdr_len -= 2;
+    }
+
+    while (sum >> 16) sum = (sum & 0xFFFF) + (sum >> 16);
+
+    return (~sum);
+}
 void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                          std::vector<int> &rxFds,
                          int fecTimeout,
@@ -723,8 +740,48 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         sessionKeyAnnounceTs = nowTs + SESSION_KEY_ANNOUNCE_MSEC;
                     }
 
+                    // fixme: should move before size check
+                    // Packet size
+                    size_t packet_size = 2 + sizeof(struct iphdr) + sizeof(struct udphdr) + rsize;
+
+                    // Packet
+                    auto *packet = (uint8_t *)malloc(packet_size);
+
+                    uint16_t net_packet_size = htons(packet_size - 2);
+                    memcpy(packet, &net_packet_size, 2);
+
+                    static int packet_id = 0;
+
+                    // IP header
+                    struct iphdr *ip = (struct iphdr *)(packet + 2);
+                    ip->saddr = inet_addr("10.5.0.11");
+                    ip->daddr = inet_addr("10.5.0.10");
+                    ip->ihl = 5;
+                    ip->version = 4;
+                    ip->tos = 0;
+                    ip->tot_len = htons(packet_size - 2);
+                    ip->id = htons(packet_id++);
+                    ip->frag_off = 0;
+                    ip->ttl = 64;
+                    ip->protocol = IPPROTO_UDP;
+                    ip->check = 0; // Will be calculated later
+                    ip->check = inet_csum((unsigned short *)ip, sizeof(struct iphdr));
+
+                    // UDP header
+                    struct udphdr *udp = (struct udphdr *)(ip + sizeof(struct iphdr));
+                    udp->source = htons(54321);
+                    udp->dest = htons(9999);
+                    udp->len = htons(sizeof(struct udphdr) + rsize);
+                    udp->check = 0;
+
+                    // Payload
+                    uint8_t *payload_buf = (uint8_t *)(udp + sizeof(struct udphdr));
+                    memcpy(payload_buf, buf, rsize);
+
                     // Forward packet
-                    transmitter->sendPacket(buf, static_cast<size_t>(rsize), 0);
+                    transmitter->sendPacket(packet, packet_size, 0);
+
+                    free(packet);
 
                     // If we've hit a log boundary inside the same poll, break to flush stats
                     if (nowTs >= logSendTs) {

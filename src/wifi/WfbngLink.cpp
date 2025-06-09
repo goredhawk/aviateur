@@ -465,19 +465,18 @@ void WfbngLink::start_link_quality_thread() {
                          fec.value(),
                          quality.idr_code.c_str());
 
-                // Put message length in the message header
                 len = strlen(message + sizeof(len));
-                len = htonl(len);
-                memcpy(message, &len, sizeof(len));
+
+                // Put message length in the message header
+                uint32_t net_len = htonl(len);
+                memcpy(message, &net_len, sizeof(len));
 
                 printf("TX message: %s", message + sizeof(len));
 
-                ssize_t sent = sendto(sockfd,
-                                      message,
-                                      strlen(message + sizeof(len)) + sizeof(len),
-                                      0,
-                                      (struct sockaddr *)&server_addr,
-                                      sizeof(server_addr));
+                size_t buf_size = len + sizeof(len);
+
+                ssize_t sent =
+                    sendto(sockfd, message, buf_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
                 if (sent < 0) {
                     printf("Failed to send message");
                     break;
