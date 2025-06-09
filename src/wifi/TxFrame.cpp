@@ -904,16 +904,12 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     /* Other useful bits */
                     uint8_t fcchunk[2]; /* 802.11 header frame control */
 
-                    /* PCAP vars */
-                    char errbuf[PCAP_ERRBUF_SIZE];
-                    pcap_t *ppcap;
-
                     /* Put our pointers in the right place */
                     ieee80211 = (struct ieee80211_hdr *)(packet + sizeof(u8aRadiotapHeader));
                     llc = (uint8_t *)(ieee80211 + sizeof(struct ieee80211_hdr));
                     ip = (struct iphdr *)(llc + sizeof(ipllc));
-                    udp = (struct udphdr *)(ip + 1);
-                    data = (uint8_t *)(udp + 1);
+                    udp = (struct udphdr *)(ip + sizeof(struct iphdr));
+                    data = (uint8_t *)(udp + sizeof(struct udphdr));
 
                     /* The radiotap header has been explained already */
                     memcpy(packet, u8aRadiotapHeader, sizeof(u8aRadiotapHeader));
