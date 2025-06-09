@@ -2,24 +2,6 @@
 
     #include "TxFrame.h"
 
-    #include <linux/ip.h>
-    #include <linux/udp.h>
-
-    #include "pcap/pcap.h"
-
-struct ieee80211_hdr {
-    uint16_t /*__le16*/ frame_control;
-    uint16_t /*__le16*/ duration_id;
-    uint8_t addr1[6];
-    uint8_t addr2[6];
-    uint8_t addr3[6];
-    uint16_t /*__le16*/ seq_ctrl;
-    // uint8_t addr4[6];
-} __attribute__((packed));
-
-    #define WLAN_FC_TYPE_DATA 2
-    #define WLAN_FC_SUBTYPE_DATA 0
-
 constexpr char *TAG = "TXFrame";
 
 //-------------------------------------------------------------
@@ -572,118 +554,6 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
     return fd;
 }
 
-/**
- * Radiotap is a protocol of sorts that is used to convey information about the
- * physical-layer part of wireless transmissions. When monitoring an interface
- * for packets, it will contain information such as what rate was used, what
- * channel it was sent on, etc. When injecting a packet, we can use it to tell
- * the 802.11 card how we want the frame to be transmitted.
- *
- * The format of the radiotap header is somewhat odd.
- * include/net/ieee80211_radiotap.h does an okay job of explaining it, but I'll
- * try to give a quick overview here.
- *
- * Keep in mind that all the fields here are little-endian, so you should
- * reverse the order of the bytes in your head when reading. Also, fields that
- * are set to 0 just mean that we let the card choose what values to use for
- * that option (for rate and channel for example, we'll let the card decide).
- */
-static const uint8_t u8aRadiotapHeader[] = {
-
-    0x00,
-    0x00, // <-- radiotap version (ignore this)
-    0x18,
-    0x00, // <-- number of bytes in our header (count the number of "0x"s)
-
-    /**
-     * The next field is a bitmap of which options we are including.
-     * The full list of which field is which option is in ieee80211_radiotap.h,
-     * but I've chosen to include:
-     *   0x00 0x01: timestamp
-     *   0x00 0x02: flags
-     *   0x00 0x03: rate
-     *   0x00 0x04: channel
-     *   0x80 0x00: tx flags (seems silly to have this AND flags, but oh well)
-     */
-    0x0f,
-    0x80,
-    0x00,
-    0x00,
-
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00, // <-- timestamp
-
-    /**
-     * This is the first set of flags, and we've set the bit corresponding to
-     * IEEE80211_RADIOTAP_F_FCS, meaning we want the card to add a FCS at the end
-     * of our buffer for us.
-     */
-    0x10,
-
-    0x00, // <-- rate
-    0x00,
-    0x00,
-    0x00,
-    0x00, // <-- channel
-
-    /**
-     * This is the second set of flags, specifically related to transmissions. The
-     * bit we've set is IEEE80211_RADIOTAP_F_TX_NOACK, which means the card won't
-     * wait for an ACK for this frame, and that it won't retry if it doesn't get
-     * one.
-     */
-    0x08,
-    0x00,
-};
-
-/**
- * After an 802.11 MAC-layer header, a logical link control (LLC) header should
- * be placed to tell the receiver what kind of data will follow (see IEEE 802.2
- * for more information).
- *
- * For political reasons, IP wasn't allocated a global so-called SAP number,
- * which means that a simple LLC header is not enough to indicate that an IP
- * frame was sent. 802.2 does, however, allow EtherType types (the same kind of
- * type numbers used in, you guessed it, Ethernet) through the use of the
- * "Subnetwork Access Protocol", or SNAP. To use SNAP, the three bytes in the
- * LLC have to be set to the magical numbers 0xAA 0xAA 0x03. The next five bytes
- * are then interpreted as a SNAP header. To specify an EtherType, we need to
- * set the first three of them to 0. The last two bytes can then finally be set
- * to 0x0800, which is the IP EtherType.
- */
-const uint8_t ipllc[8] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00, 0x08, 0x00};
-
-/**
- * A simple implementation of the internet checksum used by IP
- * Not very interesting, so it has been moved below main()
- */
-uint16_t inet_csum(const void *buf, size_t hdr_len);
-
-uint16_t inet_csum(const void *buf, size_t hdr_len) {
-    unsigned long sum = 0;
-    const uint16_t *ip1;
-
-    ip1 = (const uint16_t *)buf;
-    while (hdr_len > 1) {
-        sum += *ip1++;
-        if (sum & 0x80000000) sum = (sum & 0xFFFF) + (sum >> 16);
-        hdr_len -= 2;
-    }
-
-    while (sum >> 16) sum = (sum & 0xFFFF) + (sum >> 16);
-
-    return (~sum);
-}
-
-/* A bogus MAC address just to show that it can be done */
-const uint8_t mac[6] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab};
-
 void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                          std::vector<int> &rxFds,
                          int fecTimeout,
@@ -831,9 +701,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
                 while (true) {
                     if (shouldStop_) {
-    #ifdef __ANDROID__
-                        __android_log_print(ANDROID_LOG_DEBUG, TAG, "TxFrame: stopping in POLLIN loop");
-    #endif
+                        printf("TxFrame: stopping dataSource loop");
                         break;
                     }
 
@@ -886,135 +754,8 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         sessionKeyAnnounceTs = nowTs + SESSION_KEY_ANNOUNCE_MSEC;
                     }
 
-                    // Total packet size
-                    size_t packet_size = sizeof(u8aRadiotapHeader) + sizeof(struct ieee80211_hdr) + sizeof(ipllc) +
-                                         sizeof(struct iphdr) + sizeof(struct udphdr) + rsize /* data */ + 4 /* FCS */;
-
-                    // Packet
-                    uint8_t *packet = (uint8_t *)malloc(packet_size);
-
-                    /* The parts of our packet */
-                    uint8_t *rt; /* radiotap */
-                    struct ieee80211_hdr *ieee80211;
-                    uint8_t *llc;
-                    struct iphdr *ip;
-                    struct udphdr *udp;
-                    uint8_t *data;
-
-                    /* Other useful bits */
-                    uint8_t fcchunk[2]; /* 802.11 header frame control */
-
-                    /* Put our pointers in the right place */
-                    ieee80211 = (struct ieee80211_hdr *)(packet + sizeof(u8aRadiotapHeader));
-                    llc = (uint8_t *)(ieee80211 + sizeof(struct ieee80211_hdr));
-                    ip = (struct iphdr *)(llc + sizeof(ipllc));
-                    udp = (struct udphdr *)(ip + sizeof(struct iphdr));
-                    data = (uint8_t *)(udp + sizeof(struct udphdr));
-
-                    /* The radiotap header has been explained already */
-                    memcpy(packet, u8aRadiotapHeader, sizeof(u8aRadiotapHeader));
-
-                    /**
-                     * Next, we need to construct the 802.11 header
-                     *
-                     * The biggest trick here is the frame control field.
-                     * http://www.wildpackets.com/resources/compendium/wireless_lan/wlan_packets
-                     * gives a fairly good explanation.
-                     *
-                     * The first byte of the FC gives the type and "subtype" of the 802.11 frame.
-                     * We're transmitting a data frame, so we set both the type and the subtype to
-                     * DATA.
-                     *
-                     * Most guides also forget to mention that the bits *within each byte* in the
-                     * FC are reversed (!!!), so FROMDS is actually the *second to last* bit in
-                     * the FC, hence 0x02.
-                     */
-                    fcchunk[0] = ((WLAN_FC_TYPE_DATA << 2) | (WLAN_FC_SUBTYPE_DATA << 4));
-                    fcchunk[1] = 0x02;
-                    memcpy(&ieee80211->frame_control, &fcchunk[0], 2 * sizeof(uint8_t));
-
-                    /**
-                     * The remaining fields are more straight forward.
-                     * The duration we can set to some arbitrary high number, and the sequence
-                     * number can safely be set to 0.
-                     * The addresses here can be set to whatever, but bear in mind that which
-                     * address corresponds to source/destination/BSSID will vary depending on
-                     * which of TODS and FROMDS are set. The full table can be found at the
-                     * wildpackets.com link above, or condensed here:
-                     *
-                     *  +-------+---------+-------------+-------------+-------------+-----------+
-                     *  | To DS | From DS | Address 1   | Address 2   | Address 3   | Address 4 |
-                     *  +-------+---------+-------------+-------------+-------------+-----------+
-                     *  |     0 |       0 | Destination | Source      | BSSID       | N/A       |
-                     *  |     0 |       1 | Destination | BSSID       | Source      | N/A       |
-                     *  |     1 |       0 | BSSID       | Source      | Destination | N/A       |
-                     *  |     1 |       1 | Receiver    | Transmitter | Destination | Source    |
-                     *  +-------+---------+-------------+-------------+-------------+-----------+
-                     *
-                     * Also note that addr4 has been commented out. This is because it should not
-                     * be present unless both TODS *and* FROMDS has been set (as shown above).
-                     */
-                    ieee80211->duration_id = 0xffff;
-                    memcpy(&ieee80211->addr1[0], mac, 6 * sizeof(uint8_t));
-                    memcpy(&ieee80211->addr2[0], mac, 6 * sizeof(uint8_t));
-                    memcpy(&ieee80211->addr3[0], mac, 6 * sizeof(uint8_t));
-                    ieee80211->seq_ctrl = 0;
-                    // hdr->addr4;
-
-                    /* The LLC+SNAP header has already been explained above */
-                    memcpy(llc, ipllc, 8 * sizeof(uint8_t));
-
-                    const char *to = "10.5.0.10";
-                    const char *from = "192.168.1.100";
-
-                    struct sockaddr_in saddr, daddr; /* IP source and destination */
-                    daddr.sin_family = AF_INET;
-                    saddr.sin_family = AF_INET;
-                    daddr.sin_port = htons(9999);
-                    saddr.sin_port = htons(50505);
-                    inet_pton(AF_INET, to, (struct in_addr *)&daddr.sin_addr.s_addr);
-                    inet_pton(AF_INET, from, (struct in_addr *)&saddr.sin_addr.s_addr);
-
-                    static int packet_id = 0;
-
-                    // IP header
-                    // struct iphdr *ip = (struct iphdr *)packet + sizeof(struct ieee80211_hdr);
-                    ip->saddr = saddr.sin_addr.s_addr;
-                    ip->daddr = daddr.sin_addr.s_addr;
-                    ip->ihl = 5; /* header length, number of 32-bit words */
-                    ip->version = 4;
-                    ip->tos = 0;
-                    ip->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + rsize);
-                    ip->id = htons(packet_id++);
-                    ip->frag_off = htons(0x4000); /* Don't fragment */
-                    ip->ttl = 64;
-                    ip->protocol = IPPROTO_UDP;
-
-                    /**
-                     * The checksum should be calculated over the entire header with the checksum
-                     * field set to 0, so that's what we do
-                     */
-                    ip->check = 0; // Will be calculated later
-                    ip->check = inet_csum(ip, sizeof(struct iphdr));
-
-                    // UDP header
-                    /**
-                     * The UDP header is refreshingly simple.
-                     * Again, notice the little-endianness of ->len
-                     * UDP also lets us set the checksum to 0 to ignore it
-                     */
-                    udp->source = saddr.sin_port;
-                    udp->dest = daddr.sin_port;
-                    udp->len = htons(sizeof(struct udphdr) + rsize);
-                    udp->check = 0; // Optional
-
-                    // Payload
-                    memcpy(data, buf, rsize);
-
                     // Forward packet
-                    transmitter->sendPacket(packet, packet_size, 0);
-
-                    free(packet);
+                    transmitter->sendPacket(buf, rsize, 0);
 
                     // If we've hit a log boundary inside the same poll, break to flush stats
                     if (nowTs >= logSendTs) {
