@@ -2,7 +2,7 @@
 
     #include "TxFrame.h"
 
-constexpr char *TAG = "TXFrame";
+    #include <cinttypes>
 
 //-------------------------------------------------------------
 // Implementation of Transmitter
@@ -305,15 +305,15 @@ void RawSocketTransmitter::dumpStats(FILE *fp,
         uint64_t countAll = stats.countPacketsInjected + stats.countPacketsDropped;
         uint64_t avgLatency = (countAll == 0) ? 0 : (stats.latencySum / countAll);
 
-        // fprintf(fp,
-        //         "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
-        //         ts,
-        //         kv.first,
-        //         stats.countPacketsInjected,
-        //         stats.countPacketsDropped,
-        //         stats.latencyMin,
-        //         avgLatency,
-        //         stats.latencyMax);
+        fprintf(fp,
+                "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
+                ts,
+                kv.first,
+                stats.countPacketsInjected,
+                stats.countPacketsDropped,
+                stats.latencyMin,
+                avgLatency,
+                stats.latencyMax);
 
         injectedPackets += stats.countPacketsInjected;
         droppedPackets += stats.countPacketsDropped;
@@ -411,28 +411,15 @@ void UsbTransmitter::dumpStats(FILE *fp,
         uint64_t countAll = stats.countPacketsInjected + stats.countPacketsDropped;
         uint64_t avgLatency = (countAll == 0) ? 0 : (stats.latencySum / countAll);
 
-    #ifdef __ANDROID__
-        __android_log_print(ANDROID_LOG_INFO,
-                            TAG,
-                            "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
-                            ts,
-                            kv.first,
-                            stats.countPacketsInjected,
-                            stats.countPacketsDropped,
-                            stats.latencyMin,
-                            avgLatency,
-                            stats.latencyMax);
-    #else
-            // fprintf(fp,
-            //         "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
-            //         ts,
-            //         kv.first,
-            //         stats.countPacketsInjected,
-            //         stats.countPacketsDropped,
-            //         stats.latencyMin,
-            //         avgLatency,
-            //         stats.latencyMax);
-    #endif
+        fprintf(fp,
+                "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
+                ts,
+                kv.first,
+                stats.countPacketsInjected,
+                stats.countPacketsDropped,
+                stats.latencyMin,
+                avgLatency,
+                stats.latencyMax);
 
         injectedPackets += stats.countPacketsInjected;
         droppedPackets += stats.countPacketsDropped;
@@ -443,9 +430,7 @@ void UsbTransmitter::dumpStats(FILE *fp,
 
 void UsbTransmitter::injectPacket(const uint8_t *buf, size_t size) {
     if (!rtlDevice_ || rtlDevice_->should_stop) {
-    #ifdef __ANDROID__
-        __android_log_print(ANDROID_LOG_DEBUG, TAG, "Main thread exited, cannot send packets");
-    #endif
+        printf("Main thread exited, cannot send packets");
         throw std::runtime_error("USB Transmitter: main thread exit, should stop");
     }
 
@@ -477,10 +462,9 @@ void UsbTransmitter::injectPacket(const uint8_t *buf, size_t size) {
     std::memcpy(buffer.get() + radiotapHeaderLen_ + sizeof(ieeeHdr), buf, size);
 
     bool result = static_cast<bool>(rtlDevice_->send_packet(buffer.get(), totalSize));
-
-    #ifdef __ANDROID__
-    //    __android_log_print(ANDROID_LOG_DEBUG, TAG, "send_packet res:%d", result);
-    #endif
+    if (!result) {
+        printf("rtlDevice_::send_packet result: %d", result);
+    }
 
     uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;
     antennaStat_[key].logLatency(get_time_us() - startUs, result, static_cast<uint32_t>(size));
@@ -598,9 +582,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
     while (true) {
         if (shouldStop_) {
-    #ifdef __ANDROID__
-            __android_log_print(ANDROID_LOG_DEBUG, TAG, "TxFrame: stopping main loop");
-    #endif
+            printf("TxFrame: stopping main loop");
             break;
         }
 
@@ -629,31 +611,18 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
         curTs = get_time_ms();
         if (curTs >= logSendTs) {
             transmitter->dumpStats(stdout, curTs, countPInjected, countPDropped, countBInjected);
-    #ifdef __ANDROID__
-            __android_log_print(ANDROID_LOG_INFO,
-                                TAG,
-                                "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
-                                curTs,
-                                countPFecTimeouts,
-                                countPIncoming,
-                                countBIncoming,
-                                countPInjected,
-                                countBInjected,
-                                countPDropped,
-                                countPTruncated);
-    #else
-                // std::fprintf(stdout,
-                //              "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
-                //              curTs,
-                //              countPFecTimeouts,
-                //              countPIncoming,
-                //              countBIncoming,
-                //              countPInjected,
-                //              countBInjected,
-                //              countPDropped,
-                //              countPTruncated);
-                // std::fflush(stdout);
-    #endif
+
+            std::fprintf(stdout,
+                         "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
+                         curTs,
+                         countPFecTimeouts,
+                         countPIncoming,
+                         countBIncoming,
+                         countPInjected,
+                         countBInjected,
+                         countPDropped,
+                         countPTruncated);
+            std::fflush(stdout);
 
             if (countPDropped) {
                 std::fprintf(stderr, "%u packets dropped\n", countPDropped);
@@ -701,7 +670,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
                 while (true) {
                     if (shouldStop_) {
-                        printf("TxFrame: stopping dataSource loop");
+                        printf("TxFrame: stopping polling loop");
                         break;
                     }
 
@@ -755,7 +724,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     }
 
                     // Forward packet
-                    transmitter->sendPacket(buf, rsize, 0);
+                    transmitter->sendPacket(buf, static_cast<size_t>(rsize), 0);
 
                     // If we've hit a log boundary inside the same poll, break to flush stats
                     if (nowTs >= logSendTs) {
@@ -893,22 +862,15 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
             throw std::runtime_error(string_format("Unable to get ephemeral port: %s", std::strerror(errno)));
         }
         bindPort = ntohs(saddr.sin_port);
-        // std::printf("%" PRIu64 "\tLISTEN_UDP\t%d\n", get_time_ms(), bindPort);
+        std::printf("%" PRIu64 "\tLISTEN_UDP\t%d\n", get_time_ms(), bindPort);
     }
 
-    #ifdef __ANDROID__
-    __android_log_print(ANDROID_LOG_INFO, TAG, "Listening on UDP port: %d", bindPort);
-    #else
     std::fprintf(stderr, "Listening on UDP port: %d\n", bindPort);
-    #endif
+
     rxFds.push_back(udpFd);
 
     if (arg->udp_port == 0) {
-    #ifdef __ANDROID__
-        __android_log_print(ANDROID_LOG_INFO, TAG, "Listening on UDP port: %d", bindPort);
-    #else
         std::fprintf(stderr, "Listening on UDP port: %d\n", bindPort);
-    #endif
     }
 
     try {
@@ -941,11 +903,7 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
         // Start polling loop
         dataSource(transmitter, rxFds, arg->fec_timeout, arg->mirror, arg->log_interval);
     } catch (const std::runtime_error &ex) {
-    #ifdef __ANDROID__
-        __android_log_print(ANDROID_LOG_ERROR, TAG, "Error in TxFrame::run: %s", ex.what());
-    #else
         std::fprintf(stderr, "Error in TxFrame::run: %s\n", ex.what());
-    #endif
     }
 }
 
