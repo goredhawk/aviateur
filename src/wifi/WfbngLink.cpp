@@ -28,7 +28,7 @@
 static int socketFd = INVALID_SOCKET;
 static std::atomic playing = false;
 
-constexpr u8 WFB_TX_PORT = 9999;
+constexpr u8 WFB_TX_PORT = 160;
 constexpr u8 WFB_RX_PORT = 32;
 
 inline bool isH264(const uint8_t *data) {
