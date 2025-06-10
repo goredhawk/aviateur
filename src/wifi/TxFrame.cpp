@@ -751,7 +751,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     size_t packet_size = 2 + iphdr_len + udphdr_len + rsize;
 
                     // Packet
-                    auto packet = std::vector<uint8_t>(packet_size, 0);
+                    auto packet = std::vector<unsigned char>(packet_size, 0);
 
                     uint16_t net_packet_size = htons(packet_size - 2);
                     memcpy(packet.data(), &net_packet_size, 2);
@@ -760,7 +760,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
 
                     // IP header
                     struct iphdr *ip = (struct iphdr *)(packet.data() + 2);
-                    ip->saddr = inet_addr("10.5.0.11");
+                    ip->saddr = inet_addr("10.5.0.0");
                     ip->daddr = inet_addr("10.5.0.10");
                     ip->ihl = 5;
                     ip->version = 4;
@@ -773,7 +773,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     ip->check = 0; // Will be calculated later
 
                     // UDP header
-                    struct udphdr *udp = (struct udphdr *)(ip + iphdr_len);
+                    struct udphdr *udp = (struct udphdr *)(ip + 1);
                     udp->source = htons(54321);
                     udp->dest = htons(9999);
                     udp->len = htons(udphdr_len + rsize);
@@ -782,7 +782,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     ip->check = inet_csum((unsigned short *)ip, iphdr_len);
 
                     // Payload
-                    uint8_t *payload_buf = (uint8_t *)(udp + udphdr_len);
+                    uint8_t *payload_buf = (uint8_t *)(udp + 1);
                     memcpy(payload_buf, buf, rsize);
 
                     // Forward packet
