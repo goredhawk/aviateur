@@ -54,8 +54,8 @@ void SignalQualityCalculator::cleanup_old_fec_data() {
 }
 
 void SignalQualityCalculator::add_rssi(uint8_t ant1, uint8_t ant2) {
-    //__android_log_print(ANDROID_LOG_WARN, TAG, "rssi1 %d, rssi2 %d", (int)ant1, (int)ant2);
     std::lock_guard lock(m_mutex);
+
     RssiEntry entry;
     entry.timestamp = std::chrono::steady_clock::now();
     entry.ant1 = ant1;
@@ -64,8 +64,8 @@ void SignalQualityCalculator::add_rssi(uint8_t ant1, uint8_t ant2) {
 }
 
 void SignalQualityCalculator::add_snr(int8_t ant1, int8_t ant2) {
-    //__android_log_print(ANDROID_LOG_WARN, TAG, "rssi1 %d, rssi2 %d", (int)ant1, (int)ant2);
     std::lock_guard lock(m_mutex);
+
     SnrEntry entry;
     entry.timestamp = std::chrono::steady_clock::now();
     entry.ant1 = ant1;
@@ -76,6 +76,11 @@ void SignalQualityCalculator::add_snr(int8_t ant1, int8_t ant2) {
 SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal_quality() {
     SignalQuality ret;
     std::lock_guard lock(m_mutex);
+
+    // Make sure we clean up old data first
+    cleanup_old_rssi_data();
+    cleanup_old_snr_data();
+    cleanup_old_fec_data();
 
     float avg_rssi = get_avg(m_rssis);
     float avg_snr = get_avg(m_snrs);
@@ -99,18 +104,13 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
     ret.snr = avg_snr;
     ret.idr_code = m_idr_code;
 
-    cleanup_old_rssi_data();
-    cleanup_old_snr_data();
-    cleanup_old_fec_data();
-
     return ret;
 }
 
 std::pair<uint32_t, uint32_t> SignalQualityCalculator::get_accumulated_fec_data() {
-    // Make sure we clean up old FEC data first
-    cleanup_old_fec_data();
-
-    if (m_fec_data.empty()) return {300, 300};
+    if (m_fec_data.empty()) {
+        return {300, 300};
+    }
 
     uint32_t p_recovered = 0;
     uint32_t p_all = 0;
@@ -120,11 +120,13 @@ std::pair<uint32_t, uint32_t> SignalQualityCalculator::get_accumulated_fec_data(
         p_recovered += data.recovered;
         p_lost += data.lost;
     }
+
     return {p_recovered, p_lost};
 }
 
 void SignalQualityCalculator::add_fec_data(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost) {
     std::lock_guard lock(m_mutex);
+
     FecEntry entry;
     entry.timestamp = std::chrono::steady_clock::now();
     entry.all = p_all;

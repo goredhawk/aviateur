@@ -67,20 +67,21 @@ bool Transmitter::sendPacket(const uint8_t *buf, size_t size, uint8_t flags) {
     packetHdr->flags = flags;
     packetHdr->packet_size = htons(static_cast<uint16_t>(size));
 
+    size_t wpacketHdrSize = sizeof(wpacket_hdr_t);
+
     // Copy payload
-    std::memcpy(block_[fragmentIndex_].get() + sizeof(wpacket_hdr_t), buf, size);
+    std::memcpy(block_[fragmentIndex_].get() + wpacketHdrSize, buf, size);
 
     // Zero out the remainder
-    size_t totalHdrSize = sizeof(wpacket_hdr_t);
-    if ((totalHdrSize + size) < MAX_FEC_PAYLOAD) {
-        std::memset(block_[fragmentIndex_].get() + totalHdrSize + size, 0, MAX_FEC_PAYLOAD - (totalHdrSize + size));
+    if ((wpacketHdrSize + size) < MAX_FEC_PAYLOAD) {
+        std::memset(block_[fragmentIndex_].get() + wpacketHdrSize + size, 0, MAX_FEC_PAYLOAD - (wpacketHdrSize + size));
     }
 
     // Send this fragment
-    sendBlockFragment(totalHdrSize + size);
+    sendBlockFragment(wpacketHdrSize + size);
 
     // Track the largest data size in block
-    maxPacketSize_ = std::max(maxPacketSize_, totalHdrSize + size);
+    maxPacketSize_ = std::max(maxPacketSize_, wpacketHdrSize + size);
     fragmentIndex_++;
 
     // If not enough fragments for FEC, we are done
@@ -496,11 +497,12 @@ uint32_t TxFrame::extractRxqOverflow(struct msghdr *msg) {
 }
 
 int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
-    int fd = ::socket(AF_INET, SOCK_DGRAM, 0);
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
         throw std::runtime_error(string_format("Unable to open socket: %s", std::strerror(errno)));
     }
 
+    // Allow resuing address
     int optval = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
@@ -509,15 +511,16 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
     tv.tv_sec = 0;
     tv.tv_usec = 500000; // 500ms
     if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-        ::close(fd);
+        close(fd);
         throw std::runtime_error(string_format("Unable to set socket timeout: %s", std::strerror(errno)));
     }
 
     if (buf_size) {
         if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &buf_size, sizeof(buf_size)) < 0) {
-            ::close(fd);
+            close(fd);
             throw std::runtime_error(string_format("Unable to set requested buffer size: %s", std::strerror(errno)));
         }
+
         int actual_buf_size = 0;
         socklen_t optlen = sizeof(actual_buf_size);
         getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &actual_buf_size, &optlen);
@@ -527,19 +530,19 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
         }
     }
 
-    struct sockaddr_in saddr;
-    std::memset(&saddr, 0, sizeof(saddr));
+    struct sockaddr_in saddr = {};
     saddr.sin_family = AF_INET;
     saddr.sin_addr.s_addr = htonl(INADDR_ANY);
     saddr.sin_port = htons(static_cast<uint16_t>(port));
 
-    if (::bind(fd, reinterpret_cast<struct sockaddr *>(&saddr), sizeof(saddr)) < 0) {
-        ::close(fd);
+    if (bind(fd, reinterpret_cast<struct sockaddr *>(&saddr), sizeof(saddr)) < 0) {
+        close(fd);
         throw std::runtime_error(string_format("Unable to bind to port %d: %s", port, std::strerror(errno)));
     }
 
     return fd;
 }
+
 uint16_t inet_csum(const void *buf, size_t hdr_len) {
     unsigned long sum = 0;
     const uint16_t *ip1;
@@ -553,8 +556,9 @@ uint16_t inet_csum(const void *buf, size_t hdr_len) {
 
     while (sum >> 16) sum = (sum & 0xFFFF) + (sum >> 16);
 
-    return (~sum);
+    return ~sum;
 }
+
 void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                          std::vector<int> &rxFds,
                          int fecTimeout,
@@ -616,7 +620,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
             }
         }
 
-        int rc = ::poll(fds.data(), nfds, pollTimeout);
+        int rc = poll(fds.data(), nfds, pollTimeout);
         if (rc < 0) {
             if (errno == EINTR || errno == EAGAIN) {
                 continue;
@@ -691,11 +695,9 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                         break;
                     }
 
-                    uint8_t buf[MAX_PAYLOAD_SIZE + 1];
-                    std::memset(buf, 0, sizeof(buf));
+                    uint8_t buf[MAX_PAYLOAD_SIZE + 1] = {};
 
-                    uint8_t cmsgbuf[CMSG_SPACE(sizeof(uint32_t))];
-                    std::memset(cmsgbuf, 0, sizeof(cmsgbuf));
+                    uint8_t cmsgbuf[CMSG_SPACE(sizeof(uint32_t))] = {};
 
                     iovec iov = {};
                     iov.iov_base = buf;
@@ -707,7 +709,7 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     msg.msg_control = cmsgbuf;
                     msg.msg_controllen = sizeof(cmsgbuf);
 
-                    ssize_t rsize = ::recvmsg(pfd.fd, &msg, 0);
+                    ssize_t rsize = recvmsg(pfd.fd, &msg, 0);
                     if (rsize < 0) {
                         if (errno != EWOULDBLOCK && errno != EAGAIN && errno != ETIMEDOUT) {
                             continue;
@@ -741,19 +743,23 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     }
 
                     // fixme: should move before size check
+
+                    int iphdr_len = sizeof(struct iphdr);
+                    int udphdr_len = sizeof(struct udphdr);
+
                     // Packet size
-                    size_t packet_size = 2 + sizeof(struct iphdr) + sizeof(struct udphdr) + rsize;
+                    size_t packet_size = 2 + iphdr_len + udphdr_len + rsize;
 
                     // Packet
-                    auto *packet = (uint8_t *)malloc(packet_size);
+                    auto packet = std::vector<uint8_t>(packet_size, 0);
 
                     uint16_t net_packet_size = htons(packet_size - 2);
-                    memcpy(packet, &net_packet_size, 2);
+                    memcpy(packet.data(), &net_packet_size, 2);
 
                     static int packet_id = 0;
 
                     // IP header
-                    struct iphdr *ip = (struct iphdr *)(packet + 2);
+                    struct iphdr *ip = (struct iphdr *)(packet.data() + 2);
                     ip->saddr = inet_addr("10.5.0.11");
                     ip->daddr = inet_addr("10.5.0.10");
                     ip->ihl = 5;
@@ -765,23 +771,22 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
                     ip->ttl = 64;
                     ip->protocol = IPPROTO_UDP;
                     ip->check = 0; // Will be calculated later
-                    ip->check = inet_csum((unsigned short *)ip, sizeof(struct iphdr));
 
                     // UDP header
-                    struct udphdr *udp = (struct udphdr *)(ip + sizeof(struct iphdr));
+                    struct udphdr *udp = (struct udphdr *)(ip + iphdr_len);
                     udp->source = htons(54321);
                     udp->dest = htons(9999);
-                    udp->len = htons(sizeof(struct udphdr) + rsize);
+                    udp->len = htons(udphdr_len + rsize);
                     udp->check = 0;
 
+                    ip->check = inet_csum((unsigned short *)ip, iphdr_len);
+
                     // Payload
-                    uint8_t *payload_buf = (uint8_t *)(udp + sizeof(struct udphdr));
+                    uint8_t *payload_buf = (uint8_t *)(udp + udphdr_len);
                     memcpy(payload_buf, buf, rsize);
 
                     // Forward packet
-                    transmitter->sendPacket(packet, packet_size, 0);
-
-                    free(packet);
+                    transmitter->sendPacket(packet.data(), packet_size, 0);
 
                     // If we've hit a log boundary inside the same poll, break to flush stats
                     if (nowTs >= logSendTs) {
@@ -894,15 +899,15 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
 
     // Check system entropy
     {
-        int fd = ::open("/dev/random", O_RDONLY);
+        int fd = open("/dev/random", O_RDONLY);
         if (fd != -1) {
             int eCount = 0;
-            if (::ioctl(fd, RNDGETENTCNT, &eCount) == 0 && eCount < 160) {
+            if (ioctl(fd, RNDGETENTCNT, &eCount) == 0 && eCount < 160) {
                 std::fprintf(stderr,
                              "Warning: Low entropy available. Consider installing rng-utils, "
                              "jitterentropy, or haveged to increase entropy.\n");
             }
-            ::close(fd);
+            close(fd);
         }
     }
 
