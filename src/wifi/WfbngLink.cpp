@@ -663,6 +663,7 @@ void WfbngLink::Stop() const {
 }
 
 void WfbngLink::enable_alink(bool enable) {
+#ifdef __linux__
     if (adaptive_link_enabled == enable) {
         return;
     }
@@ -674,9 +675,11 @@ void WfbngLink::enable_alink(bool enable) {
     if (adaptive_link_enabled && link_quality_thread) {
         start_link_quality_thread();
     }
+#endif
 }
 
 void WfbngLink::set_alink_tx_power(int tx_power) {
+#ifdef __linux__
     if (tx_power <= 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "Invalid alink tx power!");
         return;
@@ -691,6 +694,7 @@ void WfbngLink::set_alink_tx_power(int tx_power) {
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }
+#endif
 }
 
 WfbngLink::WfbngLink() {

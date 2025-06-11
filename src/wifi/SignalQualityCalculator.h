@@ -7,6 +7,10 @@
 #include <utility>
 #include <vector>
 
+inline double map_range(double value, double inputMin, double inputMax, double outputMin, double outputMax) {
+    return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
+}
+
 class SignalQualityCalculator {
 public:
     struct SignalQuality {
@@ -92,10 +96,6 @@ private:
         uint32_t recovered;
         uint32_t lost;
     };
-
-    double map_range(double value, double inputMin, double inputMax, double outputMin, double outputMax) {
-        return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
-    }
 
 private:
     const std::chrono::seconds kAveragingWindow{std::chrono::seconds(1)};
