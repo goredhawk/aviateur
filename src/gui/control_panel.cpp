@@ -49,7 +49,7 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
         play_url_button_->theme_normal.bg_color = RED;
         play_url_button_->theme_hovered.bg_color = RED;
         play_url_button_->theme_pressed.bg_color = RED;
-        play_url_button_->set_text(FTR("close") + " (F5)");
+        play_url_button_->set_text(FTR("stop") + " (F5)");
     } else {
         play_url_button_->theme_normal.bg_color = GREEN;
         play_url_button_->theme_hovered.bg_color = GREEN;
