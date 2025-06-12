@@ -1,6 +1,6 @@
 #include "settings_tab.h"
 
-const std::string AVIATEUR_VERSION = "0.1.0";
+const std::string AVIATEUR_VERSION = "0.1.1";
 
 void open_explorer(const std::string& dir) {
 #ifdef _WIN32
@@ -136,6 +136,6 @@ void SettingsContainer::custom_ready() {
         version_label->container_sizing.expand_h = true;
         version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(version_label);
-        version_label->set_text("Version " + AVIATEUR_VERSION);
+        version_label->set_text(FTR("version") + " " + AVIATEUR_VERSION);
     }
 }

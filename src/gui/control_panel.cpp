@@ -237,7 +237,6 @@ void ControlPanel::custom_ready() {
             auto alink_con = std::make_shared<revector::CollapseContainer>(revector::NodeType::CheckButton);
             alink_con->set_title(FTR("alink"));
             alink_con->set_collapse(false);
-            alink_con->set_collapsed_color(revector::ColorU(33, 33, 33));
             alink_con->set_color(revector::ColorU(210.0, 137, 94));
             vbox_container->add_child(alink_con);
 
@@ -296,6 +295,7 @@ void ControlPanel::custom_ready() {
 
         {
             play_button_ = std::make_shared<revector::Button>();
+            play_button_->set_custom_minimum_size({0, 48});
             play_button_->container_sizing.expand_h = true;
             play_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             update_adapter_start_button_looking(true);
@@ -358,6 +358,7 @@ void ControlPanel::custom_ready() {
 
         {
             play_url_button_ = std::make_shared<revector::Button>();
+            play_url_button_->set_custom_minimum_size({0, 48});
             play_url_button_->container_sizing.expand_h = true;
             play_url_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             update_url_start_button_looking(true);
