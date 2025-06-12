@@ -663,11 +663,19 @@ void WfbngLink::Stop() const {
 }
 
 bool WfbngLink::get_alink_enabled() const {
+#ifdef __linux__
     return adaptive_link_enabled;
+#else
+    return false;
+#endif
 }
 
 int WfbngLink::get_alink_tx_power() const {
+#ifdef __linux__
     return adaptive_tx_power;
+#else
+    return 0;
+#endif
 }
 
 void WfbngLink::enable_alink(bool enable) {
