@@ -4,11 +4,9 @@ void TipLabel::custom_ready() {
     set_font_size(48);
 
     auto style_box = revector::StyleBox();
-    style_box.bg_color = revector::ColorU(50, 50, 50, 200);
-    style_box.corner_radius = 8;
+    style_box.bg_color = revector::ColorU(201, 79, 79);
+    style_box.corner_radius = 0;
     theme_background = style_box;
-
-    set_text_style(revector::TextStyle{revector::ColorU(201, 79, 79)});
 
     display_timer = std::make_shared<revector::Timer>();
     fade_timer = std::make_shared<revector::Timer>();

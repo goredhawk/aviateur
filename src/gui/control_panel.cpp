@@ -234,7 +234,7 @@ void ControlPanel::custom_ready() {
 
 #ifdef __linux__
         {
-            auto alink_con = std::make_shared<revector::CollapseContainer>(revector::NodeType::CheckButton);
+            auto alink_con = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Check);
             alink_con->set_title(FTR("alink"));
             alink_con->set_collapse(false);
             alink_con->set_color(revector::ColorU(210.0, 137, 94));
@@ -318,6 +318,7 @@ void ControlPanel::custom_ready() {
                             start = false;
                         }
                     } else {
+                        GuiInterface::Instance().ShowTip("Null device");
                         start = false;
                     }
                 } else {

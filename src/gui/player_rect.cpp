@@ -17,12 +17,12 @@ class SignalBar : public revector::ProgressBar {
 };
 
 void PlayerRect::show_red_tip(std::string tip) {
-    tip_label_->set_text_style(revector::TextStyle{RED});
+    tip_label_->theme_background.bg_color = RED;
     tip_label_->show_tip(tip);
 }
 
 void PlayerRect::show_green_tip(std::string tip) {
-    tip_label_->set_text_style(revector::TextStyle{GREEN});
+    tip_label_->theme_background.bg_color = GREEN;
     tip_label_->show_tip(tip);
 }
 
@@ -53,7 +53,7 @@ void PlayerRect::custom_ready() {
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
-    collapse_panel_ = std::make_shared<revector::CollapseContainer>(revector::NodeType::Button);
+    collapse_panel_ = std::make_shared<revector::CollapseContainer>(revector::CollapseButtonType::Default);
     collapse_panel_->set_title(FTR("player control"));
     collapse_panel_->set_collapse(true);
     collapse_panel_->set_color(revector::ColorU(84, 138, 247));
@@ -75,9 +75,8 @@ void PlayerRect::custom_ready() {
     set_stretch_mode(StretchMode::KeepAspectCentered);
 
     tip_label_ = std::make_shared<TipLabel>();
-    tip_label_->set_anchor_flag(revector::AnchorFlag::Center);
+    tip_label_->set_anchor_flag(revector::AnchorFlag::VCenterWide);
     tip_label_->set_visibility(false);
-    tip_label_->set_text_style(revector::TextStyle{revector::ColorU::red()});
     add_child(tip_label_);
 
     hud_container_ = std::make_shared<revector::HBoxContainer>();
