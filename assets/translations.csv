@@ -42,3 +42,5 @@ low light enhancement simple,Low light enhancement (simple),低光增强（简�
 low light enhancement dnn,Low light enhancement (DNN),低光增强（DNN）,Улучшение при слабом освещении (DNN)
 copy version num,Copy version number,复制版本号,Скопировать номер версии
 control panel,Control panel,控制面板,Панель управления
+alink,Adaptive link,自适应链路,Адаптивная ссылка
+tx power,TX power,发射功率,мощность передачи

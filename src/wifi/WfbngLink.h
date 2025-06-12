@@ -41,6 +41,10 @@ public:
     bool Start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
     void Stop() const;
 
+    bool get_alink_enabled() const;
+
+    int get_alink_tx_power() const;
+
     void enable_alink(bool enable);
 
     void set_alink_tx_power(int tx_power);

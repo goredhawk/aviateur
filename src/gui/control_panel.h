@@ -12,8 +12,8 @@ public:
 
     std::shared_ptr<revector::MenuButton> tx_pwr_btn_;
 
-    std::string net_card_name;
-    std::optional<DeviceId> selected_net_card;
+    std::string adapter_name;
+    std::optional<DeviceId> selected_adapter;
     uint32_t channel = 0;
     uint32_t channelWidthMode = 0;
     std::string keyPath;

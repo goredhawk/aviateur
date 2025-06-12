@@ -11,6 +11,7 @@
 static revector::App* app;
 
 int main() {
+    GuiInterface::Instance().init();
     GuiInterface::Instance().PutLog(LogLevel::Info, "App started");
 
     app = new revector::App({1280, 720});
@@ -88,6 +89,8 @@ int main() {
     GuiInterface::Instance().PutLog(LogLevel::Info, "Entering app main loop");
 
     app->main_loop();
+
+    GuiInterface::SaveConfig();
 
     // Quit app.
     delete app;

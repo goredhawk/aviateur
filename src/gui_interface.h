@@ -19,12 +19,17 @@
 
 #define CONFIG_FILE "config.ini"
 
+#define CONFIG_CONFIG "config"
+#define CONFIG_VERSION "version"
+
 #define CONFIG_ADAPTER "adapter"
 #define ADAPTER_DEVICE "pid_vid"
 #define ADAPTER_CHANNEL "channel"
 #define ADAPTER_CHANNEL_WIDTH_MODE "channel_width_mode"
-#define ADAPTER_CHANNEL_KEY "key"
-#define ADAPTER_CHANNEL_CODEC "codec"
+#define ADAPTER_GS_KEY "key"
+#define ADAPTER_CODEC "codec"
+#define ADAPTER_ALINK_ENABLED "alink_enabled"
+#define ADAPTER_ALINK_TX_POWER "alink_tx_power"
 
 #define CONFIG_STREAMING "streaming"
 #define CONFIG_STREAMING_URL "url"
@@ -35,6 +40,9 @@
 #define DEFAULT_PORT 52356
 
 constexpr auto LOGGER_MODULE = "Aviateur";
+
+/// Bump this if the config structure changes.
+constexpr auto CONFIG_VERSION_NUM = 1;
 
 const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
 const revector::ColorU RED = revector::ColorU(201, 79, 79);
@@ -68,6 +76,21 @@ enum class LogLevel {
     Error,
 };
 
+inline std::string IniToString(const mINI::INIStructure &ini) {
+    std::ostringstream oss;
+
+    for (const auto &[section, entries] : ini) {
+        oss << "[" << section << "]\n";
+
+        for (const auto &[key, value] : entries) {
+            oss << key << "=" << value << "\n";
+        }
+        oss << "\n";
+    }
+    return oss.str();
+}
+
+/// Acts as an interface between GUI and core.
 class GuiInterface {
 public:
     static GuiInterface &Instance() {
@@ -75,7 +98,11 @@ public:
         return interface;
     }
 
-    explicit GuiInterface() {
+    GuiInterface() = default;
+
+    ~GuiInterface() = default;
+
+    void init() {
 #ifdef _WIN32
         ShowWindow(GetConsoleWindow(), SW_HIDE); // SW_RESTORE to bring back
 
@@ -113,29 +140,10 @@ public:
             logCallbacks.emplace_back(logCallback);
         }
 
-        auto dir = GetAppDataDir();
-
         // Load config.
-        mINI::INIFile file(dir + CONFIG_FILE);
-        bool readSuccess = file.read(ini_);
-
-        if (!readSuccess) {
-            ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = "";
-            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL] = "161";
-            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = "0";
-            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY] = "";
-            ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC] = "AUTO";
-
-            ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = "udp://239.0.0.1:1234";
-
-            ini_[CONFIG_GUI][CONFIG_GUI_LANG] = "en";
-        } else {
+        if (bool read_success = ReadConfig(ini_)) {
             set_locale(ini_[CONFIG_GUI][CONFIG_GUI_LANG]);
         }
-    }
-
-    ~GuiInterface() {
-        SaveConfig();
     }
 
     static std::vector<DeviceId> GetDeviceList() {
@@ -164,9 +172,57 @@ public:
         return dir;
     }
 
+    static bool ReadConfig(mINI::INIStructure &ini) {
+        ini.clear();
+
+        auto dir = GetAppDataDir();
+        mINI::INIFile file(dir + CONFIG_FILE);
+        bool read_success = file.read(ini);
+
+        if (!ini.has(CONFIG_CONFIG)) {
+            read_success = false;
+        } else {
+            int version_num = std::stoi(ini[CONFIG_CONFIG][CONFIG_VERSION]);
+
+            // The config version is not compatible (no matter too old or too new).
+            if (version_num != CONFIG_VERSION_NUM) {
+                Instance().PutLog(LogLevel::Info, "Clear incompatible config");
+
+                read_success = false;
+            }
+        }
+
+        // Default config.
+        if (!read_success) {
+            ini[CONFIG_CONFIG][CONFIG_VERSION] = std::to_string(CONFIG_VERSION_NUM);
+            ini[CONFIG_ADAPTER][ADAPTER_DEVICE] = "";
+            ini[CONFIG_ADAPTER][ADAPTER_CHANNEL] = "161";
+            ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = "0";
+            ini[CONFIG_ADAPTER][ADAPTER_GS_KEY] = "";
+            ini[CONFIG_ADAPTER][ADAPTER_CODEC] = "AUTO";
+            ini[CONFIG_ADAPTER][ADAPTER_ALINK_ENABLED] = "true";
+            ini[CONFIG_ADAPTER][ADAPTER_ALINK_TX_POWER] = "20";
+
+            ini[CONFIG_STREAMING][CONFIG_STREAMING_URL] = "udp://239.0.0.1:1234";
+
+            ini[CONFIG_GUI][CONFIG_GUI_LANG] = "en";
+        }
+
+        if (read_success) {
+            Instance().PutLog(LogLevel::Info, "Read config:\n{}", IniToString(Instance().ini_));
+        }
+
+        return read_success;
+    }
+
     static bool SaveConfig() {
         // For clearing obsolete entries.
         // Instance().ini_.clear();
+
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_ALINK_ENABLED] =
+            WfbngLink::Instance().get_alink_enabled() ? "true" : "false";
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_ALINK_TX_POWER] =
+            std::to_string(WfbngLink::Instance().get_alink_tx_power());
 
         Instance().ini_[CONFIG_GUI][CONFIG_GUI_LANG] = Instance().locale_;
 
@@ -181,21 +237,25 @@ public:
         }
 
         mINI::INIFile file(dir + std::string(CONFIG_FILE));
-        bool writeSuccess = file.write(Instance().ini_, true);
+        bool write_success = file.write(Instance().ini_, true);
 
-        return writeSuccess;
+        if (write_success) {
+            Instance().PutLog(LogLevel::Info, "Save config:\n{}", IniToString(Instance().ini_));
+        }
+
+        return write_success;
     }
 
     static bool Start(const DeviceId &deviceId,
                       int channel,
                       int channelWidthMode,
-                      std::string keyPath,
+                      std::string gsKeyPath,
                       const std::string &codec) {
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = deviceId.display_name;
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL] = std::to_string(channel);
         Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = std::to_string(channelWidthMode);
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY] = keyPath;
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC] = codec;
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_GS_KEY] = gsKeyPath;
+        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CODEC] = codec;
 
         // Set port.
         Instance().playerPort = GetFreePort(DEFAULT_PORT);
@@ -204,11 +264,11 @@ public:
         Instance().playerCodec = codec;
 
         // If no custom key provided by the user, use the default key.
-        if (keyPath.empty()) {
-            keyPath = revector::get_asset_dir("gs.key");
-            Instance().PutLog(LogLevel::Info, "Using GS key: {}", keyPath);
+        if (gsKeyPath.empty()) {
+            gsKeyPath = revector::get_asset_dir("gs.key");
+            Instance().PutLog(LogLevel::Info, "Using GS key: {}", gsKeyPath);
         }
-        return WfbngLink::Instance().Start(deviceId, channel, channelWidthMode, keyPath);
+        return WfbngLink::Instance().Start(deviceId, channel, channelWidthMode, gsKeyPath);
     }
 
     static bool Stop() {
@@ -217,6 +277,7 @@ public:
     }
 
     static void EnableAlink(bool enable) {
+        Instance().PutLog(LogLevel::Info, "Enable alink: {}", enable);
         WfbngLink::Instance().enable_alink(enable);
     }
 

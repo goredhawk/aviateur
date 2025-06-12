@@ -53,7 +53,7 @@ void PlayerRect::custom_ready() {
     };
     GuiInterface::Instance().rtpStreamCallbacks.emplace_back(onRtpStream);
 
-    collapse_panel_ = std::make_shared<revector::CollapseContainer>();
+    collapse_panel_ = std::make_shared<revector::CollapseContainer>(revector::NodeType::Button);
     collapse_panel_->set_title(FTR("player control"));
     collapse_panel_->set_collapse(true);
     collapse_panel_->set_color(revector::ColorU(84, 138, 247));

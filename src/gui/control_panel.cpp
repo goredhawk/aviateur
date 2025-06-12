@@ -13,16 +13,16 @@ void ControlPanel::update_dongle_list() {
 
     bool previous_device_exists = false;
     for (const auto &d : devices_) {
-        if (net_card_name == d.display_name) {
+        if (adapter_name == d.display_name) {
             previous_device_exists = true;
-            selected_net_card = d;
+            selected_adapter = d;
         }
         menu->create_item(d.display_name);
     }
 
     if (!previous_device_exists) {
-        net_card_name = "";
-        selected_net_card = {};
+        adapter_name = "";
+        selected_adapter = {};
     }
 }
 
@@ -60,11 +60,11 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
 
 void ControlPanel::custom_ready() {
     auto &ini = GuiInterface::Instance().ini_;
-    net_card_name = ini[CONFIG_ADAPTER][ADAPTER_DEVICE];
+    adapter_name = ini[CONFIG_ADAPTER][ADAPTER_DEVICE];
     channel = std::stoi(ini[CONFIG_ADAPTER][ADAPTER_CHANNEL]);
     channelWidthMode = std::stoi(ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE]);
-    keyPath = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_KEY];
-    codec = ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_CODEC];
+    keyPath = ini[CONFIG_ADAPTER][ADAPTER_GS_KEY];
+    codec = ini[CONFIG_ADAPTER][ADAPTER_CODEC];
 
     auto default_theme = revector::DefaultResource::get_singleton()->get_default_theme();
     theme_bg = std::make_optional(default_theme->panel.styles["background"]);
@@ -106,9 +106,9 @@ void ControlPanel::custom_ready() {
 
             // Do this before setting dongle button text.
             update_dongle_list();
-            dongle_menu_button_->set_text(net_card_name);
+            dongle_menu_button_->set_text(adapter_name);
 
-            auto callback = [this](uint32_t) { net_card_name = dongle_menu_button_->get_selected_item_text(); };
+            auto callback = [this](uint32_t) { adapter_name = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
             refresh_dongle_button_ = std::make_shared<revector::Button>();
@@ -234,10 +234,15 @@ void ControlPanel::custom_ready() {
 
 #ifdef __linux__
         {
-            auto alink_con = std::make_shared<revector::CollapseContainer>();
-            alink_con->set_title("Adaptive Link");
-            alink_con->set_collapse(true);
-            alink_con->set_color(revector::ColorU(84, 138, 247));
+            auto alink_con = std::make_shared<revector::CollapseContainer>(revector::NodeType::CheckButton);
+            alink_con->set_title(FTR("alink"));
+            alink_con->set_collapse(false);
+            alink_con->set_collapsed_color(revector::ColorU(33, 33, 33));
+            alink_con->set_color(revector::ColorU(210.0, 137, 94));
+            vbox_container->add_child(alink_con);
+
+            auto callback2 = [this](bool collapsed) { GuiInterface::EnableAlink(!collapsed); };
+            alink_con->connect_signal("collapsed", callback2);
 
             auto vbox_container2 = std::make_shared<revector::HBoxContainer>();
             alink_con->add_child(vbox_container2);
@@ -248,7 +253,7 @@ void ControlPanel::custom_ready() {
             vbox_container2->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
-            label->set_text("TX Power");
+            label->set_text(FTR("tx power"));
             hbox_container->add_child(label);
 
             tx_pwr_btn_ = std::make_shared<revector::MenuButton>();
@@ -272,17 +277,20 @@ void ControlPanel::custom_ready() {
             }
             tx_pwr_btn_->select_item(2);
 
-            auto alink_button = std::make_shared<revector::CheckButton>();
-            alink_button->set_text("Adaptive Link");
-            alink_button->set_pressed(true);
-            auto callback2 = [this, alink_con](bool toggled) {
-                GuiInterface::EnableAlink(toggled);
-                alink_con->set_visibility(toggled);
-            };
-            alink_button->connect_signal("toggled", callback2);
-            vbox_container->add_child(alink_button);
+            // Set UI according to config
+            {
+                bool enabled = GuiInterface::Instance().ini_[CONFIG_ADAPTER][ADAPTER_ALINK_ENABLED] == "true";
+                GuiInterface::EnableAlink(enabled);
+                alink_con->set_collapse(!enabled);
 
-            vbox_container->add_child(alink_con);
+                std::string tx_power = GuiInterface::Instance().ini_[CONFIG_ADAPTER][ADAPTER_ALINK_TX_POWER];
+
+                for (int idx = 0; idx < ALINK_TX_POWERS.size(); idx++) {
+                    if (ALINK_TX_POWERS[idx] == tx_power) {
+                        tx_pwr_btn_->select_item(idx);
+                    }
+                }
+            }
         }
 #endif
 
@@ -298,7 +306,7 @@ void ControlPanel::custom_ready() {
                 if (start) {
                     std::optional<DeviceId> target_device_id;
                     for (auto &d : devices_) {
-                        if (net_card_name == d.display_name) {
+                        if (adapter_name == d.display_name) {
                             target_device_id = d;
                         }
                     }

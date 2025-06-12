@@ -662,6 +662,14 @@ void WfbngLink::Stop() const {
     }
 }
 
+bool WfbngLink::get_alink_enabled() const {
+    return adaptive_link_enabled;
+}
+
+int WfbngLink::get_alink_tx_power() const {
+    return adaptive_tx_power;
+}
+
 void WfbngLink::enable_alink(bool enable) {
 #ifdef __linux__
     if (adaptive_link_enabled == enable) {
