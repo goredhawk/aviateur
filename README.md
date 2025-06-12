@@ -11,16 +11,19 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 ![](tutorials/interface.png)
 
 > [!NOTE]
-> No AdaptiveLink support.
+> Adaptive Link support only for Linux.
 
 > [!NOTE]
 > Only RTL8812AU Wi-Fi adapter is supported.
+
+> [!NOTE]
+> No MAVLink support.
 
 ### Usage
 
 1. (Only for Windows) Download [Zadig](https://zadig.akeo.ie/)
 2. (Only for Windows) Install the libusb driver for your adapter.
-   Go *Options* → *List All Devices*.
+   Go *Options* → *List All Devices*[Screenshot.cpp](../../Downloads/Screenshot.cpp).
    ![](tutorials/zadig1.jpg)
    Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
    ![](tutorials/zadig2.jpg)
@@ -32,7 +35,9 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 
 ### Common run issues
 
-* If the application crashes at startup on Windows, install [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version) first.
+* If the application crashes at startup on Windows,
+  install [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version)
+  first.
 
 ### Latency test
 
@@ -60,7 +65,7 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 3. Add VCPKG_ROOT() to environment. (Change the value to your vcpkg path.)
    ![](tutorials/vcpkg.jpg)
 
-4. Clone third-party library source.
+4. Clone third-party library sources.
    ```powershell
    git submodule init
    git submodule update
@@ -68,7 +73,7 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 
 5. Open as a CMake project and build.
 
-### How to build on Linux (Ubuntu 24.04+)
+### How to build on Linux (tested on Ubuntu 24.04)
 
 1. Install dependencies.
    ```bash
