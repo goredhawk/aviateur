@@ -3,6 +3,13 @@
 #include "../gui_interface.h"
 
 class SignalBar : public revector::ProgressBar {
+    void custom_ready() override {
+        theme_fg = {};
+        theme_bg->corner_radius = 0;
+        theme_progress->corner_radius = 0;
+        set_fill_mode(FillMode::CenterToSide);
+    }
+
     void custom_update(double dt) override {
         if (value < 0.333 * max_value) {
             theme_progress->bg_color = RED;
@@ -92,6 +99,17 @@ void PlayerRect::custom_ready() {
     hud_container_->set_separation(16);
 
     {
+        lq_bar_ = std::make_shared<SignalBar>();
+        add_child(lq_bar_);
+        lq_bar_->set_lerp_enabled(true);
+        lq_bar_->set_custom_minimum_size({0, 8});
+        lq_bar_->set_label_visibility(false);
+        lq_bar_->set_anchor_flag(revector::AnchorFlag::BottomWide);
+        lq_bar_->container_sizing.expand_v = false;
+        lq_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
+    }
+
+    {
         video_info_label_ = std::make_shared<revector::Label>();
         hud_container_->add_child(video_info_label_);
         video_info_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
@@ -120,19 +138,6 @@ void PlayerRect::custom_ready() {
     hw_status_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(hw_status_label_);
     hw_status_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
-
-    auto lq_label = std::make_shared<revector::Label>();
-    hud_container_->add_child(lq_label);
-    lq_label->set_text("LQ");
-    lq_label->set_text_style(revector::TextStyle{revector::ColorU::white()});
-
-    lq_bar_ = std::make_shared<SignalBar>();
-    hud_container_->add_child(lq_bar_);
-    lq_bar_->set_lerp_enabled(true);
-    lq_bar_->set_custom_minimum_size({64, 16});
-    lq_bar_->set_label_visibility(false);
-    lq_bar_->container_sizing.expand_v = false;
-    lq_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
 
     rx_status_update_timer = std::make_shared<revector::Timer>();
     add_child(rx_status_update_timer);
@@ -331,6 +336,7 @@ void PlayerRect::start_playing(const std::string &url) {
 
     collapse_panel_->set_visibility(true);
     hud_container_->set_visibility(true);
+    lq_bar_->set_visibility(true);
 }
 
 void PlayerRect::stop_playing() {
@@ -348,4 +354,5 @@ void PlayerRect::stop_playing() {
 
     collapse_panel_->set_visibility(false);
     hud_container_->set_visibility(false);
+    lq_bar_->set_visibility(false);
 }
