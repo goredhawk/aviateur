@@ -7,6 +7,9 @@ class SignalBar : public revector::ProgressBar {
         theme_fg = {};
         theme_bg->corner_radius = 0;
         theme_progress->corner_radius = 0;
+
+        set_lerp_enabled(true);
+        set_label_visibility(false);
         set_fill_mode(FillMode::CenterToSide);
     }
 
@@ -101,9 +104,8 @@ void PlayerRect::custom_ready() {
     {
         lq_bar_ = std::make_shared<SignalBar>();
         add_child(lq_bar_);
-        lq_bar_->set_lerp_enabled(true);
         lq_bar_->set_custom_minimum_size({0, 8});
-        lq_bar_->set_label_visibility(false);
+        lq_bar_->set_visibility(false);
         lq_bar_->set_anchor_flag(revector::AnchorFlag::BottomWide);
         lq_bar_->container_sizing.expand_v = false;
         lq_bar_->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkCenter;
