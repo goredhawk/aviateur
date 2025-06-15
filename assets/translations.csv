@@ -15,7 +15,7 @@ channel width,Channel width,频宽,Ширина канала
 key,Key,密钥,Ключ
 settings,Settings,设置,Настройки
 video stab,Video stabilization,视频增稳,Стабилизация видео
-sw decoding,Software decoding,软件解码,программное декодирование
+force sw decoding,Force software decoding,强制软件解码,Принудительное программное декодирование
 start,Start,开始,начинать
 stop,Stop,停止,остановить
 open,Open,打开,Открыть

@@ -260,7 +260,7 @@ void PlayerRect::custom_ready() {
 
     {
         auto button = std::make_shared<revector::CheckButton>();
-        button->set_text(FTR("sw decoding"));
+        button->set_text(FTR("force sw decoding"));
         vbox->add_child(button);
 
         auto callback = [this](bool toggled) {
