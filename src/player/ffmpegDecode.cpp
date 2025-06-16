@@ -42,21 +42,21 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         }
     }
 
-    AVDictionary *param = nullptr;
+    AVDictionary *options = nullptr;
 
-    av_dict_set(&param, "preset", "ultrafast", 0);
-    av_dict_set(&param, "tune", "zerolatency", 0);
-    av_dict_set(&param, "buffer_size", "425984", 0);
-    av_dict_set(&param, "rtsp_transport", "tcp", 0);
-    av_dict_set(&param, "protocol_whitelist", "file,udp,tcp,rtp,rtmp,rtsp,http", 0);
+    av_dict_set(&options, "preset", "ultrafast", 0);
+    av_dict_set(&options, "tune", "zerolatency", 0);
+    av_dict_set(&options, "buffer_size", "425984", 0);
+    av_dict_set(&options, "rtsp_transport", "tcp", 0);
+    av_dict_set(&options, "protocol_whitelist", "file,udp,tcp,rtp,rtmp,rtsp,http", 0);
+    av_dict_set(&options, "fflags", "nobuffer", 0); // Reduce latency
 
-    // 打开输入
-    if (avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &param) != 0) {
+    if (avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options) != 0) {
         CloseInput();
         return false;
     }
 
-    // 超时机制
+    // Timeout
     static const int timeout = 10;
     startTime = std::chrono::steady_clock::now();
 
