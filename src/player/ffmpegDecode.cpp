@@ -17,29 +17,21 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
 
     CloseInput();
 
-    hwDecoderEnabled = false;
+    forceSwDecoder = forceSoftwareDecoding;
 
     // Check if any hardware decoder exists.
     if (!forceSoftwareDecoding) {
         AVHWDeviceType decoderType = AV_HWDEVICE_TYPE_NONE;
-        std::vector<AVHWDeviceType> supportedHWDevices;
+        std::vector<AVHWDeviceType> supportedHwDevices;
         do {
             decoderType = av_hwdevice_iterate_types(decoderType);
 
             if (decoderType != AV_HWDEVICE_TYPE_NONE) {
                 auto decoderName = std::string(av_hwdevice_get_type_name(decoderType));
                 GuiInterface::Instance().PutLog(LogLevel::Info, "Found hardware decoder: " + decoderName);
-                supportedHWDevices.push_back(decoderType);
+                supportedHwDevices.push_back(decoderType);
             }
         } while (decoderType != AV_HWDEVICE_TYPE_NONE);
-
-        if (!supportedHWDevices.empty()) {
-            hwDecoderType = supportedHWDevices.front();
-            GuiInterface::Instance().PutLog(
-                LogLevel::Info,
-                "Using hardware decoder: " + std::string(av_hwdevice_get_type_name(hwDecoderType)));
-            hwDecoderEnabled = true;
-        }
     }
 
     AVDictionary *options = nullptr;
@@ -260,37 +252,47 @@ bool FfmpegDecoder::OpenVideo() {
         for (uint32_t i = 0; i < pFormatCtx->nb_streams; i++) {
             if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 videoStreamIndex = i;
-                const AVCodec *codec = avcodec_find_decoder(pFormatCtx->streams[i]->codecpar->codec_id);
 
+                AVCodecID codecId = pFormatCtx->streams[i]->codecpar->codec_id;
+                GuiInterface::Instance().PutLog(LogLevel::Info, "Video codec ID: {}", (int)codecId);
+
+                const AVCodec *codec = avcodec_find_decoder(codecId);
                 if (!codec) {
                     continue;
                 }
 
-                if (hwDecoderEnabled) {
+                GuiInterface::Instance().PutLog(LogLevel::Info, "Video codec name: {}", codec->long_name);
+
+                hwDecoderEnabled = false;
+
+                if (!forceSwDecoder) {
                     for (int configIndex = 0;; configIndex++) {
                         const AVCodecHWConfig *config = avcodec_get_hw_config(codec, configIndex);
                         if (!config) {
-                            hwDecoderEnabled = false;
-                            GuiInterface::Instance().PutLog(LogLevel::Warn,
-                                                            "AVCodecHWConfig is null, disabling hardware decoder");
                             break;
                         }
 
-                        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
-                            config->device_type == hwDecoderType) {
+                        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) {
+                            hwDecoderEnabled = true;
+
                             hwPixFmt = config->pix_fmt;
+                            hwDecoderType = config->device_type;
+
+                            auto decoderName = std::string(av_hwdevice_get_type_name(hwDecoderType));
+                            GuiInterface::Instance().PutLog(LogLevel::Info, "Using hardware decoder: " + decoderName);
 
                             std::ostringstream oss;
                             oss << "Hardware acceleration pixel format: " << hwPixFmt;
                             GuiInterface::Instance().PutLog(LogLevel::Info, oss.str());
 
                             break;
-                        } else {
-                            hwDecoderEnabled = false;
-
-                            GuiInterface::Instance().PutLog(LogLevel::Warn,
-                                                            "Invalid AVCodecHWConfig, disabling hardware decoder");
                         }
+                    }
+
+                    if (!hwDecoderEnabled) {
+                        GuiInterface::Instance().PutLog(
+                            LogLevel::Warn,
+                            "No valid AVCodecHWConfig is found, disabling hardware decoder");
                     }
                 }
 
@@ -300,7 +302,7 @@ bool FfmpegDecoder::OpenVideo() {
                         hwDecoderEnabled = initHwDecoder(pVideoCodecCtx, hwDecoderType);
 
                         if (!hwDecoderEnabled) {
-                            GuiInterface::Instance().PutLog(LogLevel::Error, "hwDecoderInit failed");
+                            GuiInterface::Instance().PutLog(LogLevel::Error, "Initializing HwDecoder failed");
                         }
                     }
 

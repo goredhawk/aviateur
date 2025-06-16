@@ -148,12 +148,12 @@ private:
 
     // Audio buffer
     std::mutex abBuffMtx;
-    AVFifo* audioFifoBuffer{};
+    AVFifo *audioFifoBuffer{};
 
     // Hardware decoding
-    AVHWDeviceType hwDecoderType;
-    // If a hardware decoder is being used.
+    AVHWDeviceType hwDecoderType = AV_HWDEVICE_TYPE_NONE;
     bool hwDecoderEnabled = false;
+    bool forceSwDecoder = false;
     AVPixelFormat hwPixFmt;
     AVBufferRef *hwDeviceCtx = nullptr;
     volatile bool dropCurrentVideoFrame = false;
