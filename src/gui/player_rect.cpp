@@ -137,15 +137,20 @@ void PlayerRect::custom_ready() {
     hw_status_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(hw_status_label_);
 
+#ifdef __linux__
     pl_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(pl_label_);
+#endif
 
     rx_status_update_timer = std::make_shared<revector::Timer>();
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
         lq_bar_->set_value(GuiInterface::Instance().link_quality_);
+
+#ifdef __linux__
         pl_label_->set_text("PL: " + std::to_string(GuiInterface::Instance().packet_loss_) + "%");
+#endif
 
         rx_status_update_timer->start_timer(0.1);
     };

@@ -401,8 +401,13 @@ void WfbngLink::start_link_quality_thread() {
         while (!this->adaptive_link_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
             GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
-            GuiInterface::Instance().packet_loss_ =
-                std::round((float)quality.lost_last_second / (float)quality.total_last_second * 100.0f);
+            if (quality.total_last_second != 0) {
+                GuiInterface::Instance().packet_loss_ =
+                    std::round(float(quality.lost_last_second + quality.recovered_last_second) /
+                               (float)quality.total_last_second * 100.0f);
+            } else {
+                GuiInterface::Instance().packet_loss_ = 100;
+            }
 
             time_t currentEpoch = time(nullptr);
 
@@ -607,11 +612,11 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
-        GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a MAVLink frame, but we're unable to handle it!");
+        // GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a MAVLink frame, but we're unable to handle it!");
     }
     // UDP frame
     else if (frame.MatchesChannelID(udp_channel_id_be8)) {
-        GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a UDP frame, but we're unable to handle it!");
+        // GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a UDP frame, but we're unable to handle it!");
     }
 }
 

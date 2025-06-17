@@ -109,10 +109,6 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
 }
 
 std::tuple<uint32_t, uint32_t, uint32_t> SignalQualityCalculator::get_accumulated_fec_data() const {
-    if (m_fec_data.empty()) {
-        return {300, 300, 300};
-    }
-
     uint32_t p_recovered = 0;
     uint32_t p_all = 0;
     uint32_t p_lost = 0;
