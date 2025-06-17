@@ -35,7 +35,7 @@ public:
 
     std::shared_ptr<revector::Label> hw_status_label_;
 
-    std::shared_ptr<revector::Label> rx_status_label_;
+    std::shared_ptr<revector::Label> pl_label_;
     std::shared_ptr<SignalBar> lq_bar_;
 
     std::shared_ptr<revector::Label> video_info_label_;

@@ -425,7 +425,8 @@ public:
 
     bool config_file_exists = true;
 
-    int link_quality_ = 0;
+    int link_quality_ = 0; // Percentage
+    int packet_loss_ = 0;  // Percentage
 
     // Signals.
     std::vector<revector::AnyCallable<void>> logCallbacks;

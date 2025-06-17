@@ -401,13 +401,15 @@ void WfbngLink::start_link_quality_thread() {
         while (!this->adaptive_link_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
             GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
+            GuiInterface::Instance().packet_loss_ =
+                std::round((float)quality.lost_last_second / (float)quality.total_last_second * 100.0f);
 
             time_t currentEpoch = time(nullptr);
 
             // Map to 1000..2000
             quality.quality = map_range(quality.quality, -1024, 1024, 1000, 2000);
 
-            // Prepare & send message
+            // Prepare & send a message
             {
                 uint32_t len;
                 char message[100];

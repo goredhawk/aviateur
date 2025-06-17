@@ -114,7 +114,6 @@ void PlayerRect::custom_ready() {
     {
         video_info_label_ = std::make_shared<revector::Label>();
         hud_container_->add_child(video_info_label_);
-        video_info_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
         video_info_label_->set_text("");
 
         auto onFpsUpdate = [this](uint32_t width, uint32_t height, float fps) {
@@ -128,24 +127,25 @@ void PlayerRect::custom_ready() {
     bitrate_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(bitrate_label_);
     bitrate_label_->set_text(FTR("bit rate") + ": 0 bps");
-    bitrate_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
     {
         display_fps_label_ = std::make_shared<revector::Label>();
         hud_container_->add_child(display_fps_label_);
-        display_fps_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
         display_fps_label_->set_text(FTR("display fps") + ":");
     }
 
     hw_status_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(hw_status_label_);
-    hw_status_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
+
+    pl_label_ = std::make_shared<revector::Label>();
+    hud_container_->add_child(pl_label_);
 
     rx_status_update_timer = std::make_shared<revector::Timer>();
     add_child(rx_status_update_timer);
 
     auto callback = [this] {
         lq_bar_->set_value(GuiInterface::Instance().link_quality_);
+        pl_label_->set_text("PL: " + std::to_string(GuiInterface::Instance().packet_loss_) + "%");
 
         rx_status_update_timer->start_timer(0.1);
     };
@@ -157,7 +157,6 @@ void PlayerRect::custom_ready() {
     record_status_label_->container_sizing.expand_h = true;
     record_status_label_->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkEnd;
     record_status_label_->set_text("");
-    record_status_label_->set_text_style(revector::TextStyle{revector::ColorU::white()});
 
     auto capture_button = std::make_shared<revector::Button>();
     vbox->add_child(capture_button);

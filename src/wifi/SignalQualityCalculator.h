@@ -16,6 +16,7 @@ public:
     struct SignalQuality {
         int lost_last_second;
         int recovered_last_second;
+        int total_last_second;
         int quality;
         float snr;
         std::string idr_code;
@@ -68,7 +69,7 @@ public:
 
 private:
     /// Sum up FEC data over the last 1 second
-    std::pair<uint32_t, uint32_t> get_accumulated_fec_data();
+    std::tuple<uint32_t, uint32_t, uint32_t> get_accumulated_fec_data() const;
 
     // Helper methods to remove old entries
     void cleanup_old_rssi_data();

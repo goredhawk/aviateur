@@ -92,24 +92,25 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
     // Return final clamped quality
     // formula: quality = avg_rssi - p_recovered * 5 - p_lost * 100
     // clamp between -1024 and 1024
-    auto [p_recovered, p_lost] = get_accumulated_fec_data();
+    auto [p_recovered, p_lost, p_total] = get_accumulated_fec_data();
 
     float quality = avg_rssi; // - static_cast<float>(p_recovered) * 12.f - static_cast<float>(p_lost) * 40.f;
     quality = std::max(-1024.f, std::min(1024.f, quality));
 
-    ret.quality = quality;
     ret.lost_last_second = p_lost;
     ret.recovered_last_second = p_recovered;
+    ret.total_last_second = p_total;
 
+    ret.quality = quality;
     ret.snr = avg_snr;
     ret.idr_code = m_idr_code;
 
     return ret;
 }
 
-std::pair<uint32_t, uint32_t> SignalQualityCalculator::get_accumulated_fec_data() {
+std::tuple<uint32_t, uint32_t, uint32_t> SignalQualityCalculator::get_accumulated_fec_data() const {
     if (m_fec_data.empty()) {
-        return {300, 300};
+        return {300, 300, 300};
     }
 
     uint32_t p_recovered = 0;
@@ -121,7 +122,7 @@ std::pair<uint32_t, uint32_t> SignalQualityCalculator::get_accumulated_fec_data(
         p_lost += data.lost;
     }
 
-    return {p_recovered, p_lost};
+    return {p_recovered, p_lost, p_all};
 }
 
 void SignalQualityCalculator::add_fec_data(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost) {
