@@ -82,14 +82,19 @@ void GstDecoder::create_pipeline() {
 
     GError *error = NULL;
 
-    pipeline_ = gst_parse_launch(
-    "udpsrc name=udpsrc "
-    "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)H264 ! "
-    "rtpjitterbuffer ! "
-    "rtph264depay ! "
-    "decodebin3 ! "
-    "autovideosink name=glsink sync=false",
-    &error);
+    gchar *pipeline_str = g_strdup_printf(
+        "udpsrc name=udpsrc "
+        "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
+        "rtpjitterbuffer ! "
+        "%s ! "
+        "decodebin3 ! "
+        "autovideosink name=glsink sync=false",
+        GuiInterface::Instance().playerCodec.c_str(),
+        GuiInterface::Instance().playerCodec == "H264" ? "rtph264depay" : "rtph265depay");
+
+    pipeline_ = gst_parse_launch(pipeline_str,
+
+                                 &error);
     // pipeline_ = gst_parse_launch(
     //     "udpsrc name=udpsrc ! video/mpegts,systemstream=true,clock-rate=90000 ! "
     //     "tsdemux ! "
@@ -97,6 +102,8 @@ void GstDecoder::create_pipeline() {
     //     "autovideosink name=glsink sync=false",
     //     &error);
     g_assert_no_error(error);
+
+    g_free(pipeline_str);
 
     // GstElement *glsink = gst_bin_get_by_name(GST_BIN(pipeline_), "glsink");
     // g_signal_connect(glsink, "client-draw", (GCallback)on_client_draw, this);
@@ -134,4 +141,7 @@ void GstDecoder::stop_pipeline() {
 
     // Completely stop the pipeline.
     gst_element_set_state(pipeline_, GST_STATE_NULL);
+    gst_message_unref(msg);
+    gst_object_unref(pipeline_);
+    pipeline_ = nullptr;
 }
