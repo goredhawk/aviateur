@@ -22,27 +22,28 @@
 #define CONFIG_CONFIG "config"
 #define CONFIG_VERSION "version"
 
-#define CONFIG_ADAPTER "adapter"
-#define ADAPTER_DEVICE "pid_vid"
-#define ADAPTER_CHANNEL "channel"
-#define ADAPTER_CHANNEL_WIDTH_MODE "channel_width_mode"
-#define ADAPTER_GS_KEY "key"
-#define ADAPTER_CODEC "codec"
-#define ADAPTER_ALINK_ENABLED "alink_enabled"
-#define ADAPTER_ALINK_TX_POWER "alink_tx_power"
+#define CONFIG_WIFI "wifi"
+#define WIFI_DEVICE "pid_vid"
+#define WIFI_CHANNEL "channel"
+#define WIFI_CHANNEL_WIDTH_MODE "channel_width_mode"
+#define WIFI_GS_KEY "key"
+#define WIFI_CODEC "codec"
+#define WIFI_ALINK_ENABLED "alink_enabled"
+#define WIFI_ALINK_TX_POWER "alink_tx_power"
 
 #define CONFIG_STREAMING "streaming"
 #define CONFIG_STREAMING_URL "url"
 
-#define CONFIG_GUI "gui"
-#define CONFIG_GUI_LANG "language"
+#define CONFIG_SETTINGS "settings"
+#define CONFIG_SETTINGS_LANG "language"
+#define CONFIG_SETTINGS_MEDIA_BACKEND "media_backend"
 
 #define DEFAULT_PORT 52356
 
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Bump this if the config structure changes.
-constexpr auto CONFIG_VERSION_NUM = 1;
+constexpr auto CONFIG_VERSION_NUM = 2;
 
 const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
 const revector::ColorU RED = revector::ColorU(201, 79, 79);
@@ -142,7 +143,8 @@ public:
 
         // Load config.
         if (bool read_success = ReadConfig(ini_)) {
-            set_locale(ini_[CONFIG_GUI][CONFIG_GUI_LANG]);
+            set_locale(ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG]);
+            use_gstreamer_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] != "ffmpeg";
         }
     }
 
@@ -187,7 +189,7 @@ public:
             // The config version is not compatible (no matter too old or too new).
             if (version_num != CONFIG_VERSION_NUM) {
                 Instance().PutLog(LogLevel::Info, "Clear incompatible config");
-
+                ini.clear();
                 read_success = false;
             }
         }
@@ -195,17 +197,19 @@ public:
         // Default config.
         if (!read_success) {
             ini[CONFIG_CONFIG][CONFIG_VERSION] = std::to_string(CONFIG_VERSION_NUM);
-            ini[CONFIG_ADAPTER][ADAPTER_DEVICE] = "";
-            ini[CONFIG_ADAPTER][ADAPTER_CHANNEL] = "161";
-            ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = "0";
-            ini[CONFIG_ADAPTER][ADAPTER_GS_KEY] = "";
-            ini[CONFIG_ADAPTER][ADAPTER_CODEC] = "AUTO";
-            ini[CONFIG_ADAPTER][ADAPTER_ALINK_ENABLED] = "true";
-            ini[CONFIG_ADAPTER][ADAPTER_ALINK_TX_POWER] = "20";
+
+            ini[CONFIG_WIFI][WIFI_DEVICE] = "";
+            ini[CONFIG_WIFI][WIFI_CHANNEL] = "161";
+            ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] = "0";
+            ini[CONFIG_WIFI][WIFI_GS_KEY] = "";
+            ini[CONFIG_WIFI][WIFI_CODEC] = "AUTO";
+            ini[CONFIG_WIFI][WIFI_ALINK_ENABLED] = "true";
+            ini[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = "20";
 
             ini[CONFIG_STREAMING][CONFIG_STREAMING_URL] = "udp://239.0.0.1:1234";
 
-            ini[CONFIG_GUI][CONFIG_GUI_LANG] = "en";
+            ini[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = "en";
+            ini[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] = "ffmpeg";
         }
 
         if (read_success) {
@@ -219,12 +223,12 @@ public:
         // For clearing obsolete entries.
         // Instance().ini_.clear();
 
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_ALINK_ENABLED] =
-            WfbngLink::Instance().get_alink_enabled() ? "true" : "false";
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_ALINK_TX_POWER] =
-            std::to_string(WfbngLink::Instance().get_alink_tx_power());
+        Instance().ini_[CONFIG_WIFI][WIFI_ALINK_ENABLED] = WfbngLink::Instance().get_alink_enabled() ? "true" : "false";
+        Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = std::to_string(WfbngLink::Instance().get_alink_tx_power());
 
-        Instance().ini_[CONFIG_GUI][CONFIG_GUI_LANG] = Instance().locale_;
+        Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = Instance().locale_;
+        Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] =
+            Instance().use_gstreamer_ ? "gstreamer" : "ffmpeg";
 
         auto dir = GetAppDataDir();
 
@@ -251,11 +255,11 @@ public:
                       int channelWidthMode,
                       std::string gsKeyPath,
                       const std::string &codec) {
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_DEVICE] = deviceId.display_name;
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL] = std::to_string(channel);
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE] = std::to_string(channelWidthMode);
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_GS_KEY] = gsKeyPath;
-        Instance().ini_[CONFIG_ADAPTER][ADAPTER_CODEC] = codec;
+        Instance().ini_[CONFIG_WIFI][WIFI_DEVICE] = deviceId.display_name;
+        Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL] = std::to_string(channel);
+        Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] = std::to_string(channelWidthMode);
+        Instance().ini_[CONFIG_WIFI][WIFI_GS_KEY] = gsKeyPath;
+        Instance().ini_[CONFIG_WIFI][WIFI_CODEC] = codec;
 
         // Set port.
         Instance().playerPort = GetFreePort(DEFAULT_PORT);

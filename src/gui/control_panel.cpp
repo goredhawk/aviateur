@@ -13,16 +13,16 @@ void ControlPanel::update_dongle_list() {
 
     bool previous_device_exists = false;
     for (const auto &d : devices_) {
-        if (adapter_name == d.display_name) {
+        if (dongle_name == d.display_name) {
             previous_device_exists = true;
-            selected_adapter = d;
+            selected_dongle = d;
         }
         menu->create_item(d.display_name);
     }
 
     if (!previous_device_exists) {
-        adapter_name = "";
-        selected_adapter = {};
+        dongle_name = "";
+        selected_dongle = {};
     }
 }
 
@@ -60,11 +60,11 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
 
 void ControlPanel::custom_ready() {
     auto &ini = GuiInterface::Instance().ini_;
-    adapter_name = ini[CONFIG_ADAPTER][ADAPTER_DEVICE];
-    channel = std::stoi(ini[CONFIG_ADAPTER][ADAPTER_CHANNEL]);
-    channelWidthMode = std::stoi(ini[CONFIG_ADAPTER][ADAPTER_CHANNEL_WIDTH_MODE]);
-    keyPath = ini[CONFIG_ADAPTER][ADAPTER_GS_KEY];
-    codec = ini[CONFIG_ADAPTER][ADAPTER_CODEC];
+    dongle_name = ini[CONFIG_WIFI][WIFI_DEVICE];
+    channel = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL]);
+    channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
+    keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
+    codec = ini[CONFIG_WIFI][WIFI_CODEC];
 
     auto default_theme = revector::DefaultResource::get_singleton()->get_default_theme();
     theme_bg = std::make_optional(default_theme->panel.styles["background"]);
@@ -83,7 +83,7 @@ void ControlPanel::custom_ready() {
         auto margin_container = std::make_shared<revector::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(0, FTR("wi-fi adapter"));
+        tab_container_->set_tab_title(0, "Wi-Fi");
 
         auto vbox_container = std::make_shared<revector::VBoxContainer>();
         vbox_container->set_separation(8);
@@ -106,9 +106,9 @@ void ControlPanel::custom_ready() {
 
             // Do this before setting dongle button text.
             update_dongle_list();
-            dongle_menu_button_->set_text(adapter_name);
+            dongle_menu_button_->set_text(dongle_name);
 
-            auto callback = [this](uint32_t) { adapter_name = dongle_menu_button_->get_selected_item_text(); };
+            auto callback = [this](uint32_t) { dongle_name = dongle_menu_button_->get_selected_item_text(); };
             dongle_menu_button_->connect_signal("item_selected", callback);
 
             refresh_dongle_button_ = std::make_shared<revector::Button>();
@@ -278,11 +278,11 @@ void ControlPanel::custom_ready() {
 
             // Set UI according to config
             {
-                bool enabled = GuiInterface::Instance().ini_[CONFIG_ADAPTER][ADAPTER_ALINK_ENABLED] == "true";
+                bool enabled = GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_ALINK_ENABLED] == "true";
                 GuiInterface::EnableAlink(enabled);
                 alink_con->set_collapse(!enabled);
 
-                std::string tx_power = GuiInterface::Instance().ini_[CONFIG_ADAPTER][ADAPTER_ALINK_TX_POWER];
+                std::string tx_power = GuiInterface::Instance().ini_[CONFIG_WIFI][WIFI_ALINK_TX_POWER];
 
                 for (int idx = 0; idx < ALINK_TX_POWERS.size(); idx++) {
                     if (ALINK_TX_POWERS[idx] == tx_power) {
@@ -306,7 +306,7 @@ void ControlPanel::custom_ready() {
                 if (start) {
                     std::optional<DeviceId> target_device_id;
                     for (auto &d : devices_) {
-                        if (adapter_name == d.display_name) {
+                        if (dongle_name == d.display_name) {
                             target_device_id = d;
                         }
                     }
@@ -368,9 +368,9 @@ void ControlPanel::custom_ready() {
                 bool start = play_url_button_->get_text() == FTR("start") + " (F5)";
 
                 if (start) {
-                    std::string uri = url_edit_->get_text();
-                    GuiInterface::Instance().EmitRtpStream(uri);
-                    GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = uri;
+                    std::string url = url_edit_->get_text();
+                    GuiInterface::Instance().EmitRtpStream(url);
+                    GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = url;
                 } else {
                     GuiInterface::Instance().EmitUrlStreamShouldStop();
                 }

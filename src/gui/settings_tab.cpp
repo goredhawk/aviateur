@@ -65,6 +65,7 @@ void SettingsContainer::custom_ready() {
     auto decoder_backend_btn = std::make_shared<revector::CheckButton>();
     decoder_backend_btn->set_text(FTR("use gstreamer"));
     vbox_container->add_child(decoder_backend_btn);
+    decoder_backend_btn->set_pressed_no_signal(GuiInterface::Instance().use_gstreamer_);
     auto callback = [this](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
     decoder_backend_btn->connect_signal("toggled", callback);
 
