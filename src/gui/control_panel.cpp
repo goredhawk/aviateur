@@ -368,8 +368,9 @@ void ControlPanel::custom_ready() {
                 bool start = play_url_button_->get_text() == FTR("start") + " (F5)";
 
                 if (start) {
-                    GuiInterface::Instance().EmitRtpStream(url_edit_->get_text());
-                    GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = url_edit_->get_text();
+                    std::string uri = url_edit_->get_text();
+                    GuiInterface::Instance().EmitRtpStream(uri);
+                    GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = uri;
                 } else {
                     GuiInterface::Instance().EmitUrlStreamShouldStop();
                 }

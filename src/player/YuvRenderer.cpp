@@ -306,7 +306,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
     }
 }
 
-void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex, bool stabilize) {
+void YuvRenderer::render(const std::shared_ptr<Pathfinder::Texture>& outputTex) {
     if (!mTextureAllocated) {
         return;
     }

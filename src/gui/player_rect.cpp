@@ -1,6 +1,7 @@
 #include "player_rect.h"
 
 #include "../gui_interface.h"
+#include "src/player/gst_decoder.h"
 
 class SignalBar : public revector::ProgressBar {
     void custom_ready() override {
@@ -81,6 +82,9 @@ void PlayerRect::custom_ready() {
     player_ = std::make_shared<RealTimePlayer>(render_server->device_, render_server->queue_);
 
     render_image_ = std::make_shared<revector::RenderImage>(Pathfinder::Vec2I{1920, 1080});
+
+    gst_decoder_ = std::make_shared<GstDecoder>();
+    gst_decoder_->init();
 
     set_stretch_mode(StretchMode::KeepAspectCentered);
 
@@ -332,15 +336,31 @@ void PlayerRect::custom_draw() {
         return;
     }
     auto render_image = (revector::RenderImage *)texture.get();
-    player_->yuvRenderer_->render(render_image->get_texture(), video_stabilization_button_->get_pressed());
+
+    if (!GuiInterface::Instance().use_gstreamer_) {
+        player_->yuvRenderer_->render(render_image->get_texture());
+    }
 }
 
 void PlayerRect::start_playing(const std::string &url) {
     playing_ = true;
-    player_->play(url, force_software_decoding);
-    texture = render_image_;
 
-    collapse_panel_->set_visibility(true);
+    if (GuiInterface::Instance().use_gstreamer_) {
+        gst_decoder_->create_pipeline();
+
+        if (url.starts_with("udp://")) {
+            gst_decoder_->play_pipeline(url);
+        } else {
+            gst_decoder_->play_pipeline("");
+        }
+
+        collapse_panel_->set_visibility(false);
+    } else {
+        player_->play(url, force_software_decoding);
+        texture = render_image_;
+        collapse_panel_->set_visibility(true);
+    }
+
     hud_container_->set_visibility(true);
     lq_bar_->set_visibility(true);
 }
@@ -352,13 +372,17 @@ void PlayerRect::stop_playing() {
         record_button_->press();
     }
 
-    // Fix crash in WfbReceiver destructor.
-    if (player_) {
-        player_->stop();
+    if (GuiInterface::Instance().use_gstreamer_) {
+        gst_decoder_->stop_pipeline();
+    } else {
+        // Fix crash in WfbReceiver destructor.
+        if (player_) {
+            player_->stop();
+        }
+        texture = logo_;
+        collapse_panel_->set_visibility(false);
     }
-    texture = logo_;
 
-    collapse_panel_->set_visibility(false);
     hud_container_->set_visibility(false);
     lq_bar_->set_visibility(false);
 }

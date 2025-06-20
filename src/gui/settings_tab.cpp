@@ -62,7 +62,11 @@ void SettingsContainer::custom_ready() {
         lang_menu_button->connect_signal("item_selected", callback);
     }
 
-    // #ifdef _WIN32
+    auto decoder_backend_btn = std::make_shared<revector::CheckButton>();
+    decoder_backend_btn->set_text(FTR("use gstreamer"));
+    vbox_container->add_child(decoder_backend_btn);
+    auto callback = [this](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
+    decoder_backend_btn->connect_signal("toggled", callback);
 
     {
         auto open_capture_folder_button = std::make_shared<revector::MenuButton>();

@@ -39,13 +39,13 @@ public:
     bool getMuted() const {
         return isMuted;
     }
-    // 播放
+
     void play(const std::string &playUrl, bool forceSoftwareDecoding);
-    // 停止
+
     void stop();
-    // 静音
+
     void setMuted(bool muted = false);
-    // 截图
+
     std::string captureJpeg();
 
     // Record MP4
@@ -56,9 +56,8 @@ public:
     bool startGifRecord();
     std::string stopGifRecord() const;
 
-    // 获取视频宽度
     int getVideoWidth() const;
-    // 获取视频高度
+
     int getVideoHeight() const;
 
     void forceSoftwareDecoding(bool force);
@@ -104,9 +103,8 @@ protected:
 
     std::thread analysisThread;
 
-    // 最后输出的帧
     std::shared_ptr<AVFrame> lastFrame_;
-    // 视频是否ready
+
     void onVideoInfoReady(int width, int height, int format);
 
     bool enableAudio();

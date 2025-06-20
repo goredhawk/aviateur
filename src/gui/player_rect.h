@@ -5,11 +5,15 @@
 #include "tip_label.h"
 
 class SignalBar;
+class GstDecoder;
 
-class PlayerRect : public revector::TextureRect {
+class PlayerRect final : public revector::TextureRect {
 public:
     std::shared_ptr<RealTimePlayer> player_;
     std::string playing_file_;
+
+    std::shared_ptr<GstDecoder> gst_decoder_;
+
     bool playing_ = false;
 
     bool force_software_decoding = false;

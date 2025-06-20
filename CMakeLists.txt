@@ -16,6 +16,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
+set(AVIATEUR_ENABLE_GSTREAMER ON)
+
 find_package(PkgConfig REQUIRED)
 
 if (WIN32)
@@ -24,6 +26,37 @@ if (WIN32)
     find_package(FFmpeg REQUIRED)
     find_package(unofficial-sodium CONFIG REQUIRED)
     find_package(OpenCV REQUIRED)
+
+    if (AVIATEUR_ENABLE_GSTREAMER)
+        # To ensure dll linking, add "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin" to your PATH
+        set(GST_ROOT "C:\\Program Files\\gstreamer\\1.0\\msvc_x86_64")
+        # For older versions of gstreamer
+        #    set(GST_ROOT "C:\\gstreamer\\1.0\\msvc_x86_64")
+
+        set(GST_LIB_ROOT "${GST_ROOT}\\lib")
+
+        set(GST_INCLUDE_DIRS "${GST_ROOT}\\include\\gstreamer-1.0")
+        set(GST_LIBRARIES "${GST_LIB_ROOT}\\gstreamer-1.0.lib")
+        set(GST_SDP_LIBRARIES "${GST_LIB_ROOT}\\gstsdp-1.0.lib")
+        set(GST_WEBRTC_LIBRARIES "${GST_LIB_ROOT}\\gstwebrtc-1.0.lib")
+
+        set(GLIB_INCLUDE_DIRS "${GST_ROOT}\\include\\glib-2.0" "${GST_LIB_ROOT}\\glib-2.0\\include")
+        set(GLIB_LIBRARIES "${GST_LIB_ROOT}\\gobject-2.0.lib" "${GST_LIB_ROOT}\\glib-2.0.lib")
+
+        set(JSONGLIB_INCLUDE_DIRS "${GST_ROOT}\\include\\json-glib-1.0")
+        set(JSONGLIB_LIBRARIES "${GST_LIB_ROOT}\\json-glib-1.0.lib")
+
+        if (USE_LIBSOUP2)
+            set(LIBSOUP_INCLUDE_DIRS "${GST_ROOT}\\include\\libsoup-2.4")
+            set(LIBSOUP_LIBRARIES "${GST_LIB_ROOT}\\soup-2.4.lib")
+        else ()
+            set(LIBSOUP_INCLUDE_DIRS "${GST_ROOT}\\include\\libsoup-3.0")
+            set(LIBSOUP_LIBRARIES "${GST_LIB_ROOT}\\soup-3.0.lib")
+        endif ()
+
+        set(GIO_INCLUDE_DIRS "${GST_ROOT}\\include\\gio-win32-2.0")
+        set(GIO_LIBRARIES "${GST_LIB_ROOT}\\gio-2.0.lib")
+    endif ()
 else ()
     pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
             libavformat
@@ -32,19 +65,34 @@ else ()
             libswscale
             libavutil
     )
-    pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
-    find_package(OpenCV REQUIRED)
-endif ()
 
-file(GLOB_RECURSE SRC_LIST
-        src/*.cpp
-        src/*.c
-        src/*.h
-)
+    pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
+
+    find_package(OpenCV REQUIRED)
+
+    if (AVIATEUR_ENABLE_GSTREAMER)
+        pkg_check_modules(GLIB REQUIRED glib-2.0)
+        pkg_check_modules(GST REQUIRED gstreamer-1.0)
+        pkg_check_modules(GST_SDP REQUIRED gstreamer-sdp-1.0)
+        pkg_check_modules(GST_WEBRTC REQUIRED gstreamer-webrtc-1.0)
+        pkg_check_modules(GST REQUIRED gstreamer-plugins-base-1.0)
+        pkg_check_modules(GST REQUIRED gstreamer-plugins-bad-1.0)
+
+        pkg_check_modules(GIO REQUIRED gio-2.0)
+    endif ()
+endif ()
 
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
-add_executable(${PROJECT_NAME} ${SRC_LIST})
+add_executable(${PROJECT_NAME}
+        src/main.cpp
+        src/gui_interface.h
+)
+
+add_subdirectory(src/gui)
+add_subdirectory(src/player)
+add_subdirectory(src/wifi)
+add_subdirectory(src/feature)
 
 if (WIN32)
     string(APPEND CMAKE_CXX_FLAGS " /utf-8")
@@ -70,7 +118,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "src/wifi/wfb-ng/include")
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 
 if (WIN32)
-    target_link_libraries(${PROJECT_NAME}
+    target_link_libraries(${PROJECT_NAME} PRIVATE
             ${FFMPEG_LIBRARIES}
             PkgConfig::LIBUSB
             unofficial-sodium::sodium
@@ -80,7 +128,7 @@ if (WIN32)
             SDL3::SDL3-static
     )
 else ()
-    target_link_libraries(${PROJECT_NAME}
+    target_link_libraries(${PROJECT_NAME} PRIVATE
             PkgConfig::LIBAV
             PkgConfig::LIBSODIUM
             ${OpenCV_LIBS}
@@ -88,5 +136,24 @@ else ()
             revector
             SDL3::SDL3-static
             pcap
+    )
+endif ()
+
+if (AVIATEUR_ENABLE_GSTREAMER)
+    target_link_libraries(
+            ${PROJECT_NAME} PRIVATE
+            ${GST_LIBRARIES}
+            ${GST_SDP_LIBRARIES}
+            ${GST_WEBRTC_LIBRARIES}
+            ${GLIB_LIBRARIES}
+            ${GIO_LIBRARIES}
+    )
+
+    target_include_directories(
+            ${PROJECT_NAME} PRIVATE
+            ${GST_INCLUDE_DIRS}
+            ${GIO_INCLUDE_DIRS}
+            PUBLIC
+            ${GLIB_INCLUDE_DIRS}
     )
 endif ()

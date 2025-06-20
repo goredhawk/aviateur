@@ -428,6 +428,9 @@ public:
     int link_quality_ = 0; // Percentage
     int packet_loss_ = 0;  // Percentage
 
+    // Use gstreamer for decoding instead of ffmpeg
+    bool use_gstreamer_ = false;
+
     // Signals.
     std::vector<revector::AnyCallable<void>> logCallbacks;
     std::vector<revector::AnyCallable<void>> tipCallbacks;
