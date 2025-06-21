@@ -6,7 +6,7 @@
   </a>
 </p>
 
-OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win]).
+OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://github.com/OpenIPC/fpv4win).
 
 ![](tutorials/interface.png)
 

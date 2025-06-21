@@ -1,7 +1,10 @@
 #include "player_rect.h"
 
 #include "../gui_interface.h"
-#include "src/player/gst_decoder.h"
+
+#ifdef AVIATEUR_ENABLE_GSTREAMER
+    #include "src/player/gst_decoder.h"
+#endif
 
 class SignalBar : public revector::ProgressBar {
     void custom_ready() override {
@@ -83,8 +86,10 @@ void PlayerRect::custom_ready() {
 
     render_image_ = std::make_shared<revector::RenderImage>(Pathfinder::Vec2I{1920, 1080});
 
+#ifdef AVIATEUR_ENABLE_GSTREAMER
     gst_decoder_ = std::make_shared<GstDecoder>();
     gst_decoder_->init();
+#endif
 
     set_stretch_mode(StretchMode::KeepAspectCentered);
 
@@ -345,6 +350,7 @@ void PlayerRect::custom_draw() {
 void PlayerRect::start_playing(const std::string &url) {
     playing_ = true;
 
+#ifdef AVIATEUR_ENABLE_GSTREAMER
     if (GuiInterface::Instance().use_gstreamer_) {
         gst_decoder_->create_pipeline();
 
@@ -355,7 +361,10 @@ void PlayerRect::start_playing(const std::string &url) {
         }
 
         collapse_panel_->set_visibility(false);
-    } else {
+
+    } else
+#endif
+    {
         player_->play(url, force_software_decoding);
         texture = render_image_;
         collapse_panel_->set_visibility(true);
@@ -372,9 +381,12 @@ void PlayerRect::stop_playing() {
         record_button_->press();
     }
 
+#ifdef AVIATEUR_ENABLE_GSTREAMER
     if (GuiInterface::Instance().use_gstreamer_) {
         gst_decoder_->stop_pipeline();
-    } else {
+    } else
+#endif
+    {
         // Fix crash in WfbReceiver destructor.
         if (player_) {
             player_->stop();

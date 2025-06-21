@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef AVIATEUR_ENABLE_GSTREAMER
+
 #include <gst/gst.h>
 
 #include <string>
@@ -21,3 +23,5 @@ private:
 
     bool initialized_ = false;
 };
+
+#endif

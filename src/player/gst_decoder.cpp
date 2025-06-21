@@ -1,9 +1,11 @@
 #include "gst_decoder.h"
 
-// #include <gst/gl/gl.h>
-#include <gst/video/video.h>
+#ifdef AVIATEUR_ENABLE_GSTREAMER
 
-#include "src/gui_interface.h"
+    // #include <gst/gl/gl.h>
+    #include <gst/video/video.h>
+
+    #include "src/gui_interface.h"
 
 static gboolean gst_bus_cb(GstBus *bus, GstMessage *message, gpointer data) {
     GstBin *pipeline = GST_BIN(data);
@@ -145,3 +147,5 @@ void GstDecoder::stop_pipeline() {
     gst_object_unref(pipeline_);
     pipeline_ = nullptr;
 }
+
+#endif
