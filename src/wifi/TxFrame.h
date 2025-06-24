@@ -337,8 +337,10 @@ private:
  * @brief Command-line or user-provided arguments controlling the transmitter setup.
  */
 struct TxArgs {
+    // Fec args
     uint8_t k = 8;
     uint8_t n = 12;
+
     uint8_t radio_port = 0;
     uint32_t link_id = 0x0;
     uint64_t epoch = 0;
@@ -351,8 +353,11 @@ struct TxArgs {
     int ldpc = 0;
     int mcs_index = 1;
     int vht_nss = 1;
-    std::string debug_ip = "127.0.0.1"; // Send packets to an IP:PORT for debugging
+
+    // Send packets to an IP:PORT for debugging
+    std::string debug_ip = "127.0.0.1";
     int debug_port = 0;
+
     int fec_timeout = 20;
     int rcv_buf = 0;
     bool mirror = false;

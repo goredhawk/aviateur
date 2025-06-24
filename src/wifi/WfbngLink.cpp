@@ -459,6 +459,10 @@ void WfbngLink::start_link_quality_thread() {
                     }
                 }
 
+                int fec_lvl = fec.value();
+                GuiInterface::Instance().drone_fec_level_ = fec_lvl;
+
+                // Prepare the TX message
                 snprintf(message + sizeof(len),
                          sizeof(message) - sizeof(len),
                          "%ld:%d:%d:%d:%d:%d:%f:0:-1:%d:%s\n",
@@ -469,7 +473,7 @@ void WfbngLink::start_link_quality_thread() {
                          quality.lost_last_second,
                          quality.quality,
                          quality.snr,
-                         fec.value(),
+                         fec_lvl,
                          quality.idr_code.c_str());
 
                 len = strlen(message + sizeof(len));

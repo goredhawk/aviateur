@@ -149,6 +149,8 @@ void PlayerRect::custom_ready() {
 #ifdef __linux__
     pl_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(pl_label_);
+    fec_label_ = std::make_shared<revector::Label>();
+    hud_container_->add_child(fec_label_);
 #endif
 
     rx_status_update_timer = std::make_shared<revector::Timer>();
@@ -159,6 +161,7 @@ void PlayerRect::custom_ready() {
 
 #ifdef __linux__
         pl_label_->set_text("PL: " + std::to_string(GuiInterface::Instance().packet_loss_) + "%");
+        fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
 #endif
 
         rx_status_update_timer->start_timer(0.1);

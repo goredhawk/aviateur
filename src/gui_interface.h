@@ -431,6 +431,7 @@ public:
 
     int link_quality_ = 0; // Percentage
     int packet_loss_ = 0;  // Percentage
+    int drone_fec_level_ = 0;
 
     // Use gstreamer for decoding instead of ffmpeg
     bool use_gstreamer_ = false;
