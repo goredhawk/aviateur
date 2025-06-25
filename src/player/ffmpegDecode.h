@@ -102,7 +102,7 @@ private:
 
     std::function<void(const std::shared_ptr<AVFrame> &frame)> gotFrameCallback;
 
-    bool initHwDecoder(AVCodecContext *ctx, enum AVHWDeviceType type);
+    bool createHwCtx(AVCodecContext *ctx, enum AVHWDeviceType type);
 
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 

@@ -234,7 +234,7 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
     return res;
 }
 
-bool FfmpegDecoder::initHwDecoder(AVCodecContext *ctx, const AVHWDeviceType type) {
+bool FfmpegDecoder::createHwCtx(AVCodecContext *ctx, const AVHWDeviceType type) {
     if (av_hwdevice_ctx_create(&hwDeviceCtx, type, nullptr, nullptr, 0) < 0) {
         return false;
     }
@@ -279,10 +279,10 @@ bool FfmpegDecoder::OpenVideo() {
                             hwDecoderType = config->device_type;
 
                             auto decoderName = std::string(av_hwdevice_get_type_name(hwDecoderType));
-                            GuiInterface::Instance().PutLog(LogLevel::Info, "Using hardware decoder: " + decoderName);
+                            GuiInterface::Instance().PutLog(LogLevel::Info, "Using hw decoder: " + decoderName);
 
                             std::ostringstream oss;
-                            oss << "Hardware acceleration pixel format: " << hwPixFmt;
+                            oss << "Hw acceleration pixel format: " << hwPixFmt;
                             GuiInterface::Instance().PutLog(LogLevel::Info, oss.str());
 
                             break;
@@ -290,19 +290,19 @@ bool FfmpegDecoder::OpenVideo() {
                     }
 
                     if (!hwDecoderEnabled) {
-                        GuiInterface::Instance().PutLog(
-                            LogLevel::Warn,
-                            "No valid AVCodecHWConfig is found, disabling hardware decoder");
+                        GuiInterface::Instance().PutLog(LogLevel::Warn,
+                                                        "No valid hw config found, disabling hw decoder");
                     }
                 }
 
                 pVideoCodecCtx = avcodec_alloc_context3(codec);
+
                 if (pVideoCodecCtx) {
                     if (hwDecoderEnabled) {
-                        hwDecoderEnabled = initHwDecoder(pVideoCodecCtx, hwDecoderType);
+                        hwDecoderEnabled = createHwCtx(pVideoCodecCtx, hwDecoderType);
 
                         if (!hwDecoderEnabled) {
-                            GuiInterface::Instance().PutLog(LogLevel::Error, "Initializing HwDecoder failed");
+                            GuiInterface::Instance().PutLog(LogLevel::Warn, "Creating hw contex failed");
                         }
                     }
 
