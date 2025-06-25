@@ -84,6 +84,15 @@ void GstDecoder::create_pipeline() {
 
     GError *error = NULL;
 
+    std::string codec = "H264";
+    std::string depay = "rtph264depay";
+    if (!GuiInterface::Instance().playerCodec.empty()) {
+        if (GuiInterface::Instance().playerCodec == "H265") {
+            codec = "H265";
+            depay = "rtph265depay";
+        }
+    }
+
     gchar *pipeline_str = g_strdup_printf(
         "udpsrc name=udpsrc "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
@@ -91,12 +100,10 @@ void GstDecoder::create_pipeline() {
         "%s ! "
         "decodebin3 ! "
         "autovideosink name=glsink sync=false",
-        GuiInterface::Instance().playerCodec.c_str(),
-        GuiInterface::Instance().playerCodec == "H264" ? "rtph264depay" : "rtph265depay");
+        codec.c_str(),
+        depay.c_str());
 
-    pipeline_ = gst_parse_launch(pipeline_str,
-
-                                 &error);
+    pipeline_ = gst_parse_launch(pipeline_str, &error);
     // pipeline_ = gst_parse_launch(
     //     "udpsrc name=udpsrc ! video/mpegts,systemstream=true,clock-rate=90000 ! "
     //     "tsdemux ! "
@@ -104,8 +111,9 @@ void GstDecoder::create_pipeline() {
     //     "autovideosink name=glsink sync=false",
     //     &error);
     g_assert_no_error(error);
-
     g_free(pipeline_str);
+
+    GuiInterface::Instance().PutLog(LogLevel::Info, "GStreamer pipeline created successfully");
 
     // GstElement *glsink = gst_bin_get_by_name(GST_BIN(pipeline_), "glsink");
     // g_signal_connect(glsink, "client-draw", (GCallback)on_client_draw, this);
@@ -128,6 +136,8 @@ void GstDecoder::play_pipeline(const std::string &uri) {
     gst_object_unref(udpsrc);
 
     g_assert(gst_element_set_state(pipeline_, GST_STATE_PLAYING) != GST_STATE_CHANGE_FAILURE);
+
+    GuiInterface::Instance().PutLog(LogLevel::Info, "GStreamer pipeline started playing");
 }
 
 void GstDecoder::stop_pipeline() {
@@ -135,17 +145,22 @@ void GstDecoder::stop_pipeline() {
 
     // Wait for an EOS message on the pipeline bus.
     GstMessage *msg = gst_bus_timed_pop_filtered(GST_ELEMENT_BUS(pipeline_),
-                                                 GST_CLOCK_TIME_NONE,
+                                                 GST_SECOND * 1, // In case it's blocked forever
                                                  static_cast<GstMessageType>(GST_MESSAGE_EOS | GST_MESSAGE_ERROR));
 
     // TODO: should check if we got an error message here or an eos.
     (void)msg;
+    if (msg) {
+        gst_message_unref(msg);
+    }
 
     // Completely stop the pipeline.
     gst_element_set_state(pipeline_, GST_STATE_NULL);
-    gst_message_unref(msg);
+
     gst_object_unref(pipeline_);
     pipeline_ = nullptr;
+
+    GuiInterface::Instance().PutLog(LogLevel::Info, "GStreamer pipeline stopped");
 }
 
 #endif
