@@ -31,8 +31,8 @@
 #define WIFI_ALINK_ENABLED "alink_enabled"
 #define WIFI_ALINK_TX_POWER "alink_tx_power"
 
-#define CONFIG_STREAMING "streaming"
-#define CONFIG_STREAMING_URL "url"
+#define CONFIG_LOCALHOST "localhost"
+#define CONFIG_LOCALHOST_PORT "port"
 
 #define CONFIG_SETTINGS "settings"
 #define CONFIG_SETTINGS_LANG "language"
@@ -43,7 +43,7 @@
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Bump this if the config structure changes.
-constexpr auto CONFIG_VERSION_NUM = 2;
+constexpr auto CONFIG_VERSION_NUM = 3;
 
 const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
 const revector::ColorU RED = revector::ColorU(201, 79, 79);
@@ -206,7 +206,7 @@ public:
             ini[CONFIG_WIFI][WIFI_ALINK_ENABLED] = "true";
             ini[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = "20";
 
-            ini[CONFIG_STREAMING][CONFIG_STREAMING_URL] = "udp://239.0.0.1:1234";
+            ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = "5000";
 
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = "en";
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] = "ffmpeg";

@@ -21,8 +21,8 @@ public:
 
     std::shared_ptr<revector::Button> play_button_;
 
-    std::shared_ptr<revector::Button> play_url_button_;
-    std::shared_ptr<revector::TextEdit> url_edit_;
+    std::shared_ptr<revector::Button> play_port_button_;
+    std::shared_ptr<revector::TextEdit> localhost_port_edit_;
 
     std::shared_ptr<revector::TabContainer> tab_container_;
 

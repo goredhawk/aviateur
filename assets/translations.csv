@@ -19,7 +19,8 @@ start,Start,开始,начинать
 stop,Stop,停止,остановить
 open,Open,打开,Открыть
 close,Close,关闭,Закрывать
-streaming,Streaming,串流,Потоковое
+port,Port,端口,Порт
+local,Local,本机,Местный
 on,On,开,вкл
 off,Off,关,выкл
 invalid usb msg,Invalid USB device!,无效的 USB 设备！,Недопустимое USB-устройство!

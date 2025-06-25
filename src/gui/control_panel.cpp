@@ -46,15 +46,15 @@ void ControlPanel::update_url_start_button_looking(bool start_status) const {
     tab_container_->set_tab_disabled(!start_status);
 
     if (!start_status) {
-        play_url_button_->theme_normal.bg_color = RED;
-        play_url_button_->theme_hovered.bg_color = RED;
-        play_url_button_->theme_pressed.bg_color = RED;
-        play_url_button_->set_text(FTR("stop") + " (F5)");
+        play_port_button_->theme_normal.bg_color = RED;
+        play_port_button_->theme_hovered.bg_color = RED;
+        play_port_button_->theme_pressed.bg_color = RED;
+        play_port_button_->set_text(FTR("stop") + " (F5)");
     } else {
-        play_url_button_->theme_normal.bg_color = GREEN;
-        play_url_button_->theme_hovered.bg_color = GREEN;
-        play_url_button_->theme_pressed.bg_color = GREEN;
-        play_url_button_->set_text(FTR("start") + " (F5)");
+        play_port_button_->theme_normal.bg_color = GREEN;
+        play_port_button_->theme_hovered.bg_color = GREEN;
+        play_port_button_->theme_pressed.bg_color = GREEN;
+        play_port_button_->set_text(FTR("start") + " (F5)");
     }
 }
 
@@ -337,7 +337,7 @@ void ControlPanel::custom_ready() {
         auto margin_container = std::make_shared<revector::MarginContainer>();
         margin_container->set_margin_all(8);
         tab_container_->add_child(margin_container);
-        tab_container_->set_tab_title(1, FTR("streaming"));
+        tab_container_->set_tab_title(1, FTR("local"));
 
         auto vbox_container = std::make_shared<revector::VBoxContainer>();
         vbox_container->set_separation(8);
@@ -347,30 +347,31 @@ void ControlPanel::custom_ready() {
         vbox_container->add_child(hbox_container);
 
         auto label = std::make_shared<revector::Label>();
-        label->set_text("URL:");
+        label->set_text(FTR("port") + ":");
         hbox_container->add_child(label);
 
-        url_edit_ = std::make_shared<revector::TextEdit>();
-        url_edit_->set_editable(true);
-        url_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL]);
-        url_edit_->container_sizing.expand_h = true;
-        url_edit_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-        hbox_container->add_child(url_edit_);
+        localhost_port_edit_ = std::make_shared<revector::TextEdit>();
+        localhost_port_edit_->set_editable(true);
+        localhost_port_edit_->set_numbers_only(true);
+        localhost_port_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT]);
+        localhost_port_edit_->container_sizing.expand_h = true;
+        localhost_port_edit_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        hbox_container->add_child(localhost_port_edit_);
 
         {
-            play_url_button_ = std::make_shared<revector::Button>();
-            play_url_button_->set_custom_minimum_size({0, 48});
-            play_url_button_->container_sizing.expand_h = true;
-            play_url_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            play_port_button_ = std::make_shared<revector::Button>();
+            play_port_button_->set_custom_minimum_size({0, 48});
+            play_port_button_->container_sizing.expand_h = true;
+            play_port_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             update_url_start_button_looking(true);
 
             auto callback1 = [this] {
-                bool start = play_url_button_->get_text() == FTR("start") + " (F5)";
+                bool start = play_port_button_->get_text() == FTR("start") + " (F5)";
 
                 if (start) {
-                    std::string url = url_edit_->get_text();
-                    GuiInterface::Instance().EmitRtpStream(url);
-                    GuiInterface::Instance().ini_[CONFIG_STREAMING][CONFIG_STREAMING_URL] = url;
+                    std::string port = localhost_port_edit_->get_text();
+                    GuiInterface::Instance().EmitRtpStream("udp://127.0.0.1:" + port);
+                    GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = port;
                 } else {
                     GuiInterface::Instance().EmitUrlStreamShouldStop();
                 }
@@ -378,8 +379,8 @@ void ControlPanel::custom_ready() {
                 update_url_start_button_looking(!start);
             };
 
-            play_url_button_->connect_signal("pressed", callback1);
-            vbox_container->add_child(play_url_button_);
+            play_port_button_->connect_signal("pressed", callback1);
+            vbox_container->add_child(play_port_button_);
         }
     }
 
@@ -403,7 +404,7 @@ void ControlPanel::custom_input(revector::InputEvent &event) {
                     if (tab_container_->get_current_tab().value() == 0) {
                         play_button_->press();
                     } else {
-                        play_url_button_->press();
+                        play_port_button_->press();
                     }
                 }
             }
