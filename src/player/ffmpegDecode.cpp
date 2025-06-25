@@ -41,7 +41,10 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     av_dict_set(&options, "buffer_size", "425984", 0);
     av_dict_set(&options, "rtsp_transport", "tcp", 0);
     av_dict_set(&options, "protocol_whitelist", "file,udp,tcp,rtp,rtmp,rtsp,http", 0);
-    av_dict_set(&options, "fflags", "nobuffer", 0); // Reduce latency
+
+    // Reduce latency
+    av_dict_set(&options, "fflags", "nobuffer", 0);
+    av_dict_set(&options, "flags", "low_delay", 0);
 
     if (avformat_open_input(&pFormatCtx, inputFile.c_str(), nullptr, &options) != 0) {
         CloseInput();
