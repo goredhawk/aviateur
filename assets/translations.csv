@@ -36,7 +36,7 @@ open capture folder,Open capture folder,打开录制文件夹,Открыть п�
 open appdata folder,Open user data folder,打开用户数据文件夹,Открыть папку с данными пользователя
 open crash dump folder,Open crash dump folder,打开崩溃数据文件夹,Открыть папку аварийного дампа
 show console,Show console,显示控制台,Показать консоль
-hw decoder error,Hardware decoder fails! Try use software decoding!,硬件解码错误！请尝试软件解码！,Аппаратный декодер не работает! попробуйте использовать программное декодирование!
+invalid input data,Invalid input data!,无效的输入数据！,Неверные входные данные!
 signal lost,Signal lost!,信号丢失！,Сигнал потерян!
 low light enhancement simple,Low light enhancement (simple),低光增强（简单）,Улучшение при слабом освещении (простое)
 low light enhancement dnn,Low light enhancement (DNN),低光增强（DNN）,Улучшение при слабом освещении (DNN)

@@ -126,12 +126,12 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
                     }
                     videoFrameQueue.push(frame);
                 }
-                // Decoder error.
+                // Decoder error. But continue.
                 catch (const SendPacketException &e) {
                     GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
-                    GuiInterface::Instance().ShowTip(FTR("hw decoder error"));
+                    GuiInterface::Instance().ShowTip(FTR("invalid input data"));
                 }
-                // Read frame error, mostly due to a lost signal.
+                // Read frame error, mostly due to a lost signal. But continue.
                 catch (const ReadFrameException &e) {
                     GuiInterface::Instance().PutLog(LogLevel::Error, e.what());
                     GuiInterface::Instance().ShowTip(FTR("signal lost"));

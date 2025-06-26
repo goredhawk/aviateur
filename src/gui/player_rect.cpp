@@ -160,7 +160,7 @@ void PlayerRect::custom_ready() {
         lq_bar_->set_value(GuiInterface::Instance().link_quality_);
 
 #ifdef __linux__
-        pl_label_->set_text("PL: " + std::to_string(GuiInterface::Instance().packet_loss_) + "%");
+        pl_label_->set_text("PL: " + std::format("{:.1f}", GuiInterface::Instance().packet_loss_) + "%");
         fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
 #endif
 

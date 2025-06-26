@@ -9,12 +9,12 @@
 
 class ReadFrameException : public std::runtime_error {
 public:
-    ReadFrameException(std::string msg) : runtime_error(msg.c_str()) {}
+    ReadFrameException(const std::string &msg) : runtime_error(msg.c_str()) {}
 };
 
 class SendPacketException : public std::runtime_error {
 public:
-    SendPacketException(std::string msg) : runtime_error(msg.c_str()) {}
+    SendPacketException(const std::string &msg) : runtime_error(msg.c_str()) {}
 };
 
 class FfmpegDecoder {

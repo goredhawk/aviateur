@@ -403,8 +403,7 @@ void WfbngLink::start_link_quality_thread() {
             GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
             if (quality.total_last_second != 0) {
                 GuiInterface::Instance().packet_loss_ =
-                    std::round(float(quality.lost_last_second + quality.recovered_last_second) /
-                               (float)quality.total_last_second * 100.0f);
+                    std::round((float)quality.lost_last_second / quality.total_last_second * 1000.0f) / 10.0f;
             } else {
                 GuiInterface::Instance().packet_loss_ = 100;
             }
