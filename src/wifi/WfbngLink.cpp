@@ -158,7 +158,7 @@ std::vector<DeviceId> WfbngLink::GetDeviceList() {
     return list;
 }
 
-bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidthMode, const std::string &kPath) {
+bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidthMode, const std::string &kPath) {
     GuiInterface::Instance().wifiFrameCount_ = 0;
     GuiInterface::Instance().wfbFrameCount_ = 0;
     GuiInterface::Instance().rtpPktCount_ = 0;
@@ -256,7 +256,7 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     }
 
 #ifdef __linux__
-    txFrame = std::make_shared<TxFrame>();
+    tx_frame = std::make_shared<TxFrame>();
 #endif
 
     usbThread = std::make_shared<std::thread>([=, this]() {
@@ -302,13 +302,13 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             if (!usb_tx_thread) {
                 init_thread(usb_tx_thread, [&]() {
                     return std::make_unique<std::thread>([this, args] {
-                        txFrame->run(rtlDevice.get(), args.get());
+                        tx_frame->run(rtlDevice.get(), args.get());
                         GuiInterface::Instance().PutLog(LogLevel::Info, "USB TX thread should stop");
                     });
                 });
             }
 
-            if (adaptive_link_enabled) {
+            if (alink_enabled) {
                 stop_adaptive_link();
                 start_link_quality_thread();
             }
@@ -317,7 +317,7 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
             rtlDevice->Init(
                 [](const Packet &p) {
-                    Instance().handle80211Frame(p);
+                    Instance().handle_80211_frame(p);
                     GuiInterface::Instance().UpdateCount();
                 },
                 SelectedChannel{
@@ -337,7 +337,7 @@ bool WfbngLink::Start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
 #ifdef __linux__
         stop_adaptive_link();
-        txFrame->stop();
+        tx_frame->stop();
         destroy_thread(usb_tx_thread);
         GuiInterface::Instance().PutLog(LogLevel::Info, "USB TX thread stopped");
 // destroy_thread(usb_event_thread);
@@ -398,7 +398,7 @@ void WfbngLink::start_link_quality_thread() {
             return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
         };
 
-        while (!this->adaptive_link_should_stop) {
+        while (!this->alink_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
             GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
             if (quality.total_last_second != 0) {
@@ -497,12 +497,12 @@ void WfbngLink::start_link_quality_thread() {
         }
 
         close(sockfd);
-        this->adaptive_link_should_stop = false;
+        this->alink_should_stop = false;
     };
 
     init_thread(link_quality_thread, [=]() { return std::make_unique<std::thread>(thread_func); });
 
-    rtlDevice->SetTxPower(adaptive_tx_power);
+    rtlDevice->SetTxPower(alink_tx_power);
 }
 
 void WfbngLink::stop_adaptive_link() {
@@ -514,13 +514,13 @@ void WfbngLink::stop_adaptive_link() {
         return;
     }
 
-    adaptive_link_should_stop = true;
+    alink_should_stop = true;
     destroy_thread(link_quality_thread);
 }
 
 #endif
 
-void WfbngLink::handle80211Frame(const Packet &packet) {
+void WfbngLink::handle_80211_frame(const Packet &packet) {
     GuiInterface::Instance().wifiFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
@@ -531,11 +531,6 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
 
     GuiInterface::Instance().wfbFrameCount_++;
     GuiInterface::Instance().UpdateCount();
-
-    static int8_t rssi[2] = {1, 1};
-    static uint8_t antenna[4] = {1, 1, 1, 1};
-    uint32_t freq = 0;
-    int8_t noise[4] = {1, 1, 1, 1};
 
     static uint32_t link_id = 7669206; // sha1 hash of link_domain="default"
     static uint8_t video_radio_port = 0;
@@ -573,8 +568,13 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
         keyPath.c_str(),
         epoch,
         video_channel_id_f,
-        [](uint8_t *payload, uint16_t packet_size) { Instance().handleRtp(payload, packet_size); });
+        [](uint8_t *payload, uint16_t packet_size) { Instance().handle_rtp(payload, packet_size); });
 #endif
+
+    static int8_t rssi[2] = {1, 1};
+    static uint8_t antenna[4] = {1, 1, 1, 1};
+    uint32_t freq = 0;
+    int8_t noise[4] = {1, 1, 1, 1};
 
     // The aggregator is static, so we need a mutex to modify it
     // Considering to make it non-static
@@ -625,7 +625,7 @@ void WfbngLink::handle80211Frame(const Packet &packet) {
 }
 
 #ifdef _WIN32
-void WfbngLink::handleRtp(uint8_t *payload, uint16_t packet_size) {
+void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
     GuiInterface::Instance().rtpPktCount_++;
     GuiInterface::Instance().UpdateCount();
 
@@ -667,7 +667,7 @@ void WfbngLink::handleRtp(uint8_t *payload, uint16_t packet_size) {
 }
 #endif
 
-void WfbngLink::Stop() const {
+void WfbngLink::stop() const {
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
@@ -675,7 +675,7 @@ void WfbngLink::Stop() const {
 
 bool WfbngLink::get_alink_enabled() const {
 #ifdef __linux__
-    return adaptive_link_enabled;
+    return alink_enabled;
 #else
     return false;
 #endif
@@ -683,7 +683,7 @@ bool WfbngLink::get_alink_enabled() const {
 
 int WfbngLink::get_alink_tx_power() const {
 #ifdef __linux__
-    return adaptive_tx_power;
+    return alink_tx_power;
 #else
     return 0;
 #endif
@@ -691,15 +691,15 @@ int WfbngLink::get_alink_tx_power() const {
 
 void WfbngLink::enable_alink(bool enable) {
 #ifdef __linux__
-    if (adaptive_link_enabled == enable) {
+    if (alink_enabled == enable) {
         return;
     }
 
-    adaptive_link_enabled = enable;
-    adaptive_link_should_stop = !enable;
+    alink_enabled = enable;
+    alink_should_stop = !enable;
 
     // Enable alink during playing.
-    if (adaptive_link_enabled && link_quality_thread) {
+    if (alink_enabled && link_quality_thread) {
         start_link_quality_thread();
     }
 #endif
@@ -711,13 +711,13 @@ void WfbngLink::set_alink_tx_power(int tx_power) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "Invalid alink tx power!");
         return;
     }
-    adaptive_tx_power = tx_power;
+    alink_tx_power = tx_power;
 
     // Change alink tx power during playing.
-    if (adaptive_link_enabled && link_quality_thread) {
+    if (alink_enabled && link_quality_thread) {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power (live): {}", tx_power);
 
-        rtlDevice->SetTxPower(adaptive_tx_power);
+        rtlDevice->SetTxPower(alink_tx_power);
     } else {
         GuiInterface::Instance().PutLog(LogLevel::Info, "Set alink tx power: {}", tx_power);
     }
@@ -731,9 +731,9 @@ WfbngLink::WfbngLink() {
         GuiInterface::Instance().PutLog(LogLevel::Error, "WSAStartup failed");
         return;
     }
-#endif
 
     socketFd = socket(AF_INET, SOCK_DGRAM, 0);
+#endif
 }
 
 WfbngLink::~WfbngLink() {
@@ -743,5 +743,5 @@ WfbngLink::~WfbngLink() {
     WSACleanup();
 #endif
 
-    Stop();
+    stop();
 }

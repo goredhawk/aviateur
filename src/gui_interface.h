@@ -272,11 +272,11 @@ public:
             gsKeyPath = revector::get_asset_dir("gs.key");
             Instance().PutLog(LogLevel::Info, "Using GS key: {}", gsKeyPath);
         }
-        return WfbngLink::Instance().Start(deviceId, channel, channelWidthMode, gsKeyPath);
+        return WfbngLink::Instance().start(deviceId, channel, channelWidthMode, gsKeyPath);
     }
 
     static bool Stop() {
-        WfbngLink::Instance().Stop();
+        WfbngLink::Instance().stop();
         return true;
     }
 
@@ -421,9 +421,13 @@ public:
 
     std::string locale_ = "en";
 
-    long long wfbFrameCount_ = 0;
+    /// Number of received 802.11 frames
     long long wifiFrameCount_ = 0;
+    /// Number of received wfb-ng frames
+    long long wfbFrameCount_ = 0;
+    /// Number of received RTP packets
     long long rtpPktCount_ = 0;
+
     int playerPort = 0;
     std::string playerCodec;
 

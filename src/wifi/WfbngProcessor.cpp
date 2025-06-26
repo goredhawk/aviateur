@@ -375,7 +375,7 @@ void Aggregator::send_packet(int ring_idx, int fragment_idx) {
         fprintf(stderr, "Corrupted packet %u\n", seq);
         count_p_bad += 1;
     } else if (!(flags & WFB_PACKET_FEC_ONLY)) {
-        // WfbReceiver::handleRtp
+        // WfbReceiver::handle_rtp
         if (dcb) {
             dcb(payload, packet_size);
         }

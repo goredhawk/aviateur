@@ -1,15 +1,10 @@
-﻿//
-// Created by liangzhuohua on 2024/6/13.
-//
-
-#ifndef FPV_WFB_RTP_H
-#define FPV_WFB_RTP_H
+﻿#pragma once
 
 #if defined(_WIN32)
     #pragma pack(push, 1)
 #else
     #include <arpa/inet.h>
-#endif // defined(_WIN32)
+#endif
 
 class RtpHeader {
 public:
@@ -137,6 +132,4 @@ public:
 
 #if defined(_WIN32)
     #pragma pack(pop)
-#endif // defined(_WIN32)
-
-#endif // FPV_WFB_RTP_H
+#endif

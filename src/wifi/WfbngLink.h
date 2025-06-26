@@ -25,7 +25,7 @@ struct DeviceId {
     uint8_t port_num;
 };
 
-/// Receive packets from an adapter.
+/// Receive packets from a Wi-Fi adapter.
 class WfbngLink {
 public:
     WfbngLink();
@@ -38,8 +38,9 @@ public:
 
     static std::vector<DeviceId> GetDeviceList();
 
-    bool Start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
-    void Stop() const;
+    bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
+
+    void stop() const;
 
     bool get_alink_enabled() const;
 
@@ -50,11 +51,11 @@ public:
     void set_alink_tx_power(int tx_power);
 
     /// Process a 802.11 frame
-    void handle80211Frame(const Packet &pkt);
+    void handle_80211_frame(const Packet &packet);
 
 #ifdef _WIN32
     /// Send a RTP payload via socket.
-    void handleRtp(uint8_t *payload, uint16_t packet_size);
+    void handle_rtp(uint8_t *payload, uint16_t packet_size);
 #endif
 
 protected:
@@ -65,15 +66,15 @@ protected:
     std::string keyPath;
 
 #ifdef __linux__
-    // Alink
+    // Adaptive link
     std::unique_ptr<std::thread> usb_event_thread;
     std::unique_ptr<std::thread> usb_tx_thread;
     uint32_t link_id{7669206};
     std::recursive_mutex thread_mutex;
-    std::shared_ptr<TxFrame> txFrame;
-    bool adaptive_link_enabled = true;
-    bool adaptive_link_should_stop = false;
-    int adaptive_tx_power = 30;
+    std::shared_ptr<TxFrame> tx_frame;
+    bool alink_enabled = true;
+    bool alink_should_stop = false;
+    int alink_tx_power = 30;
     std::unique_ptr<std::thread> link_quality_thread;
     FecChangeController fec;
 

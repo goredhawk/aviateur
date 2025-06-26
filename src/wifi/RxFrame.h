@@ -1,28 +1,18 @@
-//
-// Created by gaeta on 2024-03-31.
-//
-
 #pragma once
 
 #include <array>
 #include <span>
 #include <vector>
 
-enum class RadioPort { /* define your RadioPort enum */
-};
-
 class RxFrame {
 private:
     std::span<uint8_t> _data;
-    static constexpr std::array<uint8_t, 2> _dataHeader = {uint8_t(0x08),
-                                                           uint8_t(0x01)}; // Frame control value for QoS Data
+
+    /// Frame control value for QoS data
+    static constexpr std::array<uint8_t, 2> _dataHeader = {uint8_t(0x08), uint8_t(0x01)};
 
 public:
-    RxFrame(const std::span<uint8_t> &data) : _data(data) {
-        DataAsMemory = _data;
-    }
-
-    std::span<uint8_t> DataAsMemory; // useless in c++
+    RxFrame(const std::span<uint8_t> &data) : _data(data) {}
 
     std::span<uint8_t> ControlField() const {
         return {_data.data(), 2};
@@ -30,21 +20,24 @@ public:
     std::span<uint8_t> Duration() const {
         return {_data.data() + 2, 2};
     }
+    /// Receiver address
     std::span<uint8_t> MacAp() const {
         return {_data.data() + 4, 6};
-    } // receiverAddress
+    }
+    /// Transmitter address
     std::span<uint8_t> MacSrcUniqueIdPart() const {
         return {_data.data() + 10, 1};
-    } // transmitterAddress
+    }
     std::span<uint8_t> MacSrcNoncePart1() const {
         return {_data.data() + 11, 4};
     }
     std::span<uint8_t> MacSrcRadioPort() const {
         return {_data.data() + 15, 1};
     }
+    /// Destination address
     std::span<uint8_t> MacDstUniqueIdPart() const {
         return {_data.data() + 16, 1};
-    } // destinationAddress
+    }
     std::span<uint8_t> MacDstNoncePart2() const {
         return {_data.data() + 17, 4};
     }
@@ -63,10 +56,6 @@ public:
         std::copy(_data.begin() + 17, _data.begin() + 21, data.begin() + 4);
         return {data.data(), data.size()};
     }
-
-    //    RadioPort get_valid_radio_port() const {
-    //        return RadioPort::Fromuint8_t(_data[15]);
-    //    }
 
     bool IsValidWfbFrame() const {
         if (_data.empty()) return false;
@@ -127,17 +116,8 @@ public:
 
         // Sequence Control (2 bytes)
         sequenceControl = (rawData[22] << 8) | rawData[22];
-
-        // Frame Body (variable length)
-        // For simplicity, let's assume the body starts at byte 30
-        //        frameBody.assign(rawData.begin() + 30, rawData.end() - 4);
-        //
-        //        // Frame Check Sequence (4 bytes, assuming little-endian)
-        //        frameCheckSequence = (rawData[rawData.size() - 1] << 24) |
-        //                                   (rawData[rawData.size() - 2] << 16) |
-        //                                   (rawData[rawData.size() - 3] << 8) |
-        //                                   rawData[rawData.size() - 4];
     }
+
     uint16_t frameControl;
     uint16_t durationID;
     std::vector<uint8_t> receiverAddress;
