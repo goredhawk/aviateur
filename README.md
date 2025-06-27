@@ -27,11 +27,11 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
    ![](tutorials/zadig1.jpg)
    Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
    ![](tutorials/zadig2.jpg)
-
-3. Select the adapter with the previously obtained USB ID.
-4. Select your drone channel.
-5. Select your WFB key.
-6. *Start* & Fly!
+3. Run Aviateur (on Linux, root privileges are needed to access the adapter).
+4. Select the adapter with the previously obtained USB ID.
+5. Select your drone channel.
+6. Select your WFB key.
+7. *Start* & Fly!
 
 ### Common run issues
 

@@ -165,17 +165,17 @@ void TxFrame::dataSource(std::shared_ptr<Transmitter> &transmitter,
         if (curTs >= logSendTs) {
             transmitter->dumpStats(stdout, curTs, countPInjected, countPDropped, countBInjected);
 
-            std::fprintf(stdout,
-                         "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
-                         curTs,
-                         countPFecTimeouts,
-                         countPIncoming,
-                         countBIncoming,
-                         countPInjected,
-                         countBInjected,
-                         countPDropped,
-                         countPTruncated);
-            std::fflush(stdout);
+            // std::fprintf(stdout,
+            //              "%" PRIu64 "\tPKT\t%u:%u:%u:%u:%u:%u:%u\n",
+            //              curTs,
+            //              countPFecTimeouts,
+            //              countPIncoming,
+            //              countBIncoming,
+            //              countPInjected,
+            //              countBInjected,
+            //              countPDropped,
+            //              countPTruncated);
+            // std::fflush(stdout);
 
             if (countPDropped) {
                 std::fprintf(stderr, "%u packets dropped\n", countPDropped);
@@ -448,7 +448,7 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
     int bindPort = arg->udp_port;
     int udpFd = open_udp_socket_for_rx(bindPort, arg->rcv_buf);
 
-    // No valid port is provided
+    // Invalid port is provided
     if (arg->udp_port == 0) {
         // Ephemeral port
         struct sockaddr_in saddr;
@@ -460,12 +460,12 @@ void TxFrame::run(Rtl8812aDevice *rtlDevice, TxArgs *arg) {
         std::printf("%" PRIu64 "\tLISTEN_UDP\t%d\n", get_time_ms(), bindPort);
     }
 
-    std::fprintf(stderr, "Listening on UDP port: %d\n", bindPort);
+    std::printf("Transmitter is listening on UDP port: %d\n", bindPort);
 
     rxFds.push_back(udpFd);
 
     if (arg->udp_port == 0) {
-        std::fprintf(stderr, "Listening on UDP port: %d\n", bindPort);
+        std::fprintf(stderr, "Listening on invalid UDP port: %d\n", bindPort);
     }
 
     try {

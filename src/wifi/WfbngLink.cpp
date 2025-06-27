@@ -297,7 +297,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
             args->n = 5;
             args->radio_port = WFB_TX_PORT;
 
-            printf("Radio link ID %d, radio port %d\n", args->link_id, args->radio_port);
+            // printf("Radio link ID %d, radio port %d\n", args->link_id, args->radio_port);
 
             if (!usb_tx_thread) {
                 init_thread(usb_tx_thread, [&]() {
@@ -481,7 +481,7 @@ void WfbngLink::start_link_quality_thread() {
                 uint32_t net_len = htonl(len);
                 memcpy(message, &net_len, sizeof(len));
 
-                printf("TX message: %s", message + sizeof(len));
+                // printf("TX message: %s", message + sizeof(len));
 
                 size_t buf_size = len + sizeof(len);
 

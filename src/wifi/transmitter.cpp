@@ -311,20 +311,21 @@ void RawSocketTransmitter::dumpStats(FILE *fp,
         uint64_t countAll = stats.countPacketsInjected + stats.countPacketsDropped;
         uint64_t avgLatency = (countAll == 0) ? 0 : (stats.latencySum / countAll);
 
-        fprintf(fp,
-                "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
-                ts,
-                kv.first,
-                stats.countPacketsInjected,
-                stats.countPacketsDropped,
-                stats.latencyMin,
-                avgLatency,
-                stats.latencyMax);
+        // fprintf(fp,
+        //         "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
+        //         ts,
+        //         kv.first,
+        //         stats.countPacketsInjected,
+        //         stats.countPacketsDropped,
+        //         stats.latencyMin,
+        //         avgLatency,
+        //         stats.latencyMax);
 
         injectedPackets += stats.countPacketsInjected;
         droppedPackets += stats.countPacketsDropped;
         injectedBytes += stats.countBytesInjected;
     }
+
     antennaStat_.clear();
 }
 
@@ -417,15 +418,15 @@ void UsbTransmitter::dumpStats(FILE *fp,
         uint64_t countAll = stats.countPacketsInjected + stats.countPacketsDropped;
         uint64_t avgLatency = (countAll == 0) ? 0 : (stats.latencySum / countAll);
 
-        fprintf(fp,
-                "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
-                ts,
-                kv.first,
-                stats.countPacketsInjected,
-                stats.countPacketsDropped,
-                stats.latencyMin,
-                avgLatency,
-                stats.latencyMax);
+        // fprintf(fp,
+        //         "%" PRIu64 "\tTX_ANT\t%" PRIx64 "\t%u:%u:%" PRIu64 ":%" PRIu64 ":%" PRIu64 "\n",
+        //         ts,
+        //         kv.first,
+        //         stats.countPacketsInjected,
+        //         stats.countPacketsDropped,
+        //         stats.latencyMin,
+        //         avgLatency,
+        //         stats.latencyMax);
 
         injectedPackets += stats.countPacketsInjected;
         droppedPackets += stats.countPacketsDropped;
