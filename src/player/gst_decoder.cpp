@@ -7,17 +7,14 @@
 
     #include "src/gui_interface.h"
 
-static gboolean gst_bus_cb(GstBus *bus, GstMessage *message, gpointer data) {
-    GstBin *pipeline = GST_BIN(data);
+static gboolean gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data) {
+    GstBin *pipeline = GST_BIN(user_data);
 
     switch (GST_MESSAGE_TYPE(message)) {
         case GST_MESSAGE_ERROR: {
             GError *gerr;
             gchar *debug_msg;
             gst_message_parse_error(message, &gerr, &debug_msg);
-            GST_DEBUG_BIN_TO_DOT_FILE(pipeline, GST_DEBUG_GRAPH_SHOW_ALL, "mss-pipeline-ERROR");
-            gchar *dot_data = gst_debug_bin_to_dot_data(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL);
-            g_free(dot_data);
             g_error("Error: %s (%s)", gerr->message, debug_msg);
             g_error_free(gerr);
             g_free(debug_msg);
@@ -26,13 +23,12 @@ static gboolean gst_bus_cb(GstBus *bus, GstMessage *message, gpointer data) {
             GError *gerr;
             gchar *debug_msg;
             gst_message_parse_warning(message, &gerr, &debug_msg);
-            GST_DEBUG_BIN_TO_DOT_FILE(pipeline, GST_DEBUG_GRAPH_SHOW_ALL, "mss-pipeline-WARNING");
             g_warning("Warning: %s (%s)", gerr->message, debug_msg);
             g_error_free(gerr);
             g_free(debug_msg);
         } break;
         case GST_MESSAGE_EOS: {
-            g_error("Got EOS!!");
+            g_error("Got EOS!");
         } break;
         default:
             break;
@@ -96,7 +92,7 @@ void GstDecoder::create_pipeline() {
     gchar *pipeline_str = g_strdup_printf(
         "udpsrc name=udpsrc "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
-        "rtpjitterbuffer ! "
+        "rtpjitterbuffer latency=5 ! "
         "%s ! "
         "decodebin3 ! "
         "autovideosink name=glsink sync=false",
@@ -104,12 +100,7 @@ void GstDecoder::create_pipeline() {
         depay.c_str());
 
     pipeline_ = gst_parse_launch(pipeline_str, &error);
-    // pipeline_ = gst_parse_launch(
-    //     "udpsrc name=udpsrc ! video/mpegts,systemstream=true,clock-rate=90000 ! "
-    //     "tsdemux ! "
-    //     "h264parse ! avdec_h264 ! "
-    //     "autovideosink name=glsink sync=false",
-    //     &error);
+
     g_assert_no_error(error);
     g_free(pipeline_str);
 
