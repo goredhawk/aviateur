@@ -370,7 +370,7 @@ void ControlPanel::custom_ready() {
 
                 if (start) {
                     std::string port = localhost_port_edit_->get_text();
-                    GuiInterface::Instance().EmitRtpStream("udp://127.0.0.1:" + port);
+                    GuiInterface::Instance().EmitRtpStream("udp://0.0.0.0:" + port);
                     GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = port;
                 } else {
                     GuiInterface::Instance().EmitUrlStreamShouldStop();

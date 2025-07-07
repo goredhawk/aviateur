@@ -47,9 +47,9 @@ void GstDecoder::init() {
     // setenv("GST_TRACERS", "latency(flags=pipeline)", 1); // Latency
     // setenv("GST_DEBUG_FILE", "./latency.log", 1);
 
-    gst_debug_set_default_threshold(GST_LEVEL_WARNING);
-
     gst_init(NULL, NULL);
+
+    gst_debug_set_default_threshold(GST_LEVEL_WARNING);
 }
 
 // static gboolean on_client_draw(GstGLImageSink *sink, GstGLContext *context, GstSample *sample, gpointer data) {
