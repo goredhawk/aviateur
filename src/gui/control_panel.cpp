@@ -64,7 +64,6 @@ void ControlPanel::custom_ready() {
     channel = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL]);
     channelWidthMode = std::stoi(ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE]);
     keyPath = ini[CONFIG_WIFI][WIFI_GS_KEY];
-    codec = ini[CONFIG_WIFI][WIFI_CODEC];
 
     auto default_theme = revector::DefaultResource::get_singleton()->get_default_theme();
     theme_bg = std::make_optional(default_theme->panel.styles["background"]);
@@ -312,8 +311,7 @@ void ControlPanel::custom_ready() {
                     }
 
                     if (target_device_id.has_value()) {
-                        bool res =
-                            GuiInterface::Start(target_device_id.value(), channel, channelWidthMode, keyPath, codec);
+                        bool res = GuiInterface::Start(target_device_id.value(), channel, channelWidthMode, keyPath);
                         if (!res) {
                             start = false;
                         }
@@ -350,13 +348,51 @@ void ControlPanel::custom_ready() {
         label->set_text(FTR("port") + ":");
         hbox_container->add_child(label);
 
-        localhost_port_edit_ = std::make_shared<revector::TextEdit>();
-        localhost_port_edit_->set_editable(true);
-        localhost_port_edit_->set_numbers_only(true);
-        localhost_port_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT]);
-        localhost_port_edit_->container_sizing.expand_h = true;
-        localhost_port_edit_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-        hbox_container->add_child(localhost_port_edit_);
+        local_listener_port_edit_ = std::make_shared<revector::TextEdit>();
+        local_listener_port_edit_->set_editable(true);
+        local_listener_port_edit_->set_numbers_only(true);
+        local_listener_port_edit_->set_text(GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT]);
+        local_listener_port_edit_->container_sizing.expand_h = true;
+        local_listener_port_edit_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        hbox_container->add_child(local_listener_port_edit_);
+
+        {
+            auto hbox_container = std::make_shared<revector::HBoxContainer>();
+            hbox_container->set_separation(8);
+            vbox_container->add_child(hbox_container);
+
+            auto label = std::make_shared<revector::Label>();
+            label->set_text(FTR("codec") + ":");
+            hbox_container->add_child(label);
+
+            auto codec_menu_button = std::make_shared<revector::MenuButton>();
+
+            codec_menu_button->container_sizing.expand_h = true;
+            codec_menu_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+            codec_menu_button->set_text(GuiInterface::Instance().rtp_codec_);
+            hbox_container->add_child(codec_menu_button);
+
+            auto menu = codec_menu_button->get_popup_menu().lock();
+
+            menu->create_item("H264");
+            menu->create_item("H265");
+
+            auto callback = [this](uint32_t item_index) {
+                if (item_index == 0) {
+                    GuiInterface::Instance().rtp_codec_ = "H264";
+                }
+                if (item_index == 1) {
+                    GuiInterface::Instance().rtp_codec_ = "H265";
+                }
+            };
+            codec_menu_button->connect_signal("item_selected", callback);
+
+            if (GuiInterface::Instance().rtp_codec_ == "H264") {
+                codec_menu_button->select_item(0);
+            } else {
+                codec_menu_button->select_item(1);
+            }
+        }
 
         {
             play_port_button_ = std::make_shared<revector::Button>();
@@ -369,8 +405,17 @@ void ControlPanel::custom_ready() {
                 bool start = play_port_button_->get_text() == FTR("start") + " (F5)";
 
                 if (start) {
-                    std::string port = localhost_port_edit_->get_text();
-                    GuiInterface::Instance().EmitRtpStream("udp://0.0.0.0:" + port);
+                    std::string port = local_listener_port_edit_->get_text();
+
+                    if (GuiInterface::Instance().use_gstreamer_) {
+                        GuiInterface::Instance().EmitRtpStream("udp://0.0.0.0:" + port);
+                    } else {
+                        GuiInterface::Instance().NotifyRtpStream(96,
+                                                                 0,
+                                                                 std::stoi(port),
+                                                                 GuiInterface::Instance().rtp_codec_);
+                    }
+
                     GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = port;
                 } else {
                     GuiInterface::Instance().EmitUrlStreamShouldStop();

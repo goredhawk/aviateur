@@ -2,7 +2,6 @@
 
 #ifdef AVIATEUR_ENABLE_GSTREAMER
 
-    // #include <gst/gl/gl.h>
     #include <gst/video/video.h>
 
     #include "src/gui_interface.h"
@@ -52,41 +51,16 @@ void GstDecoder::init() {
     gst_debug_set_default_threshold(GST_LEVEL_WARNING);
 }
 
-// static gboolean on_client_draw(GstGLImageSink *sink, GstGLContext *context, GstSample *sample, gpointer data) {
-//     GstVideoFrame v_frame;
-//     GstVideoInfo v_info;
-//     GstBuffer *buf = gst_sample_get_buffer(sample);
-//     const GstCaps *caps = gst_sample_get_caps(sample);
-//
-//     gst_video_info_from_caps(&v_info, caps);
-//
-//     if (!gst_video_frame_map(&v_frame, &v_info, buf, (GstMapFlags)(GST_MAP_READ | GST_MAP_GL))) {
-//         g_warning("Failed to map the video buffer");
-//         return TRUE;
-//     }
-//
-//     // Src GL texture
-//     guint texture = *(guint *)v_frame.data[0];
-//
-//     // Use texture
-//
-//     return TRUE;
-// }
-
-void GstDecoder::create_pipeline() {
+void GstDecoder::create_pipeline(const std::string &codec) {
     if (pipeline_) {
         return;
     }
 
     GError *error = NULL;
 
-    std::string codec = "H264";
     std::string depay = "rtph264depay";
-    if (!GuiInterface::Instance().playerCodec.empty()) {
-        if (GuiInterface::Instance().playerCodec == "H265") {
-            codec = "H265";
-            depay = "rtph265depay";
-        }
+    if (codec == "H265") {
+        depay = "rtph265depay";
     }
 
     gchar *pipeline_str = g_strdup_printf(
@@ -105,10 +79,6 @@ void GstDecoder::create_pipeline() {
     g_free(pipeline_str);
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "GStreamer pipeline created successfully");
-
-    // GstElement *glsink = gst_bin_get_by_name(GST_BIN(pipeline_), "glsink");
-    // g_signal_connect(glsink, "client-draw", (GCallback)on_client_draw, this);
-    // gst_object_unref(glsink);
 
     GstBus *bus = gst_element_get_bus(pipeline_);
     gst_bus_add_watch(bus, gst_bus_cb, pipeline_);

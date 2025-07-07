@@ -27,12 +27,12 @@
 #define WIFI_CHANNEL "channel"
 #define WIFI_CHANNEL_WIDTH_MODE "channel_width_mode"
 #define WIFI_GS_KEY "key"
-#define WIFI_CODEC "codec"
 #define WIFI_ALINK_ENABLED "alink_enabled"
 #define WIFI_ALINK_TX_POWER "alink_tx_power"
 
 #define CONFIG_LOCALHOST "localhost"
 #define CONFIG_LOCALHOST_PORT "port"
+#define CONFIG_LOCALHOST_CODEC "codec"
 
 #define CONFIG_SETTINGS "settings"
 #define CONFIG_SETTINGS_LANG "language"
@@ -43,7 +43,7 @@
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Bump this if the config structure changes.
-constexpr auto CONFIG_VERSION_NUM = 3;
+constexpr auto CONFIG_VERSION_NUM = 4;
 
 const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
 const revector::ColorU RED = revector::ColorU(201, 79, 79);
@@ -145,6 +145,7 @@ public:
         if (bool read_success = ReadConfig(ini_)) {
             set_locale(ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG]);
             use_gstreamer_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] != "ffmpeg";
+            rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
         }
     }
 
@@ -202,11 +203,11 @@ public:
             ini[CONFIG_WIFI][WIFI_CHANNEL] = "161";
             ini[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] = "0";
             ini[CONFIG_WIFI][WIFI_GS_KEY] = "";
-            ini[CONFIG_WIFI][WIFI_CODEC] = "AUTO";
             ini[CONFIG_WIFI][WIFI_ALINK_ENABLED] = "true";
             ini[CONFIG_WIFI][WIFI_ALINK_TX_POWER] = "20";
 
-            ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = "5000";
+            ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = "5600";
+            ini[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC] = "H264";
 
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = "en";
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] = "ffmpeg";
@@ -229,6 +230,7 @@ public:
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = Instance().locale_;
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] =
             Instance().use_gstreamer_ ? "gstreamer" : "ffmpeg";
+        Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC] = Instance().rtp_codec_;
 
         auto dir = GetAppDataDir();
 
@@ -250,22 +252,15 @@ public:
         return write_success;
     }
 
-    static bool Start(const DeviceId &deviceId,
-                      int channel,
-                      int channelWidthMode,
-                      std::string gsKeyPath,
-                      const std::string &codec) {
+    static bool Start(const DeviceId &deviceId, int channel, int channelWidthMode, std::string gsKeyPath) {
         Instance().ini_[CONFIG_WIFI][WIFI_DEVICE] = deviceId.display_name;
         Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL] = std::to_string(channel);
         Instance().ini_[CONFIG_WIFI][WIFI_CHANNEL_WIDTH_MODE] = std::to_string(channelWidthMode);
         Instance().ini_[CONFIG_WIFI][WIFI_GS_KEY] = gsKeyPath;
-        Instance().ini_[CONFIG_WIFI][WIFI_CODEC] = codec;
 
         // Set port.
         Instance().playerPort = GetFreePort(DEFAULT_PORT);
         Instance().PutLog(LogLevel::Info, "Using port: {}", Instance().playerPort);
-
-        Instance().playerCodec = codec;
 
         // If no custom key provided by the user, use the default key.
         if (gsKeyPath.empty()) {
@@ -323,15 +318,12 @@ public:
         EmitLog(level, str);
     }
 
-    int NotifyRtpStream(int pt, uint16_t ssrc) {
-        // Get free port.
-        std::string sdpFile = "sdp/sdp" + std::to_string(playerPort) + ".sdp";
+    void NotifyRtpStream(int pt, uint16_t ssrc, int port, const std::string& codec) {
+        std::string sdpFile = "sdp/sdp" + std::to_string(port) + ".sdp";
 
-        BuildSdp(sdpFile, playerCodec, pt, playerPort);
+        BuildSdp(sdpFile, codec, pt, port);
 
         EmitRtpStream(sdpFile);
-
-        return Instance().playerPort;
     }
 
     void UpdateCount() {
@@ -430,6 +422,9 @@ public:
 
     int playerPort = 0;
     std::string playerCodec;
+
+    // Local RTP listener
+    std::string rtp_codec_;
 
     bool config_file_exists = true;
 

@@ -46,3 +46,4 @@ alink,Adaptive link,自适应链路,Адаптивная ссылка
 tx power,TX power,发射功率,мощность передачи
 version,Version,版本,версия
 use gstreamer,Use GStreamer (Experimental),使用GStreamer（实验性）,использовать GStreamer (Экспериментальный)
+codec,Codec,编码,Кодек

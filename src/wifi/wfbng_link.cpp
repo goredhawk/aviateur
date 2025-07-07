@@ -68,16 +68,18 @@ protected:
 
         if (!playing) {
             playing = true;
-            if (GuiInterface::Instance().playerCodec == "AUTO") {
-                // Check H264 or h265
-                if (isH264(header->getPayloadData())) {
-                    GuiInterface::Instance().playerCodec = "H264";
-                } else {
-                    GuiInterface::Instance().playerCodec = "H265";
-                }
-                GuiInterface::Instance().PutLog(LogLevel::Debug, "Check codec " + GuiInterface::Instance().playerCodec);
+
+            // Check H264 or H265
+            if (isH264(header->getPayloadData())) {
+                GuiInterface::Instance().playerCodec = "H264";
+            } else {
+                GuiInterface::Instance().playerCodec = "H265";
             }
-            GuiInterface::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
+
+            GuiInterface::Instance().NotifyRtpStream(header->pt,
+                                                     ntohl(header->ssrc),
+                                                     GuiInterface::Instance().playerPort,
+                                                     GuiInterface::Instance().playerCodec);
         }
 
         // Send payload via socket.
@@ -644,16 +646,16 @@ void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
 
     if (!playing) {
         playing = true;
-        if (GuiInterface::Instance().playerCodec == "AUTO") {
-            // Check H264 or h265
-            if (isH264(header->getPayloadData())) {
-                GuiInterface::Instance().playerCodec = "H264";
-            } else {
-                GuiInterface::Instance().playerCodec = "H265";
-            }
-            GuiInterface::Instance().PutLog(LogLevel::Debug, "Check codec " + GuiInterface::Instance().playerCodec);
+        // Check H264 or H265
+        if (isH264(header->getPayloadData())) {
+            GuiInterface::Instance().playerCodec = "H264";
+        } else {
+            GuiInterface::Instance().playerCodec = "H265";
         }
-        GuiInterface::Instance().NotifyRtpStream(header->pt, ntohl(header->ssrc));
+        GuiInterface::Instance().NotifyRtpStream(header->pt,
+                                                 ntohl(header->ssrc),
+                                                 GuiInterface::Instance().playerPort,
+                                                 GuiInterface::Instance().playerCodec);
     }
 
     // Send payload via socket.

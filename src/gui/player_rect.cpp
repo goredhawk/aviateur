@@ -355,11 +355,11 @@ void PlayerRect::start_playing(const std::string &url) {
 
 #ifdef AVIATEUR_ENABLE_GSTREAMER
     if (GuiInterface::Instance().use_gstreamer_) {
-        gst_decoder_->create_pipeline();
-
         if (url.starts_with("udp://")) {
+            gst_decoder_->create_pipeline(GuiInterface::Instance().rtp_codec_);
             gst_decoder_->play_pipeline(url);
         } else {
+            gst_decoder_->create_pipeline(GuiInterface::Instance().playerCodec);
             gst_decoder_->play_pipeline("");
         }
 

@@ -17,12 +17,12 @@ public:
     uint32_t channel = 0;
     uint32_t channelWidthMode = 0;
     std::string keyPath;
-    std::string codec;
 
     std::shared_ptr<revector::Button> play_button_;
 
     std::shared_ptr<revector::Button> play_port_button_;
-    std::shared_ptr<revector::TextEdit> localhost_port_edit_;
+    std::shared_ptr<revector::TextEdit> local_listener_port_edit_;
+    std::string local_listener_codec;
 
     std::shared_ptr<revector::TabContainer> tab_container_;
 

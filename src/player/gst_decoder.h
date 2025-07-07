@@ -2,9 +2,9 @@
 
 #ifdef AVIATEUR_ENABLE_GSTREAMER
 
-#include <gst/gst.h>
+    #include <gst/gst.h>
 
-#include <string>
+    #include <string>
 
 class GstDecoder {
 public:
@@ -12,9 +12,9 @@ public:
 
     void init();
 
-    void create_pipeline();
+    void create_pipeline(const std::string& codec);
 
-    void play_pipeline(const std::string &uri);
+    void play_pipeline(const std::string& uri);
 
     void stop_pipeline();
 
