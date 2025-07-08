@@ -2,12 +2,12 @@
 
 #ifdef _WIN32
 
-#include <functional>
+    #include <functional>
 
-#include "WfbngDefine.h"
+    #include "wfbng_define.h"
 
 extern "C" {
-#include "fec.h"
+    #include "fec.h"
 }
 
 class BaseAggregator {

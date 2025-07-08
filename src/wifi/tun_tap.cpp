@@ -3,6 +3,8 @@
 /* Copyright (c) John Millikin <john@john-millikin.com> */
 /* SPDX-License-Identifier: 0BSD */
 
+#ifdef __linux__
+
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/if_tun.h>
@@ -311,3 +313,5 @@ bool start_tun(char *address, uint16_t send_port, uint16_t recv_port) {
 
     return true;
 }
+
+#endif
