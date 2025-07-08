@@ -8,13 +8,11 @@
 #include "gui_interface.h"
 #include "wifi/wfbng_link.h"
 
-static revector::App* app;
-
 int main() {
     GuiInterface::Instance().init();
     GuiInterface::Instance().PutLog(LogLevel::Info, "App started");
 
-    app = new revector::App({1280, 720});
+    auto app = new revector::App({1280, 720});
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "revector app created");
@@ -66,7 +64,7 @@ int main() {
         player_rect->top_control_container->add_child(player_rect->fullscreen_button_);
         player_rect->fullscreen_button_->set_text(FTR("fullscreen") + " (F11)");
 
-        auto callback = [control_panel_weak](bool toggled) {
+        auto callback = [app, control_panel_weak](bool toggled) {
             if (!control_panel_weak.expired()) {
                 app->set_fullscreen(toggled);
             }
