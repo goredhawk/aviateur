@@ -356,12 +356,27 @@ void ControlPanel::custom_ready() {
         tab_container_->add_child(margin_container);
         tab_container_->set_tab_title(1, FTR("local"));
 
-        auto vbox_container = std::make_shared<revector::VBoxContainer>();
-        vbox_container->set_separation(8);
-        margin_container->add_child(vbox_container);
+        auto vbox = std::make_shared<revector::VBoxContainer>();
+        vbox->set_separation(8);
+        margin_container->add_child(vbox);
+
+        auto con = std::make_shared<revector::Container>();
+        vbox->add_child(con);
+
+        auto vbox_blockable = std::make_shared<revector::VBoxContainer>();
+        con->add_child(vbox_blockable);
+
+        udp_prop_block_ = std::make_shared<revector::Panel>();
+        revector::StyleBox new_theme;
+        new_theme.bg_color = revector::ColorU(0, 0, 0, 150);
+        new_theme.border_width = 2;
+        new_theme.border_color = revector::ColorU(0, 0, 0);
+        udp_prop_block_->set_theme_panel(new_theme);
+        udp_prop_block_->set_visibility(false);
+        con->add_child(udp_prop_block_);
 
         auto hbox_container = std::make_shared<revector::HBoxContainer>();
-        vbox_container->add_child(hbox_container);
+        vbox_blockable->add_child(hbox_container);
 
         auto label = std::make_shared<revector::Label>();
         label->set_text(FTR("port") + ":");
@@ -378,7 +393,7 @@ void ControlPanel::custom_ready() {
         {
             auto hbox_container = std::make_shared<revector::HBoxContainer>();
             hbox_container->set_separation(8);
-            vbox_container->add_child(hbox_container);
+            vbox_blockable->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("codec") + ":");
@@ -436,15 +451,19 @@ void ControlPanel::custom_ready() {
                     }
 
                     GuiInterface::Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_PORT] = port;
+
+                    udp_prop_block_->set_visibility(true);
                 } else {
                     GuiInterface::Instance().EmitUrlStreamShouldStop();
+
+                    udp_prop_block_->set_visibility(false);
                 }
 
                 update_url_start_button_looking(!start);
             };
 
             play_port_button_->connect_signal("pressed", callback1);
-            vbox_container->add_child(play_port_button_);
+            vbox->add_child(play_port_button_);
         }
     }
 

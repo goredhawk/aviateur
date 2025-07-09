@@ -11,6 +11,7 @@ public:
     std::shared_ptr<revector::Button> refresh_dongle_button_;
 
     std::shared_ptr<revector::Panel> adapter_prop_block_;
+    std::shared_ptr<revector::Panel> udp_prop_block_;
 
     std::shared_ptr<revector::MenuButton> tx_pwr_btn_;
 
