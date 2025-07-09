@@ -34,11 +34,13 @@ void ControlPanel::update_adapter_start_button_looking(bool start_status) const 
         play_button_->theme_hovered.bg_color = RED;
         play_button_->theme_pressed.bg_color = RED;
         play_button_->set_text(FTR("stop") + " (F5)");
+        adapter_prop_block_->set_visibility(true);
     } else {
         play_button_->theme_normal.bg_color = GREEN;
         play_button_->theme_hovered.bg_color = GREEN;
         play_button_->theme_pressed.bg_color = GREEN;
         play_button_->set_text(FTR("start") + " (F5)");
+        adapter_prop_block_->set_visibility(false);
     }
 }
 
@@ -84,14 +86,31 @@ void ControlPanel::custom_ready() {
         tab_container_->add_child(margin_container);
         tab_container_->set_tab_title(0, "Wi-Fi");
 
-        auto vbox_container = std::make_shared<revector::VBoxContainer>();
-        vbox_container->set_separation(8);
-        margin_container->add_child(vbox_container);
+        auto vbox = std::make_shared<revector::VBoxContainer>();
+        vbox->set_separation(8);
+        margin_container->add_child(vbox);
+
+        auto con = std::make_shared<revector::Container>();
+        vbox->add_child(con);
+
+        auto vbox_blockable = std::make_shared<revector::VBoxContainer>();
+        con->add_child(vbox_blockable);
+
+        adapter_prop_block_ = std::make_shared<revector::Panel>();
+        revector::StyleBox new_theme;
+        new_theme.bg_color = revector::ColorU(0, 0, 0, 150);
+        new_theme.border_width = 2;
+        new_theme.border_color = revector::ColorU(0, 0, 0);
+        adapter_prop_block_->set_theme_panel(new_theme);
+        con->add_child(adapter_prop_block_);
+
+        auto vbox_unblockable = std::make_shared<revector::VBoxContainer>();
+        vbox->add_child(vbox_unblockable);
 
         {
             auto hbox_container = std::make_shared<revector::HBoxContainer>();
             hbox_container->set_separation(8);
-            vbox_container->add_child(hbox_container);
+            vbox_blockable->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("device"));
@@ -122,7 +141,7 @@ void ControlPanel::custom_ready() {
 
         {
             auto hbox_container = std::make_shared<revector::HBoxContainer>();
-            vbox_container->add_child(hbox_container);
+            vbox_blockable->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("channel"));
@@ -153,7 +172,7 @@ void ControlPanel::custom_ready() {
 
         {
             auto hbox_container = std::make_shared<revector::HBoxContainer>();
-            vbox_container->add_child(hbox_container);
+            vbox_blockable->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("channel width"));
@@ -189,7 +208,7 @@ void ControlPanel::custom_ready() {
 
         {
             auto hbox_container = std::make_shared<revector::HBoxContainer>();
-            vbox_container->add_child(hbox_container);
+            vbox_blockable->add_child(hbox_container);
 
             auto label = std::make_shared<revector::Label>();
             label->set_text(FTR("key"));
@@ -237,7 +256,7 @@ void ControlPanel::custom_ready() {
             alink_con->set_title(FTR("alink"));
             alink_con->set_collapse(false);
             alink_con->set_color(revector::ColorU(210.0, 137, 94));
-            vbox_container->add_child(alink_con);
+            vbox_unblockable->add_child(alink_con);
 
             auto callback2 = [this](bool collapsed) { GuiInterface::EnableAlink(!collapsed); };
             alink_con->connect_signal("collapsed", callback2);
@@ -326,7 +345,7 @@ void ControlPanel::custom_ready() {
                 update_adapter_start_button_looking(!start);
             };
             play_button_->connect_signal("pressed", callback1);
-            vbox_container->add_child(play_button_);
+            vbox_unblockable->add_child(play_button_);
         }
     }
 

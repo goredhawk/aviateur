@@ -10,6 +10,8 @@ public:
     std::shared_ptr<revector::MenuButton> channel_width_button_;
     std::shared_ptr<revector::Button> refresh_dongle_button_;
 
+    std::shared_ptr<revector::Panel> adapter_prop_block_;
+
     std::shared_ptr<revector::MenuButton> tx_pwr_btn_;
 
     std::string dongle_name;
