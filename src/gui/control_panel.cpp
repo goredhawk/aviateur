@@ -117,7 +117,7 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(label);
 
             dongle_menu_button_ = std::make_shared<revector::MenuButton>();
-
+            dongle_menu_button_->set_custom_minimum_size({0, 32});
             dongle_menu_button_->container_sizing.expand_h = true;
             dongle_menu_button_->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
             hbox_container->add_child(dongle_menu_button_);
