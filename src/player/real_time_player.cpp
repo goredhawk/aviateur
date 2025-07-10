@@ -1,4 +1,6 @@
-﻿#include <SDL3/SDL.h>
+﻿#include "real_time_player.h"
+
+#include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
 
 #include <future>
@@ -6,7 +8,6 @@
 
 #include "../gui_interface.h"
 #include "jpeg_encoder.h"
-#include "real_time_player.h"
 
 // GIF默认帧率
 #define DEFAULT_GIF_FRAMERATE 10
@@ -88,9 +89,13 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
     decoder = std::make_shared<FfmpegDecoder>();
 
     analysisThread = std::thread([this, forceSoftwareDecoding] {
+        // Indicate we are using ffmpeg resources in a detached thread.
+        analysisResMtx.lock();
+
         bool ok = decoder->OpenInput(url, forceSoftwareDecoding);
         if (!ok) {
             GuiInterface::Instance().PutLog(LogLevel::Error, "Loading URL failed");
+            analysisResMtx.unlock();
             return;
         }
 
@@ -110,6 +115,8 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
         hwEnabled = decoder->hwDecoderEnabled;
 
         decodeThread = std::thread([this] {
+            decodeResMtx.lock();
+
             while (!playStop) {
                 try {
                     // Getting frame.
@@ -141,10 +148,15 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
                     break;
                 }
             }
+
+            decodeResMtx.unlock();
         });
 
         // Start decode thread.
         decodeThread.detach();
+
+        // We are done with ffmpeg resources.
+        analysisResMtx.unlock();
     });
 
     // Start analysis thread.
@@ -158,12 +170,18 @@ void RealTimePlayer::stop() {
         decoder->pFormatCtx->interrupt_callback.callback = [](void *) { return 1; };
     }
 
-    if (analysisThread.joinable()) {
-        analysisThread.join();
-    }
+    // The thread will be unjoinable after calling detach().
+    // if (analysisThread.joinable()) {
+    //     analysisThread.join();
+    // }
+    // if (decodeThread.joinable()) {
+    //     decodeThread.join();
+    // }
 
-    if (decodeThread.joinable()) {
-        decodeThread.join();
+    // Wait until the detached threads finish.
+    {
+        std::lock_guard lck1(analysisResMtx);
+        std::lock_guard lck2(decodeResMtx);
     }
 
     {

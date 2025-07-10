@@ -305,7 +305,7 @@ void PlayerRect::custom_ready() {
     auto onTipUpdate = [this](std::string msg) { show_red_tip(msg); };
     GuiInterface::Instance().tipCallbacks.emplace_back(onTipUpdate);
 
-    auto onUrlStreamShouldStop = [this]() { stop_playing(); };
+    auto onUrlStreamShouldStop = [this] { stop_playing(); };
     GuiInterface::Instance().urlStreamShouldStopCallbacks.emplace_back(onUrlStreamShouldStop);
 }
 

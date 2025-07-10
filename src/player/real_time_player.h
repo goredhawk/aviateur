@@ -100,8 +100,10 @@ protected:
     std::mutex mtx;
 
     std::thread decodeThread;
+    std::mutex decodeResMtx; // Resource mutex
 
     std::thread analysisThread;
+    std::mutex analysisResMtx; // Resource mutex
 
     std::shared_ptr<AVFrame> lastFrame_;
 
