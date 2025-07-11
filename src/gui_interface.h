@@ -36,6 +36,7 @@
 
 #define CONFIG_SETTINGS "settings"
 #define CONFIG_SETTINGS_LANG "language"
+#define CONFIG_SETTINGS_DARK_MODE "dark_mode"
 #define CONFIG_SETTINGS_MEDIA_BACKEND "media_backend"
 
 #define DEFAULT_PORT 52356
@@ -43,7 +44,7 @@
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Bump this if the config structure changes.
-constexpr auto CONFIG_VERSION_NUM = 4;
+constexpr auto CONFIG_VERSION_NUM = 5;
 
 const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
 const revector::ColorU RED = revector::ColorU(201, 79, 79);
@@ -146,6 +147,7 @@ public:
             set_locale(ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG]);
             use_gstreamer_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] != "ffmpeg";
             rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
+            dark_mode_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] == "true";
         }
     }
 
@@ -211,6 +213,7 @@ public:
 
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = "en";
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] = "ffmpeg";
+            ini[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] = "true";
         }
 
         if (read_success) {
@@ -230,6 +233,8 @@ public:
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = Instance().locale_;
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] =
             Instance().use_gstreamer_ ? "gstreamer" : "ffmpeg";
+        Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] = Instance().dark_mode_ ? "true" : "false";
+
         Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC] = Instance().rtp_codec_;
 
         auto dir = GetAppDataDir();
@@ -318,7 +323,7 @@ public:
         EmitLog(level, str);
     }
 
-    void NotifyRtpStream(int pt, uint16_t ssrc, int port, const std::string& codec) {
+    void NotifyRtpStream(int pt, uint16_t ssrc, int port, const std::string &codec) {
         std::string sdpFile = "sdp/sdp" + std::to_string(port) + ".sdp";
 
         BuildSdp(sdpFile, codec, pt, port);
@@ -425,6 +430,8 @@ public:
 
     // Local RTP listener
     std::string rtp_codec_;
+
+    bool dark_mode_ = false;
 
     bool config_file_exists = true;
 

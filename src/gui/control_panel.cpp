@@ -485,9 +485,9 @@ void ControlPanel::custom_input(revector::InputEvent &event) {
             if (key_args.pressed) {
                 if (tab_container_->get_current_tab().has_value()) {
                     if (tab_container_->get_current_tab().value() == 0) {
-                        play_button_->press();
+                        play_button_->set_pressed(true);
                     } else {
-                        play_port_button_->press();
+                        play_port_button_->set_pressed(true);
                     }
                 }
             }

@@ -48,13 +48,13 @@ void PlayerRect::custom_input(revector::InputEvent &event) {
 
         if (key_args.key == revector::KeyCode::F11) {
             if (key_args.pressed) {
-                fullscreen_button_->press();
+                fullscreen_button_->set_pressed(true);
             }
         }
 
         if (playing_ && key_args.key == revector::KeyCode::F10) {
             if (key_args.pressed) {
-                record_button_->press();
+                record_button_->set_pressed(true);
             }
         }
     }
@@ -251,7 +251,7 @@ void PlayerRect::custom_ready() {
             player_->yuvRenderer_->mLowLightEnhancementSimple = toggled;
             if (toggled) {
                 if (low_light_enhancement_button_advanced_->get_pressed()) {
-                    low_light_enhancement_button_advanced_->press();
+                    low_light_enhancement_button_advanced_->set_pressed(true);
                 }
             }
         };
@@ -267,7 +267,7 @@ void PlayerRect::custom_ready() {
             player_->yuvRenderer_->mLowLightEnhancementAdvanced = toggled;
             if (toggled) {
                 if (low_light_enhancement_button_simple_->get_pressed()) {
-                    low_light_enhancement_button_simple_->press();
+                    low_light_enhancement_button_simple_->set_pressed(true);
                 }
             }
         };
@@ -381,7 +381,7 @@ void PlayerRect::stop_playing() {
     playing_ = false;
 
     if (is_recording) {
-        record_button_->press();
+        record_button_->set_pressed(true);
     }
 
 #ifdef AVIATEUR_ENABLE_GSTREAMER

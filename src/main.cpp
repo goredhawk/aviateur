@@ -12,7 +12,7 @@ int main() {
     GuiInterface::Instance().init();
     GuiInterface::Instance().PutLog(LogLevel::Info, "App started");
 
-    auto app = new revector::App({1280, 720});
+    auto app = new revector::App({1280, 720}, GuiInterface::Instance().dark_mode_);
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "revector app created");
@@ -74,7 +74,7 @@ int main() {
         auto control_panel_button = std::make_shared<revector::CheckButton>();
         player_rect->top_control_container->add_child(control_panel_button);
         control_panel_button->set_text(FTR("control panel"));
-        control_panel_button->press();
+        control_panel_button->set_pressed(true);
 
         auto callback2 = [control_panel_weak](bool toggled) {
             if (!control_panel_weak.expired()) {

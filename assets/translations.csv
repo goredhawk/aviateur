@@ -47,3 +47,4 @@ tx power,TX power,发射功率,мощность передачи
 version,Version,版本,версия
 use gstreamer,Use GStreamer,使用GStreamer,использовать GStreamer
 codec,Codec,编码,Кодек
+dark mode,Dark mode,黑暗模式,Темный режим

@@ -63,13 +63,25 @@ void SettingsContainer::custom_ready() {
     }
 
 #ifdef AVIATEUR_ENABLE_GSTREAMER
-    auto decoder_backend_btn = std::make_shared<revector::CheckButton>();
-    decoder_backend_btn->set_text(FTR("use gstreamer"));
-    vbox_container->add_child(decoder_backend_btn);
-    decoder_backend_btn->set_pressed_no_signal(GuiInterface::Instance().use_gstreamer_);
-    auto callback = [this](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
-    decoder_backend_btn->connect_signal("toggled", callback);
+    {
+        auto decoder_backend_btn = std::make_shared<revector::CheckButton>();
+        decoder_backend_btn->set_text(FTR("use gstreamer"));
+        vbox_container->add_child(decoder_backend_btn);
+        decoder_backend_btn->set_pressed_no_signal(GuiInterface::Instance().use_gstreamer_);
+        auto callback = [this](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
+        decoder_backend_btn->connect_signal("toggled", callback);
+    }
+
 #endif
+
+    {
+        auto dark_mode_btn = std::make_shared<revector::CheckButton>();
+        dark_mode_btn->set_text(FTR("dark mode"));
+        vbox_container->add_child(dark_mode_btn);
+        dark_mode_btn->set_pressed_no_signal(GuiInterface::Instance().dark_mode_);
+        auto callback = [this](bool toggled) { GuiInterface::Instance().dark_mode_ = toggled; };
+        dark_mode_btn->connect_signal("toggled", callback);
+    }
 
     {
         auto open_capture_folder_button = std::make_shared<revector::MenuButton>();
