@@ -99,7 +99,7 @@ void ControlPanel::custom_ready() {
         adapter_prop_block_ = std::make_shared<revector::Panel>();
         revector::StyleBox new_theme;
         new_theme.bg_color = revector::ColorU(0, 0, 0, 150);
-        new_theme.border_width = 2;
+        new_theme.border_width = 0;
         new_theme.border_color = revector::ColorU(0, 0, 0);
         adapter_prop_block_->set_theme_panel(new_theme);
         con->add_child(adapter_prop_block_);
@@ -217,7 +217,7 @@ void ControlPanel::custom_ready() {
             auto text_edit = std::make_shared<revector::TextEdit>();
             text_edit->set_editable(false);
             if (keyPath.empty()) {
-                text_edit->set_text("default");
+                text_edit->set_text(FTR("default"));
             } else {
                 text_edit->set_text(std::filesystem::path(keyPath).filename().string());
             }
@@ -369,7 +369,7 @@ void ControlPanel::custom_ready() {
         udp_prop_block_ = std::make_shared<revector::Panel>();
         revector::StyleBox new_theme;
         new_theme.bg_color = revector::ColorU(0, 0, 0, 150);
-        new_theme.border_width = 2;
+        new_theme.border_width = 0;
         new_theme.border_color = revector::ColorU(0, 0, 0);
         udp_prop_block_->set_theme_panel(new_theme);
         udp_prop_block_->set_visibility(false);

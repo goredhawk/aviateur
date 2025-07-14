@@ -89,7 +89,7 @@ void SettingsContainer::custom_ready() {
         open_capture_folder_button->container_sizing.expand_h = true;
         open_capture_folder_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_capture_folder_button);
-        open_capture_folder_button->set_text(FTR("open capture folder"));
+        open_capture_folder_button->set_text(FTR("capture folder"));
 
         auto callback = [this]() { open_explorer(GuiInterface::GetCaptureDir()); };
         open_capture_folder_button->connect_signal("pressed", callback);
@@ -101,7 +101,7 @@ void SettingsContainer::custom_ready() {
         open_appdata_button->container_sizing.expand_h = true;
         open_appdata_button->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         vbox_container->add_child(open_appdata_button);
-        open_appdata_button->set_text(FTR("open appdata folder"));
+        open_appdata_button->set_text(FTR("config folder"));
 
         auto callback = [this]() { open_explorer(GuiInterface::GetAppDataDir()); };
         open_appdata_button->connect_signal("pressed", callback);
