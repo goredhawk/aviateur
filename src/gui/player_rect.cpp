@@ -102,7 +102,8 @@ void PlayerRect::custom_ready() {
     add_child(hud_container_);
     hud_container_->set_size({0, 48});
     revector::StyleBox box;
-    box.bg_color = revector::ColorU(27, 27, 27, 27);
+    box.bg_color =
+        GuiInterface::Instance().dark_mode_ ? revector::ColorU(27, 27, 27, 100) : revector::ColorU(228, 228, 228, 100);
     box.border_width = 0;
     box.corner_radius = 0;
     hud_container_->set_theme_bg(box);
