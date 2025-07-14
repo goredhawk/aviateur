@@ -1,7 +1,7 @@
-mkdir appimage-build
-cd appimage-build
+mkdir appimage-build-release
+cd appimage-build-release
 
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
 
 make -j$(nproc)
 
@@ -15,6 +15,7 @@ cp ./bin/assets/logo.png ./AppDir/usr/share/icons/hicolor/128x128/apps/aviateur.
 cp -r ./bin/assets ./AppDir
 cp ./bin/aviateur ./AppDir/usr/bin/
 
+rm linuxdeploy-x86_64.AppImage
 wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
 
 # Make it executable
