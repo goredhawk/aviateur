@@ -19,9 +19,6 @@ int main() {
 
     revector::TranslationServer::get_singleton()->load_translations(revector::get_asset_dir("translations.csv"));
 
-    auto font = std::make_shared<revector::Font>(revector::get_asset_dir("NotoSansSC-Regular.ttf"));
-    revector::DefaultResource::get_singleton()->set_default_font(font);
-
     // Initialize the default libusb context.
     int rc = libusb_init(nullptr);
 
