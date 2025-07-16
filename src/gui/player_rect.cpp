@@ -230,6 +230,21 @@ void PlayerRect::custom_ready() {
     record_button_->connect_signal("pressed", record_callback);
 
     {
+        auto button = std::make_shared<revector::CheckButton>();
+        button->set_text(FTR("force sw decoding"));
+        vbox->add_child(button);
+
+        auto callback = [this](bool toggled) {
+            force_software_decoding = toggled;
+            if (playing_) {
+                player_->stop();
+                player_->play(playing_file_, force_software_decoding);
+            }
+        };
+        button->connect_signal("toggled", callback);
+    }
+
+    {
         video_stabilization_button_ = std::make_shared<revector::CheckButton>();
         video_stabilization_button_->set_text(FTR("video stab"));
         vbox->add_child(video_stabilization_button_);
@@ -244,50 +259,12 @@ void PlayerRect::custom_ready() {
     }
 
     {
-        low_light_enhancement_button_simple_ = std::make_shared<revector::CheckButton>();
-        low_light_enhancement_button_simple_->set_text(FTR("low light enhancement simple"));
-        vbox->add_child(low_light_enhancement_button_simple_);
+        low_light_enhancement_button_ = std::make_shared<revector::CheckButton>();
+        low_light_enhancement_button_->set_text(FTR("low light enhancement"));
+        vbox->add_child(low_light_enhancement_button_);
 
-        auto callback = [this](bool toggled) {
-            player_->yuvRenderer_->mLowLightEnhancementSimple = toggled;
-            if (toggled) {
-                if (low_light_enhancement_button_advanced_->get_pressed()) {
-                    low_light_enhancement_button_advanced_->set_pressed(true);
-                }
-            }
-        };
-        low_light_enhancement_button_simple_->connect_signal("toggled", callback);
-    }
-
-    {
-        low_light_enhancement_button_advanced_ = std::make_shared<revector::CheckButton>();
-        low_light_enhancement_button_advanced_->set_text(FTR("low light enhancement dnn"));
-        vbox->add_child(low_light_enhancement_button_advanced_);
-
-        auto callback = [this](bool toggled) {
-            player_->yuvRenderer_->mLowLightEnhancementAdvanced = toggled;
-            if (toggled) {
-                if (low_light_enhancement_button_simple_->get_pressed()) {
-                    low_light_enhancement_button_simple_->set_pressed(true);
-                }
-            }
-        };
-        low_light_enhancement_button_advanced_->connect_signal("toggled", callback);
-    }
-
-    {
-        auto button = std::make_shared<revector::CheckButton>();
-        button->set_text(FTR("force sw decoding"));
-        vbox->add_child(button);
-
-        auto callback = [this](bool toggled) {
-            force_software_decoding = toggled;
-            if (playing_) {
-                player_->stop();
-                player_->play(playing_file_, force_software_decoding);
-            }
-        };
-        button->connect_signal("toggled", callback);
+        auto callback = [this](bool toggled) { player_->yuvRenderer_->mLowLightEnhancement = toggled; };
+        low_light_enhancement_button_->connect_signal("toggled", callback);
     }
 
     auto onBitrateUpdate = [this](uint64_t bitrate) {

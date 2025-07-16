@@ -50,9 +50,7 @@ public:
     std::shared_ptr<revector::Label> display_fps_label_;
 
     std::shared_ptr<revector::Button> video_stabilization_button_;
-
-    std::shared_ptr<revector::Button> low_light_enhancement_button_simple_;
-    std::shared_ptr<revector::Button> low_light_enhancement_button_advanced_;
+    std::shared_ptr<revector::Button> low_light_enhancement_button_;
 
     std::shared_ptr<revector::HBoxContainer> top_control_container;
     std::shared_ptr<revector::Button> fullscreen_button_;

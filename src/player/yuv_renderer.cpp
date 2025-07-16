@@ -1,6 +1,7 @@
-﻿#include "libavutil/pixfmt.h"
+﻿#include "yuv_renderer.h"
+
+#include "libavutil/pixfmt.h"
 #include "resources/resource.h"
-#include "yuv_renderer.h"
 
 std::string vertCode = R"(#version 310 es
 
@@ -238,12 +239,6 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
         if (mPrevFrameData->linesize[0]) {
             const void* texYData = mPrevFrameData->data[0];
 
-            if (mLowLightEnhancementSimple) {
-                enhancedFrameY = cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, mPrevFrameData->data[0]);
-                cv::equalizeHist(enhancedFrameY, enhancedFrameY);
-                texYData = enhancedFrameY.data;
-            }
-
             encoder->write_texture(mTexY, {}, texYData);
         }
         if (mPrevFrameData->linesize[1]) {
@@ -273,22 +268,16 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
         if (curFrameData->linesize[0]) {
             const void* texYData = curFrameData->data[0];
 
-            if (mLowLightEnhancementSimple) {
-                cv::Mat originalFrameY =
-                    cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
-
-                cv::equalizeHist(originalFrameY, enhancedFrameY);
-
-                texYData = enhancedFrameY.data;
-            } else if (mLowLightEnhancementAdvanced) {
-                if (!mNet.has_value()) {
-                    mNet = PairLIE(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
+            if (mLowLightEnhancement) {
+                if (!mLowLightEnhancer.has_value()) {
+                    mLowLightEnhancer =
+                        LowLightEnhancer(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
                 }
 
                 cv::Mat originalFrameY =
                     cv::Mat(mTexY->get_size().y, mTexY->get_size().x, CV_8UC1, curFrameData->data[0]);
 
-                enhancedFrameY = mNet->detect(originalFrameY);
+                enhancedFrameY = mLowLightEnhancer->detect(originalFrameY);
 
                 texYData = enhancedFrameY.data;
             }

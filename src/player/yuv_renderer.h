@@ -14,7 +14,7 @@
 
 #include "../feature/video_stabilizer.h"
 #include "libavutil/frame.h"
-#include "src/feature/night_image_enhancement.h"
+#include "src/feature/low_light_enhancer.h"
 
 namespace cv {
 class Mat;
@@ -32,10 +32,8 @@ public:
 
     bool mStabilize = false;
 
-    bool mLowLightEnhancementSimple = false;
-
-    bool mLowLightEnhancementAdvanced = false;
-    std::optional<PairLIE> mNet;
+    bool mLowLightEnhancement = false;
+    std::optional<LowLightEnhancer> mLowLightEnhancer;
 
     Pathfinder::Mat3 mStabXform;
 

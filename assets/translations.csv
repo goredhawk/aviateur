@@ -38,8 +38,7 @@ open crash dump folder,Open crash dump folder,打开崩溃数据文件夹,Отк
 show console,Show console,显示控制台,Показать консоль
 invalid input data,Invalid input data!,无效的输入数据！,Неверные входные данные!
 signal lost,Signal lost!,信号丢失！,Сигнал потерян!
-low light enhancement simple,Low light enhancement (simple),低光增强（简单）,Улучшение при слабом освещении (простое)
-low light enhancement dnn,Low light enhancement (DNN),低光增强（DNN）,Улучшение при слабом освещении (DNN)
+low light enhancement,Low light enhancement,低光增强,Улучшение при слабом освещении
 control panel,Control panel,控制面板,Панель управления
 alink,Adaptive link,自适应链路,Адаптивная ссылка
 tx power,TX power,发射功率,мощность передачи

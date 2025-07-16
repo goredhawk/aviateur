@@ -1,29 +1,31 @@
-#include "night_image_enhancement.h"
+#include "low_light_enhancer.h"
 
 #include <fstream>
 #include <opencv2/dnn.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-PairLIE::PairLIE(const std::string& modelPath, float exposure) {
-    this->net = cv::dnn::readNet(modelPath);
+// See https://github.com/hpc203/low-light-image-enhancement-opencv-dnn
 
-    size_t pos = modelPath.rfind("_");
-    size_t pos_ = modelPath.rfind(".");
+LowLightEnhancer::LowLightEnhancer(const std::string& model_path, float exposure) {
+    net_ = cv::dnn::readNet(model_path);
+
+    size_t pos = model_path.rfind("_");
+    size_t pos_ = model_path.rfind(".");
     int len = pos_ - pos - 1;
-    std::string hxw = modelPath.substr(pos + 1, len);
+    std::string hxw = model_path.substr(pos + 1, len);
 
     pos = hxw.rfind("x");
     std::string h = hxw.substr(0, pos);
     len = hxw.length() - pos;
     std::string w = hxw.substr(pos + 1, len);
-    this->inpHeight = std::stoi(h);
-    this->inpWidth = std::stoi(w);
+    input_height_ = std::stoi(h);
+    input_width_ = std::stoi(w);
     cv::Mat one = cv::Mat_<float>(1, 1) << exposure;
-    this->exposure_ = cv::dnn::blobFromImage(one);
+    exposure_ = cv::dnn::blobFromImage(one);
 }
 
-cv::Mat PairLIE::detect(const cv::Mat& grayImg) {
+cv::Mat LowLightEnhancer::detect(const cv::Mat& grayImg) {
     auto srcImg = cv::Mat(grayImg.size(), CV_8UC3);
     cv::cvtColor(grayImg, srcImg, cv::COLOR_GRAY2BGR);
 
@@ -31,19 +33,18 @@ cv::Mat PairLIE::detect(const cv::Mat& grayImg) {
     const int srcw = srcImg.cols;
     cv::Mat blob = cv::dnn::blobFromImage(srcImg,
                                           1 / 255.0,
-                                          cv::Size(this->inpWidth, this->inpHeight),
+                                          cv::Size(input_width_, input_height_),
                                           cv::Scalar(0, 0, 0),
                                           true,
                                           false);
 
-    this->net.setInput(blob, "input");
-    this->net.setInput(this->exposure_,
-                       "exposure"); ////opencv-dnn多输入代码参考https://github.com/opencv/opencv/issues/19304
+    net_.setInput(blob, "input");
+    net_.setInput(exposure_, "exposure");
     std::vector<cv::Mat> outs;
-    #ifdef _WIN32
-    net.enableWinograd(false); ////如果是opencv4.7，那就需要加上这一行
-    #endif
-    this->net.forward(outs, this->net.getUnconnectedOutLayersNames());
+#ifdef _WIN32
+    net_.enableWinograd(false); // For OpenCV 4.7
+#endif
+    net_.forward(outs, net_.getUnconnectedOutLayersNames());
 
     float* pdata = (float*)outs[0].data;
     const int out_h = outs[0].size[2];
