@@ -151,9 +151,10 @@ void SettingsContainer::custom_ready() {
 
     {
         auto version_label = std::make_shared<revector::Label>();
-
         version_label->container_sizing.expand_h = true;
         version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
+        version_label->container_sizing.expand_v = true;
+        version_label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkEnd;
         vbox_container->add_child(version_label);
         version_label->set_text(FTR("version") + " " + AVIATEUR_VERSION);
     }
