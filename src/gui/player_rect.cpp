@@ -9,7 +9,8 @@
 class SignalBar : public revector::ProgressBar {
     void custom_ready() override {
         theme_fg = {};
-        theme_bg->corner_radius = 0;
+        theme_bg = {};
+        theme_progress->border_width = 0;
         theme_progress->corner_radius = 0;
 
         set_lerp_enabled(true);
