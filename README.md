@@ -11,7 +11,7 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 ![](tutorials/interface.png)
 
 > [!NOTE]
-> Adaptive Link support only for Linux.
+> Adaptive Link support is only for Linux.
 
 > [!NOTE]
 > Only RTL8812AU Wi-Fi adapter is supported.
@@ -21,17 +21,20 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 
 ### Usage
 
-1. (Only for Windows) Download [Zadig](https://zadig.akeo.ie/)
-2. (Only for Windows) Install the libusb driver for your adapter.
+1. (Windows) Download [Zadig](https://zadig.akeo.ie/)
+2. (Windows) Install the libusb driver for your adapter.
    Go *Options* → *List All Devices*[Screenshot.cpp](../../Downloads/Screenshot.cpp).
    ![](tutorials/zadig1.jpg)
    Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
    ![](tutorials/zadig2.jpg)
-3. Run Aviateur (on Linux, root privileges are needed to access the adapter).
-4. Select the adapter with the previously obtained USB ID.
-5. Select your drone channel.
-6. Select your WFB key.
-7. *Start* & Fly!
+3. (Linux) Go to `/lib/udev/rules.d`, create a new file named `80-my8812au.rules` and add
+   `SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", MODE="0666"` in it.
+4. (Linux) Call `sudo udevadm control --reload-rules`, then reboot (required).
+5. Run Aviateur (on Linux, if you skip step 3 & 4, root privileges are needed to access the adapter).
+6. Select the adapter of the correct USB ID.
+7. Select your drone channel.
+8. Select your WFB-NG key.
+9. *Start* & Fly!
 
 ### Common run issues
 
