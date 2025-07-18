@@ -97,6 +97,7 @@ void PlayerRect::custom_ready() {
     tip_label_ = std::make_shared<TipLabel>();
     tip_label_->set_anchor_flag(revector::AnchorFlag::VCenterWide);
     tip_label_->set_visibility(false);
+    tip_label_->set_word_wrap(true);
     add_child(tip_label_);
 
     hud_container_ = std::make_shared<revector::HBoxContainer>();
