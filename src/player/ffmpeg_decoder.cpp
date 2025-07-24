@@ -1,11 +1,12 @@
-﻿#include <cassert>
+﻿#include "ffmpeg_decoder.h"
+
+#include <cassert>
 #include <iostream>
 #include <vector>
 
-#include "ffmpeg_decoder.h"
 #include "src/gui_interface.h"
 
-#define MAX_AUDIO_PACKET (2 * 1024 * 1024)
+constexpr size_t MAX_AUDIO_PACKET = 2 * 1024 * 1024;
 
 bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding) {
 #ifndef NDEBUG
@@ -51,12 +52,12 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
     }
 
     // Timeout
-    static const int timeout = 10;
+    static constexpr int timeout = 10;
     startTime = std::chrono::steady_clock::now();
 
     pFormatCtx->interrupt_callback.callback = [](void *timestamp) -> int {
-        auto now = std::chrono::steady_clock::now();
-        std::chrono::duration<double, std::chrono::seconds::period> duration =
+        const auto now = std::chrono::steady_clock::now();
+        const std::chrono::duration<double> duration =
             now - *(std::chrono::time_point<std::chrono::steady_clock> *)timestamp;
         return duration.count() > timeout;
     };
@@ -185,28 +186,26 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
 
         // Handle video
         if (packet->stream_index == videoStreamIndex) {
-            // NALU callback
             if (gotPktCallback) {
                 gotPktCallback(packet);
             }
 
             timestamp->record("gotPktCallback");
 
-            std::shared_ptr<AVFrame> pVideoYuv = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
+            std::shared_ptr<AVFrame> pFrameVideo = std::shared_ptr<AVFrame>(av_frame_alloc(), &freeFrame);
 
-            bool isDecodeComplete = DecodeVideo(packet.get(), pVideoYuv);
-            if (isDecodeComplete) {
-                res = pVideoYuv;
+            if (bool successful = DecodeVideo(packet.get(), pFrameVideo)) {
+                res = pFrameVideo;
             }
 
             timestamp->record("DecodeVideo");
 
-            // Frame callback
-            if (gotFrameCallback) {
-                gotFrameCallback(pVideoYuv);
+            // Trigger callback
+            if (gotVideoFrameCallback) {
+                gotVideoFrameCallback(pFrameVideo);
             }
 
-            timestamp->record("gotFrameCallback");
+            timestamp->record("gotVideoFrameCallback");
             timestamp->print();
 
             break;
@@ -219,11 +218,11 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
             }
 
             if (packet->dts != AV_NOPTS_VALUE) {
-                int audioFrameSize = MAX_AUDIO_PACKET;
-                std::shared_ptr<uint8_t> pFrameAudio = std::shared_ptr<uint8_t>(new uint8_t[audioFrameSize]);
+                constexpr int audioFrameSize = MAX_AUDIO_PACKET;
+                auto pFrameAudio = std::shared_ptr<uint8_t>(new uint8_t[audioFrameSize]);
 
-                int nDecodedSize = DecodeAudio(packet.get(), pFrameAudio.get(), audioFrameSize);
-                if (nDecodedSize > 0) {
+                if (const int nDecodedSize = DecodeAudio(packet.get(), pFrameAudio.get(), audioFrameSize);
+                    nDecodedSize > 0) {
                     writeAudioBuff(pFrameAudio.get(), nDecodedSize);
                 }
             }

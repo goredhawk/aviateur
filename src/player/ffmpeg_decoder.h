@@ -98,11 +98,16 @@ private:
 
     void writeAudioBuff(uint8_t *aSample, size_t aSize);
 
+    /// NALU callback (video/audio)
     std::function<void(const std::shared_ptr<AVPacket> &packet)> gotPktCallback;
 
-    std::function<void(const std::shared_ptr<AVFrame> &frame)> gotFrameCallback;
+    std::function<void(const std::shared_ptr<AVFrame> &frame)> gotVideoFrameCallback;
 
     bool createHwCtx(AVCodecContext *ctx, enum AVHWDeviceType type);
+
+    void emitBitrateUpdate(uint64_t pBitrate) {
+        bitrateUpdateCallback(pBitrate);
+    }
 
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 
@@ -136,10 +141,6 @@ private:
     int width{};
 
     int height{};
-
-    void emitBitrateUpdate(uint64_t pBitrate) {
-        bitrateUpdateCallback(pBitrate);
-    }
 
     volatile uint64_t bytesSecond = 0;
     uint64_t bitrate = 0;

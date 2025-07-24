@@ -419,7 +419,7 @@ bool RealTimePlayer::startGifRecord() {
     }
 
     // 设置获得解码帧回调
-    decoder->gotFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
+    decoder->gotVideoFrameCallback = [this](const std::shared_ptr<AVFrame> &frame) {
         if (!gifEncoder_) {
             return;
         }
@@ -441,7 +441,7 @@ bool RealTimePlayer::startGifRecord() {
 }
 
 std::string RealTimePlayer::stopGifRecord() const {
-    decoder->gotFrameCallback = nullptr;
+    decoder->gotVideoFrameCallback = nullptr;
     if (!gifEncoder_) {
         return "";
     }
