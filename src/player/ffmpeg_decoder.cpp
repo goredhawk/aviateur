@@ -68,9 +68,9 @@ bool FfmpegDecoder::OpenInput(std::string &inputFile, bool forceSoftwareDecoding
         return false;
     }
 
-    std::chrono::duration<double> duration = std::chrono::steady_clock::now() - startTime;
     // Timeout
-    if (duration.count() > timeout) {
+    if (const std::chrono::duration<double> duration = std::chrono::steady_clock::now() - startTime;
+        duration.count() > timeout) {
         CloseInput();
         return false;
     }
@@ -221,7 +221,7 @@ std::shared_ptr<AVFrame> FfmpegDecoder::GetNextFrame() {
                 constexpr int audioFrameSize = MAX_AUDIO_PACKET;
                 auto pFrameAudio = std::shared_ptr<uint8_t>(new uint8_t[audioFrameSize]);
 
-                if (const int nDecodedSize = DecodeAudio(packet.get(), pFrameAudio.get(), audioFrameSize);
+                if (const size_t nDecodedSize = DecodeAudio(packet.get(), pFrameAudio.get(), audioFrameSize);
                     nDecodedSize > 0) {
                     writeAudioBuff(pFrameAudio.get(), nDecodedSize);
                 }
@@ -254,7 +254,7 @@ bool FfmpegDecoder::OpenVideo() {
             if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 videoStreamIndex = i;
 
-                AVCodecID codecId = pFormatCtx->streams[i]->codecpar->codec_id;
+                const AVCodecID codecId = pFormatCtx->streams[i]->codecpar->codec_id;
                 GuiInterface::Instance().PutLog(LogLevel::Info, "Video codec ID: {}", (int)codecId);
 
                 const AVCodec *codec = avcodec_find_decoder(codecId);
@@ -391,9 +391,8 @@ bool FfmpegDecoder::OpenAudio() {
         for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++) {
             if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
                 audioStreamIndex = i;
-                const AVCodec *codec = avcodec_find_decoder(pFormatCtx->streams[i]->codecpar->codec_id);
 
-                if (codec) {
+                if (const AVCodec *codec = avcodec_find_decoder(pFormatCtx->streams[i]->codecpar->codec_id)) {
                     pAudioCodecCtx = avcodec_alloc_context3(codec);
                     if (pAudioCodecCtx) {
                         if (avcodec_parameters_to_context(pAudioCodecCtx, pFormatCtx->streams[i]->codecpar) >= 0) {
@@ -432,7 +431,7 @@ void FfmpegDecoder::CloseAudio() {
     }
 }
 
-int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize) {
+size_t FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize) {
     size_t decodedSize = 0;
 
     int ret = avcodec_send_packet(pAudioCodecCtx, av_pkt);
@@ -444,7 +443,7 @@ int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size
 
     while (true) {
         uint8_t *pDest = pOutBuffer + decodedSize;
-        if ((nOutBufferSize - decodedSize) < 0) {
+        if (nOutBufferSize - decodedSize < 0) {
             break;
         }
 
@@ -473,32 +472,31 @@ int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size
                                             0,
                                             nullptr);
 
-                        auto ret = swr_init(ptr);
-                        if (ret < 0) {
+                        if (const int ret2 = swr_init(ptr); ret2 < 0) {
                             char errStr[AV_ERROR_MAX_STRING_SIZE];
-                            av_strerror(ret, errStr, AV_ERROR_MAX_STRING_SIZE);
+                            av_strerror(ret2, errStr, AV_ERROR_MAX_STRING_SIZE);
                             throw std::runtime_error("Decoding audio failed: " + std::string(errStr));
                         }
                         swrCtx = std::shared_ptr<SwrContext>(ptr, &freeSwrCtx);
                     }
 
                     // Convert audio frame to S16 format
-                    int samples = swr_convert(swrCtx.get(),
-                                              &pDest,
-                                              audioFrame->nb_samples,
-                                              (const uint8_t **)audioFrame->data,
-                                              audioFrame->nb_samples);
-                    size_t sizeToDecode =
+                    const int samples = swr_convert(swrCtx.get(),
+                                                    &pDest,
+                                                    audioFrame->nb_samples,
+                                                    (const uint8_t **)audioFrame->data,
+                                                    audioFrame->nb_samples);
+                    const size_t sizeToDecode =
                         samples * pAudioCodecCtx->ch_layout.nb_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
 
                     decodedSize += sizeToDecode;
                 } else {
                     // Copy S16 audio data directly
-                    size_t sizeToDecode = av_samples_get_buffer_size(nullptr,
-                                                                     pAudioCodecCtx->ch_layout.nb_channels,
-                                                                     audioFrame->nb_samples,
-                                                                     AV_SAMPLE_FMT_S16,
-                                                                     1);
+                    const size_t sizeToDecode = av_samples_get_buffer_size(nullptr,
+                                                                           pAudioCodecCtx->ch_layout.nb_channels,
+                                                                           audioFrame->nb_samples,
+                                                                           AV_SAMPLE_FMT_S16,
+                                                                           1);
                     memcpy(pDest, audioFrame->data[0], sizeToDecode);
 
                     decodedSize += sizeToDecode;
@@ -528,32 +526,29 @@ int FfmpegDecoder::DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size
     return decodedSize;
 }
 
-void FfmpegDecoder::writeAudioBuff(uint8_t *aSample, size_t aSize) {
+void FfmpegDecoder::writeAudioBuff(const uint8_t *aSample, const size_t aSize) {
     std::lock_guard lck(abBuffMtx);
 
-    size_t free_space = av_fifo_can_write(audioFifoBuffer);
-    if (free_space < aSize) {
+    if (const size_t free_space = av_fifo_can_write(audioFifoBuffer); free_space < aSize) {
         // Drop old data.
         std::vector<uint8_t> tmp;
         tmp.resize(aSize);
         av_fifo_read(audioFifoBuffer, tmp.data(), aSize);
     }
 
-    int ret = av_fifo_write(audioFifoBuffer, aSample, aSize);
-    if (ret < 0) {
+    if (const int ret = av_fifo_write(audioFifoBuffer, aSample, aSize); ret < 0) {
         GuiInterface::Instance().PutLog(LogLevel::Warn, "av_fifo_write failed!");
     }
 }
 
-int FfmpegDecoder::ReadAudioBuff(uint8_t *aSample, size_t aSize) {
+int FfmpegDecoder::ReadAudioBuff(uint8_t *aSample, const size_t aSize) {
     std::lock_guard lck(abBuffMtx);
 
-    size_t available_size = av_fifo_can_read(audioFifoBuffer);
-    if (available_size < aSize) {
+    if (const size_t available_size = av_fifo_can_read(audioFifoBuffer); available_size < aSize) {
         // Not enough to read.
         return false;
     }
-    int ret = av_fifo_read(audioFifoBuffer, aSample, aSize);
+    const int ret = av_fifo_read(audioFifoBuffer, aSample, aSize);
 
     return ret >= 0;
 }

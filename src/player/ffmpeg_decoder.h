@@ -92,11 +92,11 @@ private:
 
     void CloseAudio();
 
-    int DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
+    size_t DecodeAudio(const AVPacket *av_pkt, uint8_t *pOutBuffer, size_t nOutBufferSize);
 
     bool DecodeVideo(const AVPacket *av_pkt, std::shared_ptr<AVFrame> &pOutFrame);
 
-    void writeAudioBuff(uint8_t *aSample, size_t aSize);
+    void writeAudioBuff(const uint8_t *aSample, size_t aSize);
 
     /// NALU callback (video/audio)
     std::function<void(const std::shared_ptr<AVPacket> &packet)> gotPktCallback;
