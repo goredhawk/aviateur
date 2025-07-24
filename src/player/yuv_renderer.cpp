@@ -1,87 +1,17 @@
 ﻿#include "yuv_renderer.h"
 
+#include <utility>
+
 #include "libavutil/pixfmt.h"
 #include "resources/resource.h"
 
-std::string vertCode = R"(#version 310 es
-
-layout(std140) uniform bUniform0 {
-    mat4 xform;
-    int pixFmt;
-    int pad0;
-    int pad1;
-    int pad2;
-};
-
-layout(location = 0) in vec2 aPos;
-layout(location = 1) in vec2 aUV;
-
-out vec2 v_texCoord;
-
-void main() {
-    gl_Position = xform * vec4(aPos, 1.0f, 1.0f);
-    v_texCoord = aUV;
-}
-)";
-
-std::string fragCode =
-    R"(#version 310 es
-
-#ifdef GL_ES
-precision highp float;
-precision highp sampler2D;
+#ifdef REVECTOR_USE_VULKAN
+    #include "../shaders/generated/yuv_frag_spv.h"
+    #include "../shaders/generated/yuv_vert_spv.h"
+#else
+    #include "../shaders/generated/yuv_frag.h"
+    #include "../shaders/generated/yuv_vert.h"
 #endif
-
-out vec4 oFragColor;
-
-in vec2 v_texCoord;
-
-uniform sampler2D tex_y;
-uniform sampler2D tex_u;
-uniform sampler2D tex_v;
-
-layout(std140) uniform bUniform0 {
-    mat4 xform;
-    int pixFmt;
-    int pad0;
-    int pad1;
-    int pad2;
-};
-
-void main() {
-    vec3 yuv;
-    vec3 rgb;
-    if (pixFmt == 0 || pixFmt == 12) {
-        //yuv420p
-        yuv.x = texture(tex_y, v_texCoord).r;
-        yuv.y = texture(tex_u, v_texCoord).r - 0.5;
-        yuv.z = texture(tex_v, v_texCoord).r - 0.5;
-        rgb = mat3( 1.0,       1.0,         1.0,
-                    0.0,       -0.3455,  1.779,
-                    1.4075, -0.7169,  0.0) * yuv;
-    } else if( pixFmt == 23 ){
-        // NV12
-        yuv.x = texture(tex_y, v_texCoord).r;
-        yuv.y = texture(tex_u, v_texCoord).r - 0.5;
-        yuv.z = texture(tex_u, v_texCoord).g - 0.5;
-        rgb = mat3( 1.0,       1.0,         1.0,
-                    0.0,       -0.3455,  1.779,
-                    1.4075, -0.7169,  0.0) * yuv;
-
-    } else {
-        //YUV444P
-        yuv.x = texture(tex_y, v_texCoord).r;
-        yuv.y = texture(tex_u, v_texCoord).r - 0.5;
-        yuv.z = texture(tex_v, v_texCoord).r - 0.5;
-
-        rgb.x = clamp( yuv.x + 1.402 *yuv.z, 0.0, 1.0);
-        rgb.y = clamp( yuv.x - 0.34414 * yuv.y - 0.71414 * yuv.z, 0.0, 1.0);
-        rgb.z = clamp( yuv.x + 1.772 * yuv.y, 0.0, 1.0);
-    }
-
-    oFragColor = vec4(rgb, 1.0);
-}
-)";
 
 struct FragUniformBlock {
     Pathfinder::Mat4 xform;
@@ -92,8 +22,8 @@ struct FragUniformBlock {
 };
 
 YuvRenderer::YuvRenderer(std::shared_ptr<Pathfinder::Device> device, std::shared_ptr<Pathfinder::Queue> queue) {
-    mDevice = device;
-    mQueue = queue;
+    mDevice = std::move(device);
+    mQueue = std::move(queue);
 }
 
 void YuvRenderer::init() {
@@ -127,12 +57,17 @@ void YuvRenderer::initGeometry() {
 }
 
 void YuvRenderer::initPipeline() {
-    const auto vert_source = std::vector<char>(vertCode.begin(), vertCode.end());
-    const auto frag_source = std::vector<char>(fragCode.begin(), fragCode.end());
+#ifdef REVECTOR_USE_VULKAN
+    const auto vert_source = std::vector<char>(std::begin(fill_vert_spv), std::end(fill_vert_spv));
+    const auto frag_source = std::vector<char>(std::begin(fill_frag_spv), std::end(fill_frag_spv));
+#else
+    const auto vert_source = std::vector<char>(std::begin(aviateur::yuv_vert), std::end(aviateur::yuv_vert));
+    const auto frag_source = std::vector<char>(std::begin(aviateur::yuv_frag), std::end(aviateur::yuv_frag));
+#endif
 
     std::vector<Pathfinder::VertexInputAttributeDescription> attribute_descriptions;
 
-    uint32_t stride = 4 * sizeof(float);
+    constexpr uint32_t stride = 4 * sizeof(float);
 
     attribute_descriptions.push_back({0, 2, Pathfinder::DataType::f32, stride, 0, Pathfinder::VertexInputRate::Vertex});
 
@@ -223,8 +158,8 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
             mStabXform.v[6] = stabXform.at<double>(0, 2) / mTexY->get_size().x;
             mStabXform.v[7] = stabXform.at<double>(1, 2) / mTexY->get_size().y;
 
-            mStabXform =
-                mStabXform.scale(Pathfinder::Vec2F(1.0f + (float)HORIZONTAL_BORDER_CROP / mTexY->get_size().x));
+            mStabXform = mStabXform.scale(
+                Pathfinder::Vec2F(1.0f + static_cast<float>(HORIZONTAL_BORDER_CROP) / mTexY->get_size().x));
         }
 
         mPreviousFrame = frameY.clone();
@@ -270,8 +205,7 @@ void YuvRenderer::updateTextureData(const std::shared_ptr<AVFrame>& curFrameData
 
             if (mLowLightEnhancement) {
                 if (!mLowLightEnhancer.has_value()) {
-                    mLowLightEnhancer =
-                        LowLightEnhancer(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
+                    mLowLightEnhancer = LowLightEnhancer(revector::get_asset_dir("weights/pairlie_180x320.onnx"));
                 }
 
                 cv::Mat originalFrameY =
