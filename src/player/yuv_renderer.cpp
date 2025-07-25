@@ -5,13 +5,12 @@
 #include "libavutil/pixfmt.h"
 #include "resources/resource.h"
 
-#ifdef REVECTOR_USE_VULKAN
-    #include "../shaders/generated/yuv_frag_spv.h"
-    #include "../shaders/generated/yuv_vert_spv.h"
-#else
-    #include "../shaders/generated/yuv_frag.h"
-    #include "../shaders/generated/yuv_vert.h"
-#endif
+// SPV
+#include "../shaders/generated/yuv_frag_spv.h"
+#include "../shaders/generated/yuv_vert_spv.h"
+// GLSL
+#include "../shaders/generated/yuv_frag.h"
+#include "../shaders/generated/yuv_vert.h"
 
 struct FragUniformBlock {
     Pathfinder::Mat4 xform;
@@ -57,13 +56,15 @@ void YuvRenderer::initGeometry() {
 }
 
 void YuvRenderer::initPipeline() {
-#ifdef REVECTOR_USE_VULKAN
-    const auto vert_source = std::vector<char>(std::begin(fill_vert_spv), std::end(fill_vert_spv));
-    const auto frag_source = std::vector<char>(std::begin(fill_frag_spv), std::end(fill_frag_spv));
-#else
-    const auto vert_source = std::vector<char>(std::begin(aviateur::yuv_vert), std::end(aviateur::yuv_vert));
-    const auto frag_source = std::vector<char>(std::begin(aviateur::yuv_frag), std::end(aviateur::yuv_frag));
-#endif
+    std::vector<char> vert_source, frag_source;
+
+    if (mDevice->get_backend_type() == Pathfinder::BackendType::Vulkan) {
+        vert_source = std::vector<char>(std::begin(aviateur::yuv_vert_spv), std::end(aviateur::yuv_vert_spv));
+        frag_source = std::vector<char>(std::begin(aviateur::yuv_frag_spv), std::end(aviateur::yuv_frag_spv));
+    } else {
+        vert_source = std::vector<char>(std::begin(aviateur::yuv_vert), std::end(aviateur::yuv_vert));
+        frag_source = std::vector<char>(std::begin(aviateur::yuv_frag), std::end(aviateur::yuv_frag));
+    }
 
     std::vector<Pathfinder::VertexInputAttributeDescription> attribute_descriptions;
 
