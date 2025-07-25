@@ -66,13 +66,13 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
    .\vcpkg install libusb ffmpeg libsodium opencv
    ```
 
-3. Add VCPKG_ROOT() to environment. (Change the value to your vcpkg path.)
+3. Add VCPKG_ROOT to environment. (Change the value to your vcpkg path.)
    ![](tutorials/vcpkg.jpg)
 
 4. Clone third-party library sources.
    ```powershell
-   git submodule init
-   git submodule update
+   git submodule update --init --recursive
+   git submodule update --remote --recursive
    ```
 
 5. Open as a CMake project and build.
@@ -81,8 +81,8 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 
 1. Install dependencies.
    ```bash
-   git submodule init
-   git submodule update
+   git submodule update --init --recursive
+   git submodule update --remote --recursive
    sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev libpcap-dev
    ```
 
