@@ -72,7 +72,6 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 4. Clone third-party library sources.
    ```powershell
    git submodule update --init --recursive
-   git submodule update --remote --recursive
    ```
 
 5. Open as a CMake project and build.
@@ -82,7 +81,6 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 1. Install dependencies.
    ```bash
    git submodule update --init --recursive
-   git submodule update --remote --recursive
    sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev libpcap-dev
    ```
 

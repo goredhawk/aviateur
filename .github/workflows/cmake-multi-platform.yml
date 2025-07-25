@@ -58,8 +58,7 @@ jobs:
         id: vars
         if: runner.os == 'Windows'
         run: |
-          git submodule init
-          git submodule update
+          git submodule update --init --recursive
           git clone https://github.com/Microsoft/vcpkg.git
           cd vcpkg
           .\bootstrap-vcpkg.bat
@@ -70,8 +69,7 @@ jobs:
       - name: Install dependency libraries (Linux)
         if: runner.os == 'Linux'
         run: |
-          git submodule init
-          git submodule update
+          git submodule update --init --recursive
           sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev libpcap-dev
           sudo apt install gstreamer1.0-plugins-good gstreamer1.0-nice gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad libgstreamer-plugins-bad1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev glslang-tools libbsd-dev libgl1-mesa-dev libsystemd-dev libx11-dev libx11-xcb-dev libxxf86vm-dev pkg-config gstreamer1.0-libav libglib2.0-dev
 
