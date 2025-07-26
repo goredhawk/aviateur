@@ -106,6 +106,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "3rd/devourer/src" "3rd/devou
 
 add_subdirectory(3rd/revector)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/revector/src")
+set(REVECTOR_VULKAN OFF)
 
 add_subdirectory(3rd/json)
 target_include_directories(${PROJECT_NAME} PRIVATE "3rd/json/include")
