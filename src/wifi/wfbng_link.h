@@ -78,6 +78,10 @@ protected:
     std::unique_ptr<std::thread> link_quality_thread;
     FecController fec_controller;
 
+    // TUN
+    bool tun_enabled = false;
+    std::unique_ptr<std::thread> tun_thread;
+
     void init_thread(std::unique_ptr<std::thread> &thread,
                      const std::function<std::unique_ptr<std::thread>()> &init_func) {
         std::unique_lock lock(thread_mutex);

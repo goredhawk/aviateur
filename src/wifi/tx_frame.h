@@ -75,7 +75,7 @@ struct TxArgs {
  */
 class TxFrame {
 public:
-    TxFrame();
+    TxFrame(bool tun_enabled);
     ~TxFrame();
 
     /**
@@ -113,6 +113,8 @@ public:
 
 private:
     bool shouldStop_ = false;
+
+    bool tun_enabled_ = false;
 
     /**
      * @brief Create a UDP socket for receiving data

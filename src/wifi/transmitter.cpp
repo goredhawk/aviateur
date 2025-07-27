@@ -59,6 +59,8 @@ bool Transmitter::sendPacket(const uint8_t *buf, size_t size, uint8_t flags) {
         return false;
     }
 
+    // printf("Transmitter sends a packet, size %lu\n", size);
+
     // Ensure size is within user payload limit
     if (size > MAX_PAYLOAD_SIZE) {
         throw std::runtime_error("sendPacket: size exceeds MAX_PAYLOAD_SIZE");

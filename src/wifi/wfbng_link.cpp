@@ -10,6 +10,7 @@
 #include "rx_frame.h"
 #include "signal_quality.h"
 #ifdef __linux__
+    #include "tun.h"
     #include "tx_frame.h"
     #include "wfb-ng/rx.hpp"
 #endif
@@ -258,7 +259,7 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     }
 
 #ifdef __linux__
-    tx_frame = std::make_shared<TxFrame>();
+    tx_frame = std::make_shared<TxFrame>(tun_enabled);
 #endif
 
     usbThread = std::make_shared<std::thread>([=, this]() {
@@ -360,6 +361,13 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
     });
     usbThread->detach();
 
+#ifdef __linux__
+    if (tun_enabled) {
+        tun_thread = std::make_unique<std::thread>([=, this] { start_tun("10.5.0.3", 24, 8001, 8000); });
+        tun_thread->detach();
+    }
+#endif
+
     return true;
 }
 
@@ -373,26 +381,35 @@ void WfbngLink::start_link_quality_thread() {
 
         fec_controller.setEnabled(true);
 
-        const char *ip = "127.0.0.1";
-        int port = 8001;
-        int sockfd;
+        std::string ip;
+        int port;
+        if (tun_enabled) {
+            ip = "10.5.0.10";
+            port = 9999;
+        } else {
+            ip = "127.0.0.1";
+            port = 8001;
+        }
+
+        int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
         // Create UDP socket
-        if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        if (sock_fd < 0) {
             printf("Socket creation failed");
             return;
         }
 
         int opt = 1;
-        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
         struct sockaddr_in server_addr = {};
         server_addr.sin_family = AF_INET;
         server_addr.sin_port = htons(port);
 
-        if (inet_pton(AF_INET, ip, &server_addr.sin_addr) <= 0) {
+        // Convert the IP address from text to binary form
+        if (inet_pton(AF_INET, ip.c_str(), &server_addr.sin_addr) <= 0) {
             printf("Invalid IP address");
-            close(sockfd);
+            close(sock_fd);
             return;
         }
 
@@ -487,8 +504,10 @@ void WfbngLink::start_link_quality_thread() {
 
                 size_t buf_size = len + sizeof(len);
 
+                printf("Alink thread sends a packet, size %lu\n", buf_size);
+
                 ssize_t sent =
-                    sendto(sockfd, message, buf_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
+                    sendto(sock_fd, message, buf_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
                 if (sent < 0) {
                     printf("Failed to send message");
                     break;
@@ -497,7 +516,7 @@ void WfbngLink::start_link_quality_thread() {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        close(sockfd);
+        close(sock_fd);
         this->alink_should_stop = false;
     };
 
@@ -564,6 +583,9 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
                                       epoch,
                                       video_channel_id_f,
                                       0);
+
+    static std::unique_ptr<AggregatorX> udp_aggregator =
+        std::make_unique<AggregatorX>(client_addr, udp_client_port, keyPath, epoch, udp_channel_id_f, 0);
 #else
     static std::unique_ptr<Aggregator> video_aggregator = std::make_unique<Aggregator>(
         keyPath.c_str(),
@@ -613,15 +635,25 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
         GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
 #endif
-
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
         // GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a MAVLink frame, but we're unable to handle it!");
     }
     // UDP frame
-    else if (frame.MatchesChannelID(udp_channel_id_be8)) {
+    else if (frame.MatchesChannelID(udp_channel_id_be8) && tun_enabled) {
         // GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a UDP frame, but we're unable to handle it!");
+
+        udp_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                                       packet.Data.size() - sizeof(ieee80211_header) - 4,
+                                       0,
+                                       antenna,
+                                       rssi,
+                                       noise,
+                                       freq,
+                                       0,
+                                       0,
+                                       NULL);
     }
 }
 
