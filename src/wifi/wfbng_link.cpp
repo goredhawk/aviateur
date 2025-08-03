@@ -365,8 +365,9 @@ bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidt
 
 #ifdef __linux__
     if (tun_enabled) {
-        tun_thread = std::make_unique<std::thread>([=, this] { start_tun("10.5.0.3", 24, 8001, 8000); });
-        tun_thread->detach();
+        tun_ = std::make_unique<Tun>();
+        tun_->init("10.5.0.3", 24, 8001, 8000);
+        tun_->start();
     }
 #endif
 
@@ -705,6 +706,9 @@ void WfbngLink::handle_rtp(uint8_t *payload, uint16_t packet_size) {
 void WfbngLink::stop() const {
     if (rtlDevice) {
         rtlDevice->should_stop = true;
+    }
+    if (tun_) {
+        tun_->stop();
     }
 }
 

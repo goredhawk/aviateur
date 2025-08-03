@@ -13,6 +13,7 @@
 #include "FrameParser.h"
 #include "Rtl8812aDevice.h"
 #include "fec_controller.h"
+#include "tun.h"
 #ifdef __linux__
     #include "tx_frame.h"
 #endif
@@ -80,7 +81,7 @@ protected:
 
     // TUN
     bool tun_enabled = false;
-    std::unique_ptr<std::thread> tun_thread;
+    std::unique_ptr<Tun> tun_;
 
     void init_thread(std::unique_ptr<std::thread> &thread,
                      const std::function<std::unique_ptr<std::thread>()> &init_func) {

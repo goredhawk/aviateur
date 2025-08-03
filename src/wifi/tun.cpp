@@ -59,17 +59,16 @@ int tun_connect(const char *iface_name, short flags, char *iface_name_out) {
     #include <linux/rtnetlink.h>
 
 int netlink_connect() {
-    int netlink_fd, rc;
     struct sockaddr_nl sockaddr;
 
-    netlink_fd = socket(AF_NETLINK, SOCK_RAW | SOCK_CLOEXEC, NETLINK_ROUTE);
+    const int netlink_fd = socket(AF_NETLINK, SOCK_RAW | SOCK_CLOEXEC, NETLINK_ROUTE);
     if (netlink_fd == -1) {
         return -1;
     }
 
     memset(&sockaddr, 0, sizeof sockaddr);
     sockaddr.nl_family = AF_NETLINK;
-    rc = bind(netlink_fd, (struct sockaddr *)&sockaddr, sizeof sockaddr);
+    int rc = bind(netlink_fd, (struct sockaddr *)&sockaddr, sizeof sockaddr);
     if (rc == -1) {
         int bind_errno = errno;
         close(netlink_fd);
@@ -136,7 +135,7 @@ int netlink_link_up(int netlink_fd, const char *iface_name) {
     return 0;
 }
 
-int run_proxy(int tun_fd, int send_fd, int recv_fd) {
+int Tun::run_proxy(int tun_fd, int send_fd, int recv_fd) const {
     pollfd poll_fds[2];
     poll_fds[0].fd = tun_fd;
     poll_fds[0].events = POLLIN;
@@ -145,7 +144,7 @@ int run_proxy(int tun_fd, int send_fd, int recv_fd) {
 
     char recv_buf[UINT16_MAX];
 
-    while (true) {
+    while (!should_stop) {
         if (const int rc = poll(poll_fds, 1, 0) == -1; rc < 0) {
             if (errno == EINTR || errno == EAGAIN) {
                 continue;
@@ -192,6 +191,8 @@ int run_proxy(int tun_fd, int send_fd, int recv_fd) {
         // }
     }
 
+    close_fds();
+
     return 0;
 }
 
@@ -237,53 +238,85 @@ int bind_localhost_udp(const uint16_t port) {
     return fd;
 }
 
-bool start_tun(const char *address, const uint8_t prefix_bits, const uint16_t send_port, const uint16_t recv_port) {
+Tun::~Tun() {
+    stop();
+}
+
+bool Tun::init(const char *address, uint8_t prefix_bits, uint16_t send_port, uint16_t recv_port) {
     char iface_name[IFNAMSIZ];
 
     // Whatever received from the IP address will be forwarded to localhost:send_port
-    const int send_fd = connect_localhost_udp(send_port);
+    send_fd = connect_localhost_udp(send_port);
     if (send_fd == -1) {
         fprintf(stderr, "Failed to bind_localhost_udp(%u) failed!", send_port);
+        close_fds();
         return false;
     }
 
     // Whatever sent to localhost:recv_port will be forwarded to the IP address
-    const int recv_fd = bind_localhost_udp(recv_port);
+    recv_fd = bind_localhost_udp(recv_port);
     if (recv_fd == -1) {
         fprintf(stderr, "connect_localhost_udp(%u) failed!", recv_port);
+        close_fds();
         return false;
     }
 
-    const int tun_fd = tun_connect(NULL, IFF_TUN | IFF_NO_PI, iface_name);
+    tun_fd = tun_connect(NULL, IFF_TUN | IFF_NO_PI, iface_name);
     if (tun_fd == -1) {
         fprintf(stderr, "tun_connect failed!");
+        close_fds();
         return false;
     }
 
     const int netlink_fd = netlink_connect();
     if (netlink_fd == -1) {
         fprintf(stderr, "netlink_connect failed!");
+        close_fds();
         return false;
     }
 
     int rc = netlink_set_addr_ipv4(netlink_fd, iface_name, address, prefix_bits);
     if (rc == -1) {
         fprintf(stderr, "netlink_set_addr_ipv4 failed!");
+        close_fds();
+        close(netlink_fd);
         return false;
     }
     rc = netlink_link_up(netlink_fd, iface_name);
     if (rc == -1) {
         fprintf(stderr, "netlink_link_up failed!");
+        close_fds();
+        close(netlink_fd);
         return false;
     }
+
     close(netlink_fd);
 
-    if (run_proxy(tun_fd, send_fd, recv_fd) == -1) {
-        perror("run_proxy failed!");
-        return false;
-    }
+    return true;
+}
+
+bool Tun::start() {
+    tun_thread = std::make_unique<std::thread>([=, this] { run_proxy(tun_fd, send_fd, recv_fd); });
+
+    tun_thread->detach();
 
     return true;
+}
+
+void Tun::stop() {
+    should_stop = true;
+}
+
+void Tun::close_fds() const {
+    if (send_fd != -1) {
+        close(send_fd);
+    }
+    if (recv_fd != -1) {
+        close(recv_fd);
+    }
+    if (tun_fd != -1) {
+        close(tun_fd);
+    }
 }
 
 #endif
