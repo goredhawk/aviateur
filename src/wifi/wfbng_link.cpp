@@ -49,23 +49,25 @@ public:
         : AggregatorUDPv4(client_addr, client_port, keypair, epoch, channel_id, snd_buf_size) {}
 
 protected:
-    void send_to_socket(const uint8_t *payload, uint16_t packet_size) override {
+    void send_to_socket(const uint8_t *payload, const uint16_t packet_size) override {
         GuiInterface::Instance().rtpPktCount_++;
         GuiInterface::Instance().UpdateCount();
 
-        // if (rtlDevice->should_stop) {
-        //     return;
-        // }
         if (packet_size < 12) {
             return;
         }
 
-        // sockaddr_in serverAddr{};
-        // serverAddr.sin_family = AF_INET;
-        // serverAddr.sin_port = htons(GuiInterface::Instance().playerPort);
-        // serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
         auto *header = (RtpHeader *)payload;
+        const uint16_t seq_num = htons(header->seq);
+
+        GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP sequence number: {}", seq_num);
+        GuiInterface::Instance().PutLog(LogLevel::Debug, "RTP timestamp: {}", htonl(header->stamp));
+
+        static uint16_t prev_seq_num = seq_num;
+        if (seq_num - prev_seq_num > 1) {
+            GuiInterface::Instance().PutLog(LogLevel::Info, "RTP packets lost: {}", seq_num - prev_seq_num - 1);
+        }
+        prev_seq_num = seq_num;
 
         if (!playing) {
             playing = true;
@@ -504,7 +506,7 @@ void WfbngLink::start_link_quality_thread() {
 
                 size_t buf_size = len + sizeof(len);
 
-                printf("Alink thread sends a packet, size %lu\n", buf_size);
+                // printf("Alink thread sends a packet, size %lu\n", buf_size);
 
                 ssize_t sent =
                     sendto(sock_fd, message, buf_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
