@@ -5,12 +5,6 @@
 #include <vector>
 
 class RxFrame {
-private:
-    std::span<uint8_t> _data;
-
-    /// Frame control value for QoS data
-    static constexpr std::array<uint8_t, 2> _dataHeader = {uint8_t(0x08), uint8_t(0x01)};
-
 public:
     RxFrame(const std::span<uint8_t> &data) : _data(data) {}
 
@@ -78,6 +72,12 @@ public:
                _data[18] == channel_id[0] && _data[19] == channel_id[1] && _data[20] == channel_id[2] &&
                _data[21] == channel_id[3];
     }
+
+private:
+    std::span<uint8_t> _data;
+
+    /// Frame control value for QoS data
+    static constexpr std::array<uint8_t, 2> _dataHeader = {uint8_t(0x08), uint8_t(0x01)};
 
 private:
     bool IsDataFrame() const {

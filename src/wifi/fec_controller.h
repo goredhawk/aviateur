@@ -8,27 +8,27 @@ public:
     /// Query the current (possibly decayed) fec_change value.
     /// Call this as often as you like; the class handles its own timing.
     int value() {
-        if (!mEnabled) {
+        if (!enabled_) {
             return 0;
         }
 
-        std::lock_guard lock(mx_);
+        std::lock_guard lock(mutex_);
         decayLocked_();
         return val_;
     }
 
     /// Raise fec_change. If newValue <= current, the call is ignored.
     /// A successful bump resets the 5-second "hold" timer.
-    void bump(int newValue) {
-        std::lock_guard lock(mx_);
+    void bump(const int newValue) {
+        std::lock_guard lock(mutex_);
         if (newValue > val_) {
             val_ = newValue;
             lastChange_ = Clock::now();
         }
     }
 
-    void setEnabled(bool use) {
-        mEnabled = use;
+    void setEnabled(const bool use) {
+        enabled_ = use;
     }
 
 private:
@@ -40,8 +40,8 @@ private:
             return;
         }
 
-        auto now = Clock::now();
-        auto elapsed = now - lastChange_;
+        const auto now = Clock::now();
+        const auto elapsed = now - lastChange_;
 
         // Still inside the mandatory 5-second hold? Do nothing.
         if (elapsed < kTick) {
@@ -49,7 +49,7 @@ private:
         }
 
         // How many *full* ticks have passed since lastChange_?
-        auto ticks = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() / kTick.count();
+        const auto ticks = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() / kTick.count();
         if (ticks == 0) {
             return; // safety net (shouldn't hit)
         }
@@ -68,6 +68,6 @@ private:
 
     int val_{0};
     Clock::time_point lastChange_{Clock::now()};
-    std::mutex mx_;
-    bool mEnabled = false;
+    std::mutex mutex_;
+    bool enabled_ = false;
 };

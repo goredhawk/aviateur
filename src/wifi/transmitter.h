@@ -142,7 +142,7 @@ public:
      * @param succeeded True if packet was sent successfully, false if dropped.
      * @param packetSize Number of bytes in the packet.
      */
-    void logLatency(uint64_t latency, bool succeeded, uint32_t packetSize) {
+    void logLatency(const uint64_t latency, const bool succeeded, const uint32_t packetSize) {
         if ((countPacketsInjected + countPacketsDropped) == 0) {
             latencyMin = latency;
             latencyMax = latency;
@@ -194,7 +194,7 @@ public:
 
     ~RawSocketTransmitter() override;
 
-    void selectOutput(int idx) override {
+    void selectOutput(const int idx) override {
         currentOutput_ = idx;
     }
 
@@ -255,7 +255,7 @@ private:
 
 /**
  * @class UsbTransmitter
- * @brief Transmitter that sends packets via an attached USB Wi-Fi device (Rtl8812a).
+ * @brief Transmitter that sends packets via an attached USB Wi-Fi device (Rtl8812au).
  */
 class UsbTransmitter : public Transmitter {
 public:

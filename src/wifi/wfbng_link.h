@@ -10,7 +10,6 @@
 #include <thread>
 #include <vector>
 
-#include "FrameParser.h"
 #include "Rtl8812aDevice.h"
 #include "fec_controller.h"
 #include "tun.h"

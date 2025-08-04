@@ -18,10 +18,10 @@
 #include "logger.h"
 #include "wfbng_processor.h"
 
-#pragma comment(lib, "ws2_32.lib")
-
 #ifdef __linux__
     #define INVALID_SOCKET (-1)
+#else
+    #pragma comment(lib, "ws2_32.lib")
 #endif
 
 #define GET_H264_NAL_UNIT_TYPE(buffer_ptr) (buffer_ptr[0] & 0x1F)

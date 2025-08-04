@@ -10,7 +10,7 @@
     #include <cinttypes>
     #include <cstring>
 
-TxFrame::TxFrame(bool tun_enabled) {
+TxFrame::TxFrame(const bool tun_enabled) {
     tun_enabled_ = tun_enabled;
 }
 
@@ -32,7 +32,7 @@ uint32_t TxFrame::extractRxqOverflow(struct msghdr *msg) {
 }
 
 int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
-    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    const int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
         throw std::runtime_error(string_format("Unable to open socket: %s", std::strerror(errno)));
     }
@@ -42,7 +42,7 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
     // Set receive timeout to 500ms
-    struct timeval tv;
+    struct timeval tv{};
     tv.tv_sec = 0;
     tv.tv_usec = 500000; // 500ms
     if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
@@ -80,9 +80,8 @@ int TxFrame::open_udp_socket_for_rx(int port, int buf_size) {
 
 uint16_t inet_csum(const void *buf, size_t hdr_len) {
     unsigned long sum = 0;
-    const uint16_t *ip1;
 
-    ip1 = (const uint16_t *)buf;
+    const auto *ip1 = (const uint16_t *)buf;
     while (hdr_len > 1) {
         sum += *ip1++;
         if (sum & 0x80000000) sum = (sum & 0xFFFF) + (sum >> 16);

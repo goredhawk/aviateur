@@ -125,8 +125,7 @@ void Transmitter::sendSessionKey() {
 
 void Transmitter::sendBlockFragment(size_t packetSize) {
     // Prepare local buffer for encryption
-    uint8_t cipherBuf[MAX_FORWARDER_PACKET_SIZE];
-    std::memset(cipherBuf, 0, sizeof(cipherBuf));
+    uint8_t cipherBuf[MAX_FORWARDER_PACKET_SIZE] = {};
 
     auto *blockHdr = reinterpret_cast<wblock_hdr_t *>(cipherBuf);
     blockHdr->packet_type = WFB_PACKET_DATA;
@@ -135,20 +134,20 @@ void Transmitter::sendBlockFragment(size_t packetSize) {
     unsigned long long cipherLen = 0;
 
     // AEAD encrypt
-    int rc = crypto_aead_chacha20poly1305_encrypt(cipherBuf + sizeof(wblock_hdr_t),
-                                                  &cipherLen,
-                                                  block_[fragmentIndex_].get(),
-                                                  packetSize,
-                                                  reinterpret_cast<const uint8_t *>(blockHdr),
-                                                  sizeof(wblock_hdr_t),
-                                                  nullptr,
-                                                  reinterpret_cast<const uint8_t *>(&blockHdr->data_nonce),
-                                                  sessionKey_);
+    const int rc = crypto_aead_chacha20poly1305_encrypt(cipherBuf + sizeof(wblock_hdr_t),
+                                                        &cipherLen,
+                                                        block_[fragmentIndex_].get(),
+                                                        packetSize,
+                                                        reinterpret_cast<const uint8_t *>(blockHdr),
+                                                        sizeof(wblock_hdr_t),
+                                                        nullptr,
+                                                        reinterpret_cast<const uint8_t *>(&blockHdr->data_nonce),
+                                                        sessionKey_);
     if (rc != 0) {
         throw std::runtime_error("Unable to encrypt packet!");
     }
 
-    size_t finalSize = sizeof(wblock_hdr_t) + cipherLen;
+    const size_t finalSize = sizeof(wblock_hdr_t) + cipherLen;
     injectPacket(cipherBuf, finalSize);
 }
 
@@ -196,7 +195,7 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
       radiotapHeader_(std::move(radiotapHeader)), radiotapHeaderLen_(radiotapHeaderLen), frameType_(frameType) {
     // Create raw sockets and bind to specified interfaces
     for (const auto &iface : wlans) {
-        int fd = ::socket(PF_PACKET, SOCK_RAW, 0);
+        int fd = socket(PF_PACKET, SOCK_RAW, 0);
         if (fd < 0) {
             throw std::runtime_error(
                 string_format("Unable to open PF_PACKET socket on %s: %s", iface.c_str(), std::strerror(errno)));
@@ -204,7 +203,7 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
 
         const int optval = 1;
         if (setsockopt(fd, SOL_PACKET, PACKET_QDISC_BYPASS, &optval, sizeof(optval)) != 0) {
-            ::close(fd);
+            close(fd);
             throw std::runtime_error(
                 string_format("Unable to set PACKET_QDISC_BYPASS on %s: %s", iface.c_str(), std::strerror(errno)));
         }
@@ -236,7 +235,7 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
 
 RawSocketTransmitter::~RawSocketTransmitter() {
     for (int fd : sockFds_) {
-        ::close(fd);
+        close(fd);
     }
 }
 
@@ -251,7 +250,7 @@ void RawSocketTransmitter::injectPacket(const uint8_t *buf, size_t size) {
 
     // Patch the Frame Control field, channel ID, and seq number
     ieeeHdr[0] = frameType_;
-    uint32_t channelIdBE = htonl(channelId_);
+    const uint32_t channelIdBE = htonl(channelId_);
     std::memcpy(ieeeHdr + SRC_MAC_THIRD_BYTE, &channelIdBE, sizeof(uint32_t));
     std::memcpy(ieeeHdr + DST_MAC_THIRD_BYTE, &channelIdBE, sizeof(uint32_t));
 
@@ -260,8 +259,7 @@ void RawSocketTransmitter::injectPacket(const uint8_t *buf, size_t size) {
     ieee80211Sequence_ += 16;
 
     // iovec for sendmsg
-    struct iovec iov[3];
-    std::memset(iov, 0, sizeof(iov));
+    struct iovec iov[3] = {};
 
     iov[0].iov_base = radiotapHeader_.get();
     iov[0].iov_len = radiotapHeaderLen_;
@@ -270,29 +268,28 @@ void RawSocketTransmitter::injectPacket(const uint8_t *buf, size_t size) {
     iov[2].iov_base = const_cast<uint8_t *>(buf);
     iov[2].iov_len = size;
 
-    msghdr msg;
-    std::memset(&msg, 0, sizeof(msg));
+    msghdr msg = {};
     msg.msg_iov = iov;
     msg.msg_iovlen = 3;
 
     if (currentOutput_ >= 0) {
         // Single-interface mode
-        uint64_t startUs = get_time_us();
-        int rc = ::sendmsg(sockFds_[currentOutput_], &msg, 0);
-        bool success = (rc >= 0 || errno == ENOBUFS);
+        const uint64_t startUs = get_time_us();
+        const ssize_t rc = sendmsg(sockFds_[currentOutput_], &msg, 0);
+        const bool success = rc >= 0 || errno == ENOBUFS;
 
         if (rc < 0 && errno != ENOBUFS) {
             throw std::runtime_error(string_format("Unable to inject packet: %s", std::strerror(errno)));
         }
 
-        uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;
+        const uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;
         antennaStat_[key].logLatency(get_time_us() - startUs, success, static_cast<uint32_t>(size));
     } else {
         // Mirror mode: send on all interfaces
         for (size_t i = 0; i < sockFds_.size(); i++) {
-            uint64_t startUs = get_time_us();
-            int rc = ::sendmsg(sockFds_[i], &msg, 0);
-            bool success = (rc >= 0 || errno == ENOBUFS);
+            const uint64_t startUs = get_time_us();
+            const ssize_t rc = sendmsg(sockFds_[i], &msg, 0);
+            const bool success = rc >= 0 || errno == ENOBUFS;
 
             if (rc < 0 && errno != ENOBUFS) {
                 throw std::runtime_error(string_format("Unable to inject packet: %s", std::strerror(errno)));
@@ -453,7 +450,7 @@ void UsbTransmitter::injectPacket(const uint8_t *buf, const size_t size) {
 
     // Patch frame type
     ieeeHdr[0] = frameType_;
-    uint32_t channelIdBE = htonl(channelId_);
+    const uint32_t channelIdBE = htonl(channelId_);
     std::memcpy(ieeeHdr + SRC_MAC_THIRD_BYTE, &channelIdBE, sizeof(uint32_t));
     std::memcpy(ieeeHdr + DST_MAC_THIRD_BYTE, &channelIdBE, sizeof(uint32_t));
 
@@ -461,22 +458,22 @@ void UsbTransmitter::injectPacket(const uint8_t *buf, const size_t size) {
     ieeeHdr[FRAME_SEQ_HB] = static_cast<uint8_t>((ieee80211Sequence_ >> 8) & 0xff);
     ieee80211Sequence_ += 16;
 
-    uint64_t startUs = get_time_us();
+    const uint64_t startUs = get_time_us();
 
     // Merge into one contiguous buffer
-    size_t totalSize = radiotapHeaderLen_ + sizeof(ieeeHdr) + size;
+    const size_t totalSize = radiotapHeaderLen_ + sizeof(ieeeHdr) + size;
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[totalSize]);
 
     std::memcpy(buffer.get(), radiotapHeader_, radiotapHeaderLen_);
     std::memcpy(buffer.get() + radiotapHeaderLen_, ieeeHdr, sizeof(ieeeHdr));
     std::memcpy(buffer.get() + radiotapHeaderLen_ + sizeof(ieeeHdr), buf, size);
 
-    bool result = rtlDevice_->send_packet(buffer.get(), totalSize);
+    const bool result = rtlDevice_->send_packet(buffer.get(), totalSize);
     if (!result) {
         printf("Rtl8812aDevice::send_packet failed!");
     }
 
-    uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;
+    const uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;
     antennaStat_[key].logLatency(get_time_us() - startUs, result, static_cast<uint32_t>(size));
 }
 

@@ -2,9 +2,12 @@
 
 #ifdef __linux__
 
+    #include <sys/socket.h>
+
+    #include <memory>
     #include <vector>
 
-    #include "Rtl8812aDevice.h"
+    #include "transmitter.h"
 
 // -- External C Libraries --
 
@@ -12,12 +15,7 @@ extern "C" {
     #include "fec.h" // FEC library
 }
 
-    #include <netinet/in.h>
-    #include <sys/socket.h>
-
-    #include <memory>
-
-    #include "transmitter.h"
+class Rtl8812aDevice;
 
 // //-------------------------------------------------------------
 // // Utility function to format strings (variadic).
@@ -33,7 +31,6 @@ extern "C" {
 
 //-------------------------------------------------------------
 // A custom deleter for FEC pointer usage in unique_ptr
-
 
 /**
  * @struct TxArgs
@@ -75,7 +72,7 @@ struct TxArgs {
  */
 class TxFrame {
 public:
-    TxFrame(bool tun_enabled);
+    explicit TxFrame(bool tun_enabled);
     ~TxFrame();
 
     /**
