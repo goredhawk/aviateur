@@ -384,17 +384,17 @@ void WfbngLink::start_link_quality_thread() {
 
         fec_controller.setEnabled(true);
 
-        std::string ip;
-        int port;
+        std::string ip = "127.0.0.1";
+        int port = 8001;
+
+    #ifdef __linux__
         if (tun_enabled) {
             ip = "10.5.0.10";
             port = 9999;
-        } else {
-            ip = "127.0.0.1";
-            port = 8001;
         }
+    #endif
 
-        int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+        const int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
         // Create UDP socket
         if (sock_fd < 0) {
@@ -644,19 +644,23 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
         // GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a MAVLink frame, but we're unable to handle it!");
     }
     // UDP frame
-    else if (frame.MatchesChannelID(udp_channel_id_be8) && tun_enabled) {
+    else if (frame.MatchesChannelID(udp_channel_id_be8)) {
         // GuiInterface::Instance().PutLog(LogLevel::Warn, "Received a UDP frame, but we're unable to handle it!");
 
-        udp_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
-                                       packet.Data.size() - sizeof(ieee80211_header) - 4,
-                                       0,
-                                       antenna,
-                                       rssi,
-                                       noise,
-                                       freq,
-                                       0,
-                                       0,
-                                       NULL);
+#ifdef __linux__
+        if (tun_enabled) {
+            udp_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                                           packet.Data.size() - sizeof(ieee80211_header) - 4,
+                                           0,
+                                           antenna,
+                                           rssi,
+                                           noise,
+                                           freq,
+                                           0,
+                                           0,
+                                           NULL);
+        }
+#endif
     }
 }
 
@@ -707,9 +711,11 @@ void WfbngLink::stop() const {
     if (rtlDevice) {
         rtlDevice->should_stop = true;
     }
+#ifdef __linux__
     if (tun_) {
         tun_->stop();
     }
+#endif
 }
 
 bool WfbngLink::get_alink_enabled() const {
