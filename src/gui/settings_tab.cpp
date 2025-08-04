@@ -78,7 +78,7 @@ void SettingsContainer::custom_ready() {
         auto dark_mode_btn = std::make_shared<revector::CheckButton>();
         dark_mode_btn->set_text(FTR("dark mode"));
         vbox_container->add_child(dark_mode_btn);
-        dark_mode_btn->set_pressed_no_signal(GuiInterface::Instance().dark_mode_);
+        dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
         auto callback = [this](bool toggled) { GuiInterface::Instance().dark_mode_ = toggled; };
         dark_mode_btn->connect_signal("toggled", callback);
     }
@@ -92,7 +92,7 @@ void SettingsContainer::custom_ready() {
         open_capture_folder_button->set_text(FTR("capture folder"));
 
         auto callback = [this]() { open_explorer(GuiInterface::GetCaptureDir()); };
-        open_capture_folder_button->connect_signal("pressed", callback);
+        open_capture_folder_button->connect_signal("triggered", callback);
     }
 
     {
@@ -104,7 +104,7 @@ void SettingsContainer::custom_ready() {
         open_appdata_button->set_text(FTR("config folder"));
 
         auto callback = [this]() { open_explorer(GuiInterface::GetAppDataDir()); };
-        open_appdata_button->connect_signal("pressed", callback);
+        open_appdata_button->connect_signal("triggered", callback);
     }
 
 #ifdef _WIN32
@@ -126,7 +126,7 @@ void SettingsContainer::custom_ready() {
                 open_explorer(dumps_dir);
             }
         };
-        open_crash_dumps_button->connect_signal("pressed", callback);
+        open_crash_dumps_button->connect_signal("triggered", callback);
     }
 
     {

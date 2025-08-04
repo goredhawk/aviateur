@@ -136,7 +136,7 @@ void ControlPanel::custom_ready() {
             hbox_container->add_child(refresh_dongle_button_);
 
             auto callback2 = [this]() { update_dongle_list(); };
-            refresh_dongle_button_->connect_signal("pressed", callback2);
+            refresh_dongle_button_->connect_signal("triggered", callback2);
         }
 
         {
@@ -246,7 +246,7 @@ void ControlPanel::custom_ready() {
                     keyPath = path.value();
                 }
             };
-            select_button->connect_signal("pressed", callback);
+            select_button->connect_signal("triggered", callback);
             hbox_container->add_child(select_button);
         }
 
@@ -344,7 +344,7 @@ void ControlPanel::custom_ready() {
 
                 update_adapter_start_button_looking(!start);
             };
-            play_button_->connect_signal("pressed", callback1);
+            play_button_->connect_signal("triggered", callback1);
             vbox_unblockable->add_child(play_button_);
         }
     }
@@ -462,7 +462,7 @@ void ControlPanel::custom_ready() {
                 update_url_start_button_looking(!start);
             };
 
-            play_port_button_->connect_signal("pressed", callback1);
+            play_port_button_->connect_signal("triggered", callback1);
             vbox->add_child(play_port_button_);
         }
     }
@@ -485,9 +485,9 @@ void ControlPanel::custom_input(revector::InputEvent &event) {
             if (key_args.pressed) {
                 if (tab_container_->get_current_tab().has_value()) {
                     if (tab_container_->get_current_tab().value() == 0) {
-                        play_button_->set_pressed(true);
+                        play_button_->trigger();
                     } else {
-                        play_port_button_->set_pressed(true);
+                        play_port_button_->trigger();
                     }
                 }
             }

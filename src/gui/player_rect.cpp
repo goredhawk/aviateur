@@ -49,13 +49,13 @@ void PlayerRect::custom_input(revector::InputEvent &event) {
 
         if (key_args.key == revector::KeyCode::F11) {
             if (key_args.pressed) {
-                fullscreen_button_->set_pressed(true);
+                fullscreen_button_->set_toggled(true);
             }
         }
 
         if (playing_ && key_args.key == revector::KeyCode::F10) {
             if (key_args.pressed) {
-                record_button_->set_pressed(true);
+                record_button_->trigger();
             }
         }
     }
@@ -191,7 +191,7 @@ void PlayerRect::custom_ready() {
             show_green_tip(FTR("frame saved") + output_file);
         }
     };
-    capture_button->connect_signal("pressed", capture_callback);
+    capture_button->connect_signal("triggered", capture_callback);
 
     record_button_ = std::make_shared<revector::Button>();
     vbox->add_child(record_button_);
@@ -229,7 +229,7 @@ void PlayerRect::custom_ready() {
             }
         }
     };
-    record_button_->connect_signal("pressed", record_callback);
+    record_button_->connect_signal("triggered", record_callback);
 
     {
         auto button = std::make_shared<revector::CheckButton>();
@@ -361,7 +361,7 @@ void PlayerRect::stop_playing() {
     playing_ = false;
 
     if (is_recording) {
-        record_button_->set_pressed(true);
+        record_button_->trigger();
     }
 
 #ifdef AVIATEUR_ENABLE_GSTREAMER
