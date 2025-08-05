@@ -1,6 +1,6 @@
 #include "gst_decoder.h"
 
-#ifdef AVIATEUR_ENABLE_GSTREAMER
+#ifdef AVIATEUR_USE_GSTREAMER
 
     #include <gst/video/video.h>
 

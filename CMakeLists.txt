@@ -16,7 +16,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-option(AVIATEUR_ENABLE_GSTREAMER "Enable gstreamer" ON)
+option(AVIATEUR_ENABLE_GSTREAMER "Enable gstreamer" OFF)
 
 find_package(PkgConfig REQUIRED)
 
@@ -88,7 +88,7 @@ add_executable(${PROJECT_NAME}
 if (AVIATEUR_ENABLE_GSTREAMER)
     target_compile_definitions(
             ${PROJECT_NAME} PRIVATE
-            AVIATEUR_ENABLE_GSTREAMER
+            AVIATEUR_USE_GSTREAMER
     )
 endif ()
 

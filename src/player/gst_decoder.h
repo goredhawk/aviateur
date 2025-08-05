@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef AVIATEUR_ENABLE_GSTREAMER
+#ifdef AVIATEUR_USE_GSTREAMER
 
     #include <gst/gst.h>
 
