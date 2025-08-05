@@ -145,7 +145,7 @@ int Tun::run_proxy(int tun_fd, int send_fd, int recv_fd) const {
     char recv_buf[UINT16_MAX];
 
     while (!should_stop) {
-        if (const int rc = poll(poll_fds, 1, 0) == -1; rc < 0) {
+        if (const int rc = poll(poll_fds, 2, 0) == -1; rc < 0) {
             if (errno == EINTR || errno == EAGAIN) {
                 continue;
             }
@@ -177,18 +177,18 @@ int Tun::run_proxy(int tun_fd, int send_fd, int recv_fd) const {
         }
 
         // 2) Thread to capture rtl8812 → [ localport:8000 UDP → TUN ]
-        // if ((poll_fds[1].revents & POLLIN) != 0) {
-        //     ssize_t count = recv(recv_fd, recv_buf, UINT16_MAX, 0);
-        //     if (count < 0) {
-        //         return -1;
-        //     }
-        //
-        //     if (write(tun_fd, recv_buf + 2, count - 2) == -1) {
-        //         return -1;
-        //     }
-        //
-        //     printf("localhost:8001 -> TUN\n");
-        // }
+        if ((poll_fds[1].revents & POLLIN) != 0) {
+            const ssize_t count = recv(recv_fd, recv_buf, UINT16_MAX, 0);
+            if (count < 0) {
+                return -1;
+            }
+
+            if (write(tun_fd, recv_buf + 2, count - 2) == -1) {
+                return -1;
+            }
+
+            printf("localhost:8001 -> TUN\n");
+        }
     }
 
     close_fds();
