@@ -161,7 +161,7 @@ public:
 #elif defined(__linux__)
         passwd *pw = getpwuid(getuid());
         const char *home_dir = pw->pw_dir;
-        auto dir = std::string(home_dir) + "/aviateur/";
+        auto dir = std::string(home_dir) + "/.aviateur/";
 #endif
         return dir;
     }
