@@ -6,21 +6,21 @@
 #include <sstream>
 
 #include "../gui_interface.h"
+#include "WiFiDriver.h"
+#include "logger.h"
 #include "rtp.h"
 #include "rx_frame.h"
 #include "signal_quality.h"
-#ifdef __linux__
-    #include "tun.h"
-    #include "tx_frame.h"
-    #include "wfb-ng/rx.hpp"
-#endif
-#include "WiFiDriver.h"
-#include "logger.h"
-#include "wfbng_processor.h"
 
 #ifdef __linux__
+    #include "linux/tun.h"
+    #include "linux/tx_frame.h"
+    #include "wfb-ng/rx.hpp"
+
     #define INVALID_SOCKET (-1)
 #else
+    #include "windows/wfbng_processor.h"
+
     #pragma comment(lib, "ws2_32.lib")
 #endif
 

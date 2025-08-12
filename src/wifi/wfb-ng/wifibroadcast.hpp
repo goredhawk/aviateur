@@ -1,3 +1,4 @@
+#pragma once
 // Copyright (C) 2017 - 2024 Vasily Evseenko <svpcom@p2ptech.org>
 
 /*
@@ -16,9 +17,6 @@
  */
 
 
-#ifndef __WIFIBROADCAST_HPP__
-#define __WIFIBROADCAST_HPP__
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -27,7 +25,7 @@
 #include <utime.h>
 #include <unistd.h>
 #include <getopt.h>
-// #include <pcap.h>
+#include <pcap.h>
 #include <endian.h>
 #include <fcntl.h>
 #include <time.h>
@@ -290,5 +288,3 @@ int open_udp_socket_for_rx(int port, int rcv_buf_size, uint32_t bind_addr = INAD
 int open_unix_socket_for_rx(const char *socket_path, int rcv_buf_size, int socket_type = SOCK_DGRAM, int socket_protocol = 0);
 uint64_t get_time_ms(void);
 uint64_t get_time_us(void);
-
-#endif

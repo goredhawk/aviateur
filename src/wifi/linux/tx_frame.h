@@ -9,12 +9,6 @@
 
     #include "transmitter.h"
 
-// -- External C Libraries --
-
-extern "C" {
-    #include "fec.h" // FEC library
-}
-
 class Rtl8812aDevice;
 
 // //-------------------------------------------------------------

@@ -12,9 +12,10 @@
 
 #include "Rtl8812aDevice.h"
 #include "fec_controller.h"
-#include "tun.h"
+
 #ifdef __linux__
-    #include "tx_frame.h"
+    #include "linux/tun.h"
+    #include "linux/tx_frame.h"
 #endif
 
 struct DeviceId {

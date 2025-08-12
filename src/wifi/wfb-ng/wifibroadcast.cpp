@@ -15,20 +15,17 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifdef __linux__
-
-#include "wifibroadcast.hpp"
-
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <stdarg.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string>
 #include <memory>
 #include <stdexcept>
-#include <string>
+
+#include "wifibroadcast.hpp"
 
 using namespace std;
 
@@ -148,5 +145,3 @@ int open_unix_socket_for_rx(const char *socket_path, int rcv_buf_size, int socke
     }
     return fd;
 }
-
-#endif

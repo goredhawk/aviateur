@@ -1,3 +1,4 @@
+#pragma once
 // -*- C++ -*-
 //
 // Copyright (C) 2017 - 2024 Vasily Evseenko <svpcom@p2ptech.org>
@@ -16,25 +17,22 @@
  *   with this program; if not, write to the Free Software Foundation, Inc.,
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-#pragma once
 
-#include <arpa/inet.h>
-#include <errno.h>
-#include <netinet/in.h>
+#include <unordered_map>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-
-#include <set>
-#include <stdexcept>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <errno.h>
 #include <string>
-#include <unordered_map>
+#include <set>
+#include <string.h>
+#include <stdexcept>
 
-#include "../fec.h"
-#include "pcap/pcap.h"
 #include "wifibroadcast.hpp"
+
 
 typedef enum {
     LOCAL,

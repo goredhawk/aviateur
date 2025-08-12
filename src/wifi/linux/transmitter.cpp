@@ -17,7 +17,8 @@ Transmitter::Transmitter(int k, int n, const std::string &keypair, uint64_t epoc
     : fecPtr_(nullptr, FecDeleter{}), fecK_(k), fecN_(n), blockIndex_(0), fragmentIndex_(0),
       block_(static_cast<size_t>(n)), maxPacketSize_(0), epoch_(epoch), channelId_(channelId) {
     // Create a new fec object
-    fec_t *rawFec = fec_new(fecK_, fecN_);
+    fec_t *rawFec;
+    fec_new(fecK_, fecN_, &rawFec);
     if (!rawFec) {
         throw std::runtime_error("fec_new() failed");
     }
@@ -94,10 +95,10 @@ bool Transmitter::sendPacket(const uint8_t *buf, size_t size, uint8_t flags) {
     }
 
     // If we have k fragments, encode the parity
-    fec_encode(fecPtr_.get(),
-               const_cast<const uint8_t **>(reinterpret_cast<uint8_t **>(block_.data())),
-               reinterpret_cast<uint8_t **>(block_.data()) + fecK_,
-               maxPacketSize_);
+    fec_encode_simd(fecPtr_.get(),
+                    reinterpret_cast<uint8_t **>(block_.data()),
+                    reinterpret_cast<uint8_t **>(block_.data()) + fecK_,
+                    maxPacketSize_);
 
     // Send all FEC fragments
     while (fragmentIndex_ < static_cast<uint8_t>(fecN_)) {

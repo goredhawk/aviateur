@@ -4,7 +4,7 @@
 
 // -- External C Libraries --
 extern "C" {
-    #include "fec.h"
+    #include "../wfb-ng/zfex.h"
 }
 
     #include <arpa/inet.h>
@@ -20,8 +20,8 @@ extern "C" {
     #include <unordered_map>
     #include <vector>
 
+    #include "../wfb-ng/wifibroadcast.hpp"
     #include "Rtl8812aDevice.h"
-    #include "wfb-ng/wifibroadcast.hpp"
 
 /// A custom deleter for FEC pointer usage in unique_ptr
 struct FecDeleter {
