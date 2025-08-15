@@ -11,21 +11,6 @@
 
 class Rtl8812aDevice;
 
-// //-------------------------------------------------------------
-// // Utility function to format strings (variadic).
-
-// static std::string string_format(const char* fmt, ...) {
-//     va_list args;
-//     va_start(args, fmt);
-//     char buffer[1024];
-//     vsnprintf(buffer, sizeof(buffer), fmt, args);
-//     va_end(args);
-//     return std::string(buffer);
-// }
-
-//-------------------------------------------------------------
-// A custom deleter for FEC pointer usage in unique_ptr
-
 /**
  * @struct TxArgs
  * @brief Command-line or user-provided arguments controlling the transmitter setup.
@@ -67,6 +52,7 @@ struct TxArgs {
 class TxFrame {
 public:
     explicit TxFrame(bool tun_enabled);
+
     ~TxFrame();
 
     /**

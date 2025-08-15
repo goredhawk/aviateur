@@ -58,7 +58,7 @@ public:
     /**
      * @brief Sends a single packet (optionally triggers FEC block finalization).
      * @param buf Pointer to payload data.
-     * @param size Size in bytes of payload data.
+     * @param size Size of the payload data in bytes.
      * @param flags Additional flags (e.g., WFB_PACKET_FEC_ONLY).
      * @return True if the packet is enqueued or encoded, false if ignored (e.g., FEC-only while block is empty).
      */
@@ -175,7 +175,7 @@ typedef std::unordered_map<uint64_t, TxAntennaItem> TxAntennaStat;
 
 /**
  * @class RawSocketTransmitter
- * @brief Transmitter that sends packets over raw AF_PACKET sockets.
+ * @brief Sends packets over raw AF_PACKET sockets.
  *
  * This transmitter can operate in single-output or "mirror" mode. In mirror mode,
  * it sends each packet through all raw sockets. In single-output mode, only one is selected.
@@ -220,7 +220,7 @@ private:
 
 /**
  * @class UdpTransmitter
- * @brief Transmitter that sends packets over a simple UDP socket.
+ * @brief Sends packets over a simple UDP socket.
  */
 class UdpTransmitter : public Transmitter {
 public:
@@ -255,7 +255,7 @@ private:
 
 /**
  * @class UsbTransmitter
- * @brief Transmitter that sends packets via an attached USB Wi-Fi device (Rtl8812au).
+ * @brief Sends packets via an attached USB Wi-Fi device.
  */
 class UsbTransmitter : public Transmitter {
 public:

@@ -13,7 +13,7 @@
 // Transmitter
 //-------------------------------------------------------------
 
-Transmitter::Transmitter(int k, int n, const std::string &keypair, uint64_t epoch, uint32_t channelId)
+Transmitter::Transmitter(const int k, const int n, const std::string &keypair, uint64_t epoch, uint32_t channelId)
     : fecPtr_(nullptr, FecDeleter{}), fecK_(k), fecN_(n), blockIndex_(0), fragmentIndex_(0),
       block_(static_cast<size_t>(n)), maxPacketSize_(0), epoch_(epoch), channelId_(channelId) {
     // Create a new fec object
@@ -54,7 +54,7 @@ Transmitter::~Transmitter() {
     // block_, fecPtr_ automatically cleaned up via unique_ptr
 }
 
-bool Transmitter::sendPacket(const uint8_t *buf, size_t size, uint8_t flags) {
+bool Transmitter::sendPacket(const uint8_t *buf, const size_t size, const uint8_t flags) {
     // If we are asked to finalize FEC block with no data while the block is empty, ignore
     if (fragmentIndex_ == 0 && (flags & WFB_PACKET_FEC_ONLY)) {
         return false;
@@ -64,7 +64,7 @@ bool Transmitter::sendPacket(const uint8_t *buf, size_t size, uint8_t flags) {
 
     // Ensure size is within user payload limit
     if (size > MAX_PAYLOAD_SIZE) {
-        throw std::runtime_error("sendPacket: size exceeds MAX_PAYLOAD_SIZE");
+        throw std::runtime_error("sendPacket: packet size exceeds MAX_PAYLOAD_SIZE");
     }
 
     // Write header
@@ -77,16 +77,18 @@ bool Transmitter::sendPacket(const uint8_t *buf, size_t size, uint8_t flags) {
     // Copy payload
     std::memcpy(block_[fragmentIndex_].get() + wpacketHdrSize, buf, size);
 
+    const size_t fecPayloadSize = wpacketHdrSize + size;
+
     // Zero out the remainder
-    if ((wpacketHdrSize + size) < MAX_FEC_PAYLOAD) {
-        std::memset(block_[fragmentIndex_].get() + wpacketHdrSize + size, 0, MAX_FEC_PAYLOAD - (wpacketHdrSize + size));
+    if (fecPayloadSize < MAX_FEC_PAYLOAD) {
+        std::memset(block_[fragmentIndex_].get() + fecPayloadSize, 0, MAX_FEC_PAYLOAD - fecPayloadSize);
     }
 
     // Send this fragment
-    sendBlockFragment(wpacketHdrSize + size);
+    sendBlockFragment(fecPayloadSize);
 
     // Track the largest data size in block
-    maxPacketSize_ = std::max(maxPacketSize_, wpacketHdrSize + size);
+    maxPacketSize_ = std::max(maxPacketSize_, fecPayloadSize);
     fragmentIndex_++;
 
     // If not enough fragments for FEC, we are done
@@ -124,7 +126,7 @@ void Transmitter::sendSessionKey() {
     injectPacket(sessionKeyPacket_, sizeof(sessionKeyPacket_));
 }
 
-void Transmitter::sendBlockFragment(size_t packetSize) {
+void Transmitter::sendBlockFragment(const size_t packetSize) {
     // Prepare local buffer for encryption
     uint8_t cipherBuf[MAX_FORWARDER_PACKET_SIZE] = {};
 
@@ -209,8 +211,7 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
                 string_format("Unable to set PACKET_QDISC_BYPASS on %s: %s", iface.c_str(), std::strerror(errno)));
         }
 
-        struct ifreq ifr;
-        std::memset(&ifr, 0, sizeof(ifr));
+        ifreq ifr = {};
         std::strncpy(ifr.ifr_name, iface.c_str(), sizeof(ifr.ifr_name) - 1);
 
         if (ioctl(fd, SIOCGIFINDEX, &ifr) < 0) {
@@ -219,8 +220,7 @@ RawSocketTransmitter::RawSocketTransmitter(int k,
                 string_format("Unable to get interface index for %s: %s", iface.c_str(), std::strerror(errno)));
         }
 
-        struct sockaddr_ll sll;
-        std::memset(&sll, 0, sizeof(sll));
+        sockaddr_ll sll = {};
         sll.sll_family = AF_PACKET;
         sll.sll_ifindex = ifr.ifr_ifindex;
         sll.sll_protocol = 0;
@@ -260,7 +260,7 @@ void RawSocketTransmitter::injectPacket(const uint8_t *buf, size_t size) {
     ieee80211Sequence_ += 16;
 
     // iovec for sendmsg
-    struct iovec iov[3] = {};
+    iovec iov[3] = {};
 
     iov[0].iov_base = radiotapHeader_.get();
     iov[0].iov_len = radiotapHeaderLen_;
@@ -353,7 +353,7 @@ UdpTransmitter::UdpTransmitter(int k,
 }
 
 UdpTransmitter::~UdpTransmitter() {
-    ::close(sockFd_);
+    close(sockFd_);
 }
 
 void UdpTransmitter::selectOutput(int idx) {
@@ -378,14 +378,13 @@ void UdpTransmitter::injectPacket(const uint8_t *buf, size_t size) {
     iov[1].iov_base = const_cast<uint8_t *>(buf);
     iov[1].iov_len = size;
 
-    msghdr msg;
-    std::memset(&msg, 0, sizeof(msg));
+    msghdr msg = {};
     msg.msg_name = &saddr_;
     msg.msg_namelen = sizeof(saddr_);
     msg.msg_iov = iov;
     msg.msg_iovlen = 2;
 
-    ::sendmsg(sockFd_, &msg, 0);
+    sendmsg(sockFd_, &msg, 0);
 }
 
 //-------------------------------------------------------------
