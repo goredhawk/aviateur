@@ -65,6 +65,8 @@ void SettingsContainer::custom_ready() {
             if (item_index == 3) {
                 GuiInterface::Instance().set_locale("ja");
             }
+
+            GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
         };
         lang_menu_button->connect_signal("item_selected", callback);
     }
@@ -85,7 +87,10 @@ void SettingsContainer::custom_ready() {
         dark_mode_btn->set_text(FTR("dark mode"));
         vbox_container->add_child(dark_mode_btn);
         dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
-        auto callback = [](const bool toggled) { GuiInterface::Instance().dark_mode_ = toggled; };
+        auto callback = [](const bool toggled) {
+            GuiInterface::Instance().dark_mode_ = toggled;
+            GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
+        };
         dark_mode_btn->connect_signal("toggled", callback);
     }
 
