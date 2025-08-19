@@ -42,14 +42,18 @@ void SettingsContainer::custom_ready() {
         if (GuiInterface::Instance().locale_ == "ru") {
             lang_menu_button->set_text("Русский");
         }
+        if (GuiInterface::Instance().locale_ == "ja") {
+            lang_menu_button->set_text("日本語");
+        }
 
         auto menu = lang_menu_button->get_popup_menu().lock();
 
         menu->create_item("English");
         menu->create_item("中文");
         menu->create_item("Русский");
+        menu->create_item("日本語");
 
-        auto callback = [this](uint32_t item_index) {
+        auto callback = [](const uint32_t item_index) {
             GuiInterface::Instance().set_locale("en");
 
             if (item_index == 1) {
@@ -57,6 +61,9 @@ void SettingsContainer::custom_ready() {
             }
             if (item_index == 2) {
                 GuiInterface::Instance().set_locale("ru");
+            }
+            if (item_index == 3) {
+                GuiInterface::Instance().set_locale("ja");
             }
         };
         lang_menu_button->connect_signal("item_selected", callback);
@@ -78,7 +85,7 @@ void SettingsContainer::custom_ready() {
         dark_mode_btn->set_text(FTR("dark mode"));
         vbox_container->add_child(dark_mode_btn);
         dark_mode_btn->set_toggled_no_signal(GuiInterface::Instance().dark_mode_);
-        auto callback = [this](bool toggled) { GuiInterface::Instance().dark_mode_ = toggled; };
+        auto callback = [](const bool toggled) { GuiInterface::Instance().dark_mode_ = toggled; };
         dark_mode_btn->connect_signal("toggled", callback);
     }
 
@@ -90,7 +97,7 @@ void SettingsContainer::custom_ready() {
         vbox_container->add_child(open_capture_folder_button);
         open_capture_folder_button->set_text(FTR("capture folder"));
 
-        auto callback = [this]() { open_explorer(GuiInterface::GetCaptureDir()); };
+        auto callback = [] { open_explorer(GuiInterface::GetCaptureDir()); };
         open_capture_folder_button->connect_signal("triggered", callback);
     }
 
@@ -102,7 +109,7 @@ void SettingsContainer::custom_ready() {
         vbox_container->add_child(open_appdata_button);
         open_appdata_button->set_text(FTR("config folder"));
 
-        auto callback = [this]() { open_explorer(GuiInterface::GetAppDataDir()); };
+        auto callback = [] { open_explorer(GuiInterface::GetAppDataDir()); };
         open_appdata_button->connect_signal("triggered", callback);
     }
 

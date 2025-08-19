@@ -1,50 +1,50 @@
-tag,en,zh,ru
-lang,Language,语言,Язык
-fullscreen,Fullscreen,全屏,Полноэкранный
-bit rate,Bit rate,码率,Битрейт
-display fps,Display FPS,显示帧率,Отображение FPS
-hw decoding,Hardware decoding,硬件解码,аппаратное декодирование
-capture frame,Capture frame,截图,кадр захвата
-player control,Player control,播放控制,контроль игрока
-record mp4,Record MP4,录制 MP4,Запись MP4
-recording,Recording,正在录制,Запись
-stop recording,Stop Recording,停止录制,Остановить запись
-channel,Channel,频道,Канал
-channel width,Channel width,频宽,Ширина канала
-key,Key,密钥,Ключ
-settings,Settings,设置,Настройки
-video stab,Video stabilization,视频增稳,Стабилизация видео
-force sw decoding,Force software decoding,强制软件解码,Принудительное программное декодирование
-start,Start,开始,начинать
-stop,Stop,停止,остановить
-open,Open,打开,Открыть
-close,Close,关闭,Закрывать
-port,Port,端口,Порт
-local,Local,本机,Местный
-on,On,开,вкл
-off,Off,关,выкл
-invalid usb msg,Invalid USB device!,无效的 USB 设备！,Недопустимое USB-устройство!
-wi-fi stopped msg, Wi-Fi stopped!,无线已停止！,Wi-Fi остановлен!
-device,Device,设备,Устройство
-capture fail,Failed to capture frame!,截图失败！,Не удалось захватить кадр
-frame saved,Frame saved to: ,截图保存至：,Кадр сохранен в:
-record fail,Recording failed!,录制失败！,Запись не удалась
-save record fail,Failed to save the record file!,保存录制文件失败！,Не удалось сохранить файл записи!
-video saved,Video saved to: ,视频保存至：,Видео сохранено в:
-video stab warning,Video stabilization is experimental!,视频增稳是实验性功能！,Стабилизация видео экспериментальная!
-capture folder,Capture folder,录制文件夹,Папка захвата
-config folder,Config folder,配置文件夹,Папка конфигурации
-open crash dump folder,Open crash dump folder,打开崩溃数据文件夹,Открыть папку аварийного дампа
-show console,Show console,显示控制台,Показать консоль
-invalid input data,Invalid input data!,无效的输入数据！,Неверные входные данные!
-signal lost,Signal lost!,信号丢失！,Сигнал потерян!
-low light enhancement,Low light enhancement,低光增强,Улучшение при слабом освещении
-control panel,Control panel,控制面板,Панель управления
-alink,Adaptive link,自适应链路,Адаптивная ссылка
-tx power,TX power,发射功率,мощность передачи
-version,Version,版本,версия
-use gstreamer,Use GStreamer,使用GStreamer,использовать GStreamer
-codec,Codec,编码,Кодек
-dark mode,Dark mode,黑暗模式,Темный режим
-default,Default,默认,По умолчанию
-packet loss,Packet loss,丢包,Потеря пакетов
+tag,en,zh,ru,ja
+lang,Language,语言,Язык,言語
+fullscreen,Fullscreen,全屏,Полноэкранный,全画面
+bit rate,Bit rate,码率,Битрейт,ビットレート
+display fps,Display FPS,显示帧率,Отображение FPS,ディスプレイFPS
+hw decoding,Hardware decoding,硬件解码,аппаратное декодирование,ハードウェアデコーディング
+capture frame,Capture frame,截图,кадр захвата,フレームキャプチャ
+player control,Player control,播放控制,контроль игрока,プレイヤーコントロール
+record mp4,Record MP4,录制 MP4,Запись MP4,MP4録画
+recording,Recording,正在录制,Запись,録画中
+stop recording,Stop Recording,停止录制,Остановить запись,録画を停止
+channel,Channel,频道,Канал,チャンネル
+channel width,Channel width,频宽,Ширина канала,チャンネル幅
+key,Key,密钥,Ключ,キー
+settings,Settings,设置,Настройки,設定
+video stab,Video stabilization,视频增稳,Стабилизация видео,動画手ぶれ補正
+force sw decoding,Force software decoding,强制软件解码,Принудительное программное декодирование,強制ソフトウェアデコード
+start,Start,开始,начинать,開始
+stop,Stop,停止,остановить,停止
+open,Open,打开,Открыть,開く
+close,Close,关闭,Закрывать,閉じる
+port,Port,端口,Порт,ポート
+local,Local,本机,Местный,ローカル
+on,On,开,вкл,オン
+off,Off,关,выкл,オフ
+invalid usb msg,Invalid USB device!,无效的 USB 设备！,Недопустимое USB-устройство!,無効なUSBデバイス！
+wi-fi stopped msg, Wi-Fi stopped!,无线已停止！,Wi-Fi остановлен!,Wi-Fiが停止しました！
+device,Device,设备,Устройство,デバイス
+capture fail,Failed to capture frame!,截图失败！,Не удалось захватить кадр,フレームキャプチャに失敗しました！
+frame saved,Frame saved to: ,截图保存至：,Кадр сохранен в:,フレームを保存しました：
+record fail,Recording failed!,录制失败！,Запись не удалась,録画に失敗しました！
+save record fail,Failed to save the record file!,保存录制文件失败！,Не удалось сохранить файл записи!,録画ファイルの保存に失敗しました！
+video saved,Video saved to: ,视频保存至：,Видео сохранено в:,動画を保存しました：
+video stab warning,Video stabilization is experimental!,视频增稳是实验性功能！,Стабилизация видео экспериментальная!,動画手ぶれ補正は実験的な機能です！
+capture folder,Capture folder,录制文件夹,Папка захвата,キャプチャフォルダ
+config folder,Config folder,配置文件夹,Папка конфигурации,設定フォルダ
+open crash dump folder,Open crash dump folder,打开崩溃数据文件夹,Открыть папку аварийного дампа,クラッシュダンプフォルダを開く
+show console,Show console,显示控制台,Показать консоль,コンソールを表示
+invalid input data,Invalid input data!,无效的输入数据！,Неверные входные данные!,無効な入力データ！
+signal lost,Signal lost!,信号丢失！,Сигнал потерян!,信号が失われました！
+low light enhancement,Low light enhancement,低光增强,Улучшение при слабом освещении,低照度強調
+control panel,Control panel,控制面板,Панель управления,コントロールパネル
+alink,Adaptive link,自适应链路,Адаптивная ссылка,アダプティブリンク
+tx power,TX power,发射功率,мощность передачи,送信電力
+version,Version,版本,версия,バージョン
+use gstreamer,Use GStreamer,使用GStreamer,использовать GStreamer,GStreamerの使用
+codec,Codec,编码,Кодек,コーディング
+dark mode,Dark mode,黑暗模式,Темный режим,ダークモード
+default,Default,默认,По умолчанию,デフォルト
+packet loss,Packet loss,丢包,Потеря пакетов,パケット損失
