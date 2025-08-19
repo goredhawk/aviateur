@@ -435,6 +435,8 @@ public:
 
     bool config_file_exists = true;
 
+    bool is_using_wifi = true;
+
     float link_quality_ = 0; // Percentage
     float packet_loss_ = 0;  // Percentage
     int drone_fec_level_ = 0;

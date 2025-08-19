@@ -163,8 +163,17 @@ void PlayerRect::custom_ready() {
         lq_bar_->set_value(GuiInterface::Instance().link_quality_);
 
 #ifdef __linux__
-        pl_label_->set_text("PL: " + std::format("{:.1f}", GuiInterface::Instance().packet_loss_) + "%");
-        fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
+        if (GuiInterface::Instance().is_using_wifi) {
+            pl_label_->set_visibility(true);
+            fec_label_->set_visibility(true);
+
+            pl_label_->set_text(FTR("packet loss") + ": " +
+                                std::format("{:.1f}", GuiInterface::Instance().packet_loss_) + "%");
+            fec_label_->set_text("FEC: " + std::to_string(GuiInterface::Instance().drone_fec_level_));
+        } else {
+            pl_label_->set_visibility(false);
+            fec_label_->set_visibility(false);
+        }
 #endif
 
         rx_status_update_timer->start_timer(0.1);

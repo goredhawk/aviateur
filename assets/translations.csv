@@ -47,3 +47,4 @@ use gstreamer,Use GStreamer,使用GStreamer,использовать GStreamer
 codec,Codec,编码,Кодек
 dark mode,Dark mode,黑暗模式,Темный режим
 default,Default,默认,По умолчанию
+packet loss,Packet loss,丢包,Потеря пакетов

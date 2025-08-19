@@ -321,6 +321,8 @@ void ControlPanel::custom_ready() {
             auto callback1 = [this] {
                 bool start = play_button_->get_text() == FTR("start") + " (F5)";
 
+                GuiInterface::Instance().is_using_wifi = true;
+
                 if (start) {
                     std::optional<DeviceId> target_device_id;
                     for (auto &d : devices_) {
@@ -437,6 +439,8 @@ void ControlPanel::custom_ready() {
 
             auto callback1 = [this] {
                 bool start = play_port_button_->get_text() == FTR("start") + " (F5)";
+
+                GuiInterface::Instance().is_using_wifi = false;
 
                 if (start) {
                     std::string port = local_listener_port_edit_->get_text();
