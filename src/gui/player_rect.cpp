@@ -42,14 +42,12 @@ void PlayerRect::show_green_tip(std::string tip) {
 }
 
 void PlayerRect::custom_input(revector::InputEvent &event) {
-    auto input_server = revector::InputServer::get_singleton();
-
     if (event.type == revector::InputEventType::Key) {
         auto key_args = event.args.key;
 
         if (key_args.key == revector::KeyCode::F11) {
             if (key_args.pressed) {
-                fullscreen_button_->set_toggled(true);
+                fullscreen_button_->set_toggled(!fullscreen_button_->get_toggled());
             }
         }
 
