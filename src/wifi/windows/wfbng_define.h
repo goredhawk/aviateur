@@ -183,14 +183,11 @@ typedef struct {
 } wpacket_hdr_t;
 #pragma pack(pop)
 
-#define MAX_PAYLOAD_SIZE                                                                           \
-    (MAX_PACKET_SIZE - sizeof(radiotap_header) - sizeof(ieee80211_header) - sizeof(wblock_hdr_t) - \
-     crypto_aead_chacha20poly1305_ABYTES - sizeof(wpacket_hdr_t))
-#define MAX_FEC_PAYLOAD                                                                            \
-    (MAX_PACKET_SIZE - sizeof(radiotap_header) - sizeof(ieee80211_header) - sizeof(wblock_hdr_t) - \
-     crypto_aead_chacha20poly1305_ABYTES)
-#define MAX_PACKET_SIZE 1510
-#define MAX_FORWARDER_PACKET_SIZE (MAX_PACKET_SIZE - sizeof(radiotap_header) - sizeof(ieee80211_header))
+#define WIFI_MTU  4045
+
+#define MAX_PAYLOAD_SIZE (WIFI_MTU - sizeof(ieee80211_header) - sizeof(wblock_hdr_t) - crypto_aead_chacha20poly1305_ABYTES - sizeof(wpacket_hdr_t))
+#define MAX_FEC_PAYLOAD  (WIFI_MTU - sizeof(ieee80211_header) - sizeof(wblock_hdr_t) - crypto_aead_chacha20poly1305_ABYTES)
+#define MAX_FORWARDER_PACKET_SIZE (WIFI_MTU - sizeof(ieee80211_header))
 
 #define BLOCK_IDX_MASK ((1LLU << 56) - 1)
 #define MAX_BLOCK_IDX ((1LLU << 55) - 1)
