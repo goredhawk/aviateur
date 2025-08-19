@@ -2,12 +2,12 @@
 
 #ifdef _WIN32
 
-#include <cassert>
-#include <cinttypes>
-#include <cstring>
-#include <format>
-#include <stdexcept>
-#include <string>
+    #include <cassert>
+    #include <cinttypes>
+    #include <cstring>
+    #include <format>
+    #include <stdexcept>
+    #include <string>
 
 Aggregator::Aggregator(const std::string &keypair, uint64_t epoch, uint32_t channel_id, const DataCB &cb)
     : fec_p(NULL), fec_k(-1), fec_n(-1), seq(0), rx_ring_front(0), rx_ring_alloc(0), last_known_block((uint64_t)-1),
@@ -39,7 +39,9 @@ Aggregator::~Aggregator() {
 void Aggregator::init_fec(int k, int n) {
     fec_k = k;
     fec_n = n;
-    fec_p = fec_new(fec_k, fec_n);
+
+    zfex_status_code_t rc = fec_new(fec_k, fec_n, &fec_p);
+    assert(rc == ZFEX_SC_OK);
 
     rx_ring_front = 0;
     rx_ring_alloc = 0;
@@ -90,9 +92,9 @@ int Aggregator::rx_ring_push() {
       2. Reduce packet injection speed or try to unify RX hardware.
     */
 
-#if 0
+    #if 0
     fprintf(stderr, "Override block 0x%" PRIx64 " flush %d fragments\n", rx_ring[rx_ring_front].block_idx, rx_ring[rx_ring_front].has_fragments);
-#endif
+    #endif
 
     count_p_override += 1;
 
@@ -412,7 +414,9 @@ void Aggregator::apply_fec(int ring_idx) {
         }
     }
 
-    fec_decode(fec_p, (const uint8_t **)in_blocks, out_blocks, index, MAX_FEC_PAYLOAD);
+    zfex_status_code_t rc =
+        fec_decode_simd(fec_p, (const uint8_t **)in_blocks, out_blocks, index, ZFEX_ROUND_UP_SIMD(MAX_FEC_PAYLOAD));
+    assert(rc == ZFEX_SC_OK);
 
     // 释放动态分配的内存
     delete[] index;

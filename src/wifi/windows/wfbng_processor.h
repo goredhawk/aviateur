@@ -7,7 +7,7 @@
     #include "wfbng_define.h"
 
 extern "C" {
-    #include "fec.h"
+    #include "../wfb-ng/zfex.h"
 }
 
 class BaseAggregator {
