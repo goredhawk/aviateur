@@ -102,6 +102,10 @@ void GstDecoder::play_pipeline(const std::string &uri) {
 }
 
 void GstDecoder::stop_pipeline() {
+    if (!pipeline_) {
+        return;
+    }
+
     gst_element_send_event(pipeline_, gst_event_new_eos());
 
     // Wait for an EOS message on the pipeline bus.
