@@ -80,6 +80,15 @@ if (AVIATEUR_ENABLE_GSTREAMER)
     )
 endif ()
 
+# Enable SIMD FEC
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+        ZFEX_UNROLL_ADDMUL_SIMD=8
+        ZFEX_USE_INTEL_SSSE3
+        ZFEX_USE_ARM_NEON
+        ZFEX_INLINE_ADDMUL
+        ZFEX_INLINE_ADDMUL_SIMD
+)
+
 add_subdirectory(src/gui)
 add_subdirectory(src/player)
 add_subdirectory(src/wifi)
