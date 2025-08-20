@@ -37,22 +37,9 @@ if (WIN32)
 
         set(GST_INCLUDE_DIRS "${GST_ROOT}\\include\\gstreamer-1.0")
         set(GST_LIBRARIES "${GST_LIB_ROOT}\\gstreamer-1.0.lib")
-        set(GST_SDP_LIBRARIES "${GST_LIB_ROOT}\\gstsdp-1.0.lib")
-        set(GST_WEBRTC_LIBRARIES "${GST_LIB_ROOT}\\gstwebrtc-1.0.lib")
 
         set(GLIB_INCLUDE_DIRS "${GST_ROOT}\\include\\glib-2.0" "${GST_LIB_ROOT}\\glib-2.0\\include")
         set(GLIB_LIBRARIES "${GST_LIB_ROOT}\\gobject-2.0.lib" "${GST_LIB_ROOT}\\glib-2.0.lib")
-
-        set(JSONGLIB_INCLUDE_DIRS "${GST_ROOT}\\include\\json-glib-1.0")
-        set(JSONGLIB_LIBRARIES "${GST_LIB_ROOT}\\json-glib-1.0.lib")
-
-        if (USE_LIBSOUP2)
-            set(LIBSOUP_INCLUDE_DIRS "${GST_ROOT}\\include\\libsoup-2.4")
-            set(LIBSOUP_LIBRARIES "${GST_LIB_ROOT}\\soup-2.4.lib")
-        else ()
-            set(LIBSOUP_INCLUDE_DIRS "${GST_ROOT}\\include\\libsoup-3.0")
-            set(LIBSOUP_LIBRARIES "${GST_LIB_ROOT}\\soup-3.0.lib")
-        endif ()
 
         set(GIO_INCLUDE_DIRS "${GST_ROOT}\\include\\gio-win32-2.0")
         set(GIO_LIBRARIES "${GST_LIB_ROOT}\\gio-2.0.lib")
@@ -75,6 +62,7 @@ else ()
         pkg_check_modules(GST REQUIRED gstreamer-1.0)
         pkg_check_modules(GST REQUIRED gstreamer-plugins-base-1.0)
         pkg_check_modules(GST REQUIRED gstreamer-plugins-bad-1.0)
+        pkg_check_modules(GIO REQUIRED gio-2.0)
     endif ()
 endif ()
 
@@ -146,8 +134,6 @@ if (AVIATEUR_ENABLE_GSTREAMER)
     target_link_libraries(
             ${PROJECT_NAME} PRIVATE
             ${GST_LIBRARIES}
-            ${GST_SDP_LIBRARIES}
-            ${GST_WEBRTC_LIBRARIES}
             ${GLIB_LIBRARIES}
             ${GIO_LIBRARIES}
     )
@@ -155,8 +141,7 @@ if (AVIATEUR_ENABLE_GSTREAMER)
     target_include_directories(
             ${PROJECT_NAME} PRIVATE
             ${GST_INCLUDE_DIRS}
-            ${GIO_INCLUDE_DIRS}
-            PUBLIC
             ${GLIB_INCLUDE_DIRS}
+            ${GIO_INCLUDE_DIRS}
     )
 endif ()
