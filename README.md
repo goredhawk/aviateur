@@ -47,8 +47,7 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 ![](tutorials/latency_test.jpg)
 
 > [!NOTE]
-> Currently, the glass-to-glass latency on Linux is much higher than that on Windows (~100 ms on Linux while ~70 ms on
-> Windows). This difference may stem from some performance issue in libusb.
+> Generally, enabling the GStreamer backend can achieve a lower glass-to-glass latency.
 
 ### TODOs
 
