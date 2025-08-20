@@ -66,7 +66,7 @@ void GstDecoder::create_pipeline(const std::string &codec) {
     gchar *pipeline_str = g_strdup_printf(
         "udpsrc name=udpsrc "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
-        "rtpjitterbuffer latency=5 ! "
+        "rtpjitterbuffer latency=50 ! "
         "%s ! "
         "decodebin3 ! "
         "autovideosink name=glsink sync=false",
