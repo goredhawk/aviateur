@@ -23,23 +23,23 @@ int main() {
     int rc = libusb_init(nullptr);
 
     {
-        auto hbox_container = std::make_shared<revector::HBoxContainer>();
-        hbox_container->set_separation(2);
-        hbox_container->set_anchor_flag(revector::AnchorFlag::FullRect);
-        app->get_tree_root()->add_child(hbox_container);
+        auto split_container = std::make_shared<revector::SplitContainer>();
+        split_container->set_split_ratio(1);
+        split_container->set_anchor_flag(revector::AnchorFlag::FullRect);
+        app->get_tree_root()->add_child(split_container);
 
         auto player_rect = std::make_shared<PlayerRect>();
         player_rect->container_sizing.expand_h = true;
         player_rect->container_sizing.expand_v = true;
         player_rect->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
         player_rect->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
-        hbox_container->add_child(player_rect);
+        split_container->add_child(player_rect);
 
         auto control_panel = std::make_shared<ControlPanel>();
         control_panel->set_custom_minimum_size({280, 0});
         control_panel->container_sizing.expand_v = true;
         control_panel->container_sizing.flag_v = revector::ContainerSizingFlag::Fill;
-        hbox_container->add_child(control_panel);
+        split_container->add_child(control_panel);
 
         std::weak_ptr control_panel_weak = control_panel;
         std::weak_ptr player_rect_weak = player_rect;
