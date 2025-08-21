@@ -24,7 +24,7 @@ int main() {
 
     {
         auto split_container = std::make_shared<revector::SplitContainer>();
-        split_container->set_split_ratio(1);
+        split_container->set_split_ratio(1.0f);
         split_container->set_anchor_flag(revector::AnchorFlag::FullRect);
         app->get_tree_root()->add_child(split_container);
 
