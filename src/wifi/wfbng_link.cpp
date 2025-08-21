@@ -422,7 +422,7 @@ void WfbngLink::start_link_quality_thread() {
 
         while (!this->alink_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
-            GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
+
             if (quality.total_last_second != 0) {
                 GuiInterface::Instance().packet_loss_ =
                     std::round((float)quality.lost_last_second / quality.total_last_second * 1000.0f) / 10.0f;
@@ -634,10 +634,9 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
                                          0,
                                          antenna,
                                          rssi);
-
-        auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
-        GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
 #endif
+        const auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
+        GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
     }
     // MAVLink frame
     else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
