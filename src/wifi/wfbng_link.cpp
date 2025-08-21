@@ -529,7 +529,7 @@ void WfbngLink::start_link_quality_thread() {
 }
 
 void WfbngLink::stop_adaptive_link() {
-    GuiInterface::Instance().PutLog(LogLevel::Info, "Stop alink thread");
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Stopping alink thread");
 
     std::unique_lock lock(thread_mutex);
 
@@ -539,6 +539,8 @@ void WfbngLink::stop_adaptive_link() {
 
     alink_should_stop = true;
     destroy_thread(link_quality_thread);
+
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Alink thread stopped");
 }
 
 #endif
@@ -743,7 +745,11 @@ void WfbngLink::enable_alink(bool enable) {
     alink_should_stop = !enable;
 
     // Enable alink during playing.
-    if (alink_enabled && link_quality_thread) {
+    if (alink_enabled && usbThread) {
+        if (link_quality_thread && link_quality_thread->joinable()) {
+            link_quality_thread->join();
+            link_quality_thread = nullptr;
+        }
         start_link_quality_thread();
     }
 #endif

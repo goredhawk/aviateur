@@ -97,6 +97,7 @@ protected:
             thread = nullptr;
         }
     }
+
     void start_link_quality_thread();
 
     void stop_adaptive_link();
