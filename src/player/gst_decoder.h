@@ -18,6 +18,8 @@ public:
 
     void stop_pipeline();
 
+    std::string decoder_name_;
+
 private:
     GstElement* pipeline_{};
 

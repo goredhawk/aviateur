@@ -43,15 +43,47 @@ static void on_decodebin3_pad_added(GstElement *decodebin, GstPad *pad, gpointer
         return;
     }
 
+    auto *self = (GstDecoder *)data;
+
     gchar *pad_name = gst_pad_get_name(pad);
-    GuiInterface::Instance().PutLog(LogLevel::Info, "A new src pad with name '{}' was created", pad_name);
+    GuiInterface::Instance().PutLog(LogLevel::Info, "A new src pad with name '{}' was created on decodebin3", pad_name);
     g_free(pad_name);
 
-    GstCaps *caps = gst_pad_get_current_caps(pad);
-    gchar *str = gst_caps_serialize(caps, GST_SERIALIZE_FLAG_NONE);
-    GuiInterface::Instance().PutLog(LogLevel::Info, "Pad caps: {}", str);
-    g_free(str);
-    gst_caps_unref(caps);
+    // Step 1: Get the target pad from the ghost pad
+    GstPad *dec_pad = gst_ghost_pad_get_target(GST_GHOST_PAD(pad));
+
+    if (dec_pad) {
+        GstCaps *caps = gst_pad_get_current_caps(dec_pad);
+        if (caps) {
+            gchar *str = gst_caps_serialize(caps, GST_SERIALIZE_FLAG_NONE);
+            GuiInterface::Instance().PutLog(LogLevel::Info, "Pad caps: {}", str);
+            g_free(str);
+            gst_caps_unref(caps);
+        }
+
+        // Step 2: Get the parent element from the target pad (the actual decoder)
+        GstElement *decoder = gst_pad_get_parent_element(dec_pad);
+
+        if (decoder) {
+            gchar *decoder_name = gst_element_get_name(decoder);
+
+            const gchar *type_name = G_OBJECT_TYPE_NAME(decoder);
+
+            GuiInterface::Instance().PutLog(LogLevel::Info, "The actual decoder type is: {}", type_name);
+
+            self->decoder_name_ = std::string(type_name);
+
+            // Clean up references
+            g_free(decoder_name);
+            gst_object_unref(decoder);
+        } else {
+            g_print("Could not get the parent element of the target pad.\n");
+        }
+
+        gst_object_unref(dec_pad);
+    } else {
+        g_print("Could not get the target pad.\n");
+    }
 }
 
 void GstDecoder::init() {
@@ -110,7 +142,7 @@ void GstDecoder::create_pipeline(const std::string &codec) {
             return;
         }
 
-        g_signal_connect(decodebin3, "pad-added", G_CALLBACK(on_decodebin3_pad_added), NULL);
+        g_signal_connect(decodebin3, "pad-added", G_CALLBACK(on_decodebin3_pad_added), this);
 
         gst_object_unref(decodebin3);
     }

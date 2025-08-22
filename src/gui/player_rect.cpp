@@ -298,14 +298,19 @@ void PlayerRect::custom_ready() {
 void PlayerRect::custom_update(double dt) {
     player_->update(dt);
 
-    if (!GuiInterface::Instance().use_gstreamer_) {
+    std::string decoder_name;
+    if (GuiInterface::Instance().use_gstreamer_) {
+        decoder_name = gst_decoder_->decoder_name_;
+    } else {
         auto hw_decoder_name = player_->getHwDecoderName();
-        hw_status_label_->set_text(FTR("hw decoder") + ": " +
-                                   (hw_decoder_name.has_value() ? hw_decoder_name.value() : std::string(FTR("off"))));
-        hw_status_label_->set_visibility(true);
+        decoder_name = hw_decoder_name.has_value() ? hw_decoder_name.value() : std::string(FTR("off"));
+    }
+
+    hw_status_label_->set_text(FTR("hw decoder") + ": " + decoder_name);
+
+    if (!GuiInterface::Instance().use_gstreamer_) {
         bitrate_label_->set_visibility(true);
     } else {
-        hw_status_label_->set_visibility(false);
         bitrate_label_->set_visibility(false);
     }
 
