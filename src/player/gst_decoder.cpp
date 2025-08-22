@@ -35,6 +35,23 @@ static gboolean gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data)
     return TRUE;
 }
 
+/// This callback function is called when a new pad is created by decodebin3
+static void on_decodebin3_pad_added(GstElement *decodebin, GstPad *pad, gpointer data) {
+    if (GST_PAD_DIRECTION(pad) != GST_PAD_SRC) {
+        return;
+    }
+
+    gchar *pad_name = gst_pad_get_name(pad);
+    GuiInterface::Instance().PutLog(LogLevel::Info, "A new src pad with name '{}' was created", pad_name);
+    g_free(pad_name);
+
+    GstCaps *caps = gst_pad_get_current_caps(pad);
+    gchar *str = gst_caps_serialize(caps, GST_SERIALIZE_FLAG_NONE);
+    GuiInterface::Instance().PutLog(LogLevel::Info, "Pad caps: {}", str);
+    g_free(str);
+    gst_caps_unref(caps);
+}
+
 void GstDecoder::init() {
     if (initialized_) {
         return;
@@ -64,11 +81,11 @@ void GstDecoder::create_pipeline(const std::string &codec) {
     }
 
     gchar *pipeline_str = g_strdup_printf(
-        "udpsrc name=udpsrc "
+        "udpsrc name=udpsrc buffer-size=8000000 "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
         "rtpjitterbuffer latency=50 ! "
         "%s ! "
-        "decodebin3 ! "
+        "decodebin3 name=decbin ! "
         "autovideosink name=glsink sync=false",
         codec.c_str(),
         depay.c_str());
@@ -83,6 +100,18 @@ void GstDecoder::create_pipeline(const std::string &codec) {
     GstBus *bus = gst_element_get_bus(pipeline_);
     gst_bus_add_watch(bus, gst_bus_cb, pipeline_);
     gst_clear_object(&bus);
+
+    {
+        GstElement *decodebin3 = gst_bin_get_by_name(GST_BIN(pipeline_), "decbin");
+        if (!decodebin3) {
+            GuiInterface::Instance().PutLog(LogLevel::Error, "Could not find decodebin3 element");
+            return;
+        }
+
+        g_signal_connect(decodebin3, "pad-added", G_CALLBACK(on_decodebin3_pad_added), NULL);
+
+        gst_object_unref(decodebin3);
+    }
 }
 
 void GstDecoder::play_pipeline(const std::string &uri) {
