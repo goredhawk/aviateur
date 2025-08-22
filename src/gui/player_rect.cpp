@@ -125,24 +125,23 @@ void PlayerRect::custom_ready() {
         video_info_label_ = std::make_shared<revector::Label>();
         hud_container_->add_child(video_info_label_);
         video_info_label_->set_text("");
+        video_info_label_->set_visibility(false);
 
-        auto onFpsUpdate = [this](uint32_t width, uint32_t height, float fps) {
+        auto on_deocder_ready = [this](uint32_t width, uint32_t height, float fps) {
             std::stringstream ss;
             ss << width << "x" << height << "@" << int(round(fps));
             video_info_label_->set_text(ss.str());
+            video_info_label_->set_visibility(true);
         };
-        GuiInterface::Instance().decoderReadyCallbacks.emplace_back(onFpsUpdate);
+        GuiInterface::Instance().decoderReadyCallbacks.emplace_back(on_deocder_ready);
     }
 
     bitrate_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(bitrate_label_);
     bitrate_label_->set_text(FTR("bit rate") + ": 0 bps");
 
-    {
-        display_fps_label_ = std::make_shared<revector::Label>();
-        hud_container_->add_child(display_fps_label_);
-        display_fps_label_->set_text(FTR("display fps") + ":");
-    }
+    render_fps_label_ = std::make_shared<revector::Label>();
+    hud_container_->add_child(render_fps_label_);
 
     hw_status_label_ = std::make_shared<revector::Label>();
     hud_container_->add_child(hw_status_label_);
@@ -310,8 +309,8 @@ void PlayerRect::custom_update(double dt) {
         bitrate_label_->set_visibility(false);
     }
 
-    display_fps_label_->set_text(FTR("render fps") + ": " +
-                                 std::to_string(revector::Engine::get_singleton()->get_fps_int()));
+    render_fps_label_->set_text(FTR("render fps") + ": " +
+                                std::to_string(revector::Engine::get_singleton()->get_fps_int()));
 
     if (is_recording) {
         std::chrono::duration<double, std::chrono::seconds::period> duration =
