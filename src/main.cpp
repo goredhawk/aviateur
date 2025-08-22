@@ -12,7 +12,8 @@ int main() {
     GuiInterface::Instance().init();
     GuiInterface::Instance().PutLog(LogLevel::Info, "App started");
 
-    auto app = new revector::App({1280, 720}, GuiInterface::Instance().dark_mode_);
+    auto app =
+        new revector::App({1280, 720}, GuiInterface::Instance().dark_mode_, GuiInterface::Instance().use_vulkan_);
     app->set_window_title("Aviateur - OpenIPC FPV Ground Station");
 
     GuiInterface::Instance().PutLog(LogLevel::Info, "revector app created");

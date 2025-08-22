@@ -38,13 +38,14 @@
 #define CONFIG_SETTINGS_LANG "language"
 #define CONFIG_SETTINGS_DARK_MODE "dark_mode"
 #define CONFIG_SETTINGS_MEDIA_BACKEND "media_backend"
+#define CONFIG_SETTINGS_RENDER_BACKEND "render_backend"
 
 #define DEFAULT_PORT 52356
 
 constexpr auto LOGGER_MODULE = "Aviateur";
 
 /// Bump this if the config structure changes.
-constexpr auto CONFIG_VERSION_NUM = 5;
+constexpr auto CONFIG_VERSION_NUM = 6;
 
 const revector::ColorU GREEN = revector::ColorU(78, 135, 82);
 const revector::ColorU RED = revector::ColorU(201, 79, 79);
@@ -145,7 +146,8 @@ public:
         // Load config.
         if (bool read_success = ReadConfig(ini_)) {
             set_locale(ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG]);
-            use_gstreamer_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] != "ffmpeg";
+            use_gstreamer_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] == "gstreamer";
+            use_vulkan_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] == "vulkan";
             rtp_codec_ = ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC];
             dark_mode_ = ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] == "true";
         }
@@ -213,6 +215,7 @@ public:
 
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = "en";
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] = "ffmpeg";
+            ini[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] = "opengl";
             ini[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] = "true";
         }
 
@@ -233,6 +236,7 @@ public:
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_LANG] = Instance().locale_;
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_MEDIA_BACKEND] =
             Instance().use_gstreamer_ ? "gstreamer" : "ffmpeg";
+        Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_RENDER_BACKEND] = Instance().use_vulkan_ ? "vulkan" : "opengl";
         Instance().ini_[CONFIG_SETTINGS][CONFIG_SETTINGS_DARK_MODE] = Instance().dark_mode_ ? "true" : "false";
 
         Instance().ini_[CONFIG_LOCALHOST][CONFIG_LOCALHOST_CODEC] = Instance().rtp_codec_;
@@ -443,6 +447,8 @@ public:
 
     // Use gstreamer for decoding instead of ffmpeg
     bool use_gstreamer_ = false;
+
+    bool use_vulkan_ = false;
 
     // Signals.
     std::vector<revector::AnyCallable<void>> logCallbacks;

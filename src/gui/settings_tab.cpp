@@ -73,14 +73,23 @@ void SettingsContainer::custom_ready() {
 
 #ifdef AVIATEUR_USE_GSTREAMER
     {
-        auto decoder_backend_btn = std::make_shared<revector::CheckButton>();
-        decoder_backend_btn->set_text(FTR("use gstreamer"));
-        vbox_container->add_child(decoder_backend_btn);
-        decoder_backend_btn->set_toggled_no_signal(GuiInterface::Instance().use_gstreamer_);
+        auto media_backend_btn = std::make_shared<revector::CheckButton>();
+        media_backend_btn->set_text(FTR("use gstreamer"));
+        vbox_container->add_child(media_backend_btn);
+        media_backend_btn->set_toggled_no_signal(GuiInterface::Instance().use_gstreamer_);
         auto callback = [this](bool toggled) { GuiInterface::Instance().use_gstreamer_ = toggled; };
-        decoder_backend_btn->connect_signal("toggled", callback);
+        media_backend_btn->connect_signal("toggled", callback);
     }
 #endif
+
+    {
+        auto render_backend_btn = std::make_shared<revector::CheckButton>();
+        render_backend_btn->set_text(FTR("use vulkan"));
+        vbox_container->add_child(render_backend_btn);
+        render_backend_btn->set_toggled_no_signal(GuiInterface::Instance().use_vulkan_);
+        auto callback = [this](bool toggled) { GuiInterface::Instance().use_vulkan_ = toggled; };
+        render_backend_btn->connect_signal("toggled", callback);
+    }
 
     {
         auto dark_mode_btn = std::make_shared<revector::CheckButton>();
