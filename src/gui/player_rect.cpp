@@ -299,11 +299,18 @@ void PlayerRect::custom_ready() {
 void PlayerRect::custom_update(double dt) {
     player_->update(dt);
 
-    auto hw_decoder_name = player_->getHwDecoderName();
-    hw_status_label_->set_text(FTR("hw decoder") + ": " +
-                               (hw_decoder_name.has_value() ? hw_decoder_name.value() : std::string(FTR("off"))));
+    if (!GuiInterface::Instance().use_gstreamer_) {
+        auto hw_decoder_name = player_->getHwDecoderName();
+        hw_status_label_->set_text(FTR("hw decoder") + ": " +
+                                   (hw_decoder_name.has_value() ? hw_decoder_name.value() : std::string(FTR("off"))));
+        hw_status_label_->set_visibility(true);
+        bitrate_label_->set_visibility(true);
+    } else {
+        hw_status_label_->set_visibility(false);
+        bitrate_label_->set_visibility(false);
+    }
 
-    display_fps_label_->set_text(FTR("display fps") + ": " +
+    display_fps_label_->set_text(FTR("render fps") + ": " +
                                  std::to_string(revector::Engine::get_singleton()->get_fps_int()));
 
     if (is_recording) {

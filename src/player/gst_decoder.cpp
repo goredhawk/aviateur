@@ -6,14 +6,16 @@
 
     #include "src/gui_interface.h"
 
-static gboolean gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data) {
+static gboolean gst_bus_cb(GstBus *bus, GstMessage *msg, gpointer user_data) {
     GstBin *pipeline = GST_BIN(user_data);
 
-    switch (GST_MESSAGE_TYPE(message)) {
+    switch (GST_MESSAGE_TYPE(msg)) {
+        case GST_MESSAGE_QOS: {
+        } break;
         case GST_MESSAGE_ERROR: {
             GError *gerr;
             gchar *debug_msg;
-            gst_message_parse_error(message, &gerr, &debug_msg);
+            gst_message_parse_error(msg, &gerr, &debug_msg);
             g_error("Error: %s (%s)", gerr->message, debug_msg);
             g_error_free(gerr);
             g_free(debug_msg);
@@ -21,7 +23,7 @@ static gboolean gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data)
         case GST_MESSAGE_WARNING: {
             GError *gerr;
             gchar *debug_msg;
-            gst_message_parse_warning(message, &gerr, &debug_msg);
+            gst_message_parse_warning(msg, &gerr, &debug_msg);
             g_warning("Warning: %s (%s)", gerr->message, debug_msg);
             g_error_free(gerr);
             g_free(debug_msg);
@@ -81,7 +83,7 @@ void GstDecoder::create_pipeline(const std::string &codec) {
     }
 
     gchar *pipeline_str = g_strdup_printf(
-        "udpsrc name=udpsrc buffer-size=8000000 "
+        "udpsrc name=udpsrc "
         "caps=application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)%s ! "
         "rtpjitterbuffer latency=50 ! "
         "%s ! "
@@ -122,6 +124,10 @@ void GstDecoder::play_pipeline(const std::string &uri) {
     } else {
         g_object_set(udpsrc, "uri", uri.c_str(), NULL);
     }
+
+    gint buffer_size;
+    g_object_get(G_OBJECT(udpsrc), "buffer-size", &buffer_size, NULL);
+    GuiInterface::Instance().PutLog(LogLevel::Info, "udpsrc buffer-size: {} bytes", buffer_size);
 
     gst_object_unref(udpsrc);
 
