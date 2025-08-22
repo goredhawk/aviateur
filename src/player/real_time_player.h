@@ -62,7 +62,7 @@ public:
 
     void forceSoftwareDecoding(bool force);
 
-    bool isHardwareAccelerated() const;
+    std::optional<std::string> getHwDecoderName() const;
 
     std::shared_ptr<FfmpegDecoder> getDecoder() const;
 
@@ -120,7 +120,7 @@ protected:
     bool hasAudio() const;
 
     bool forceSoftwareDecoding_ = false;
-    bool hwEnabled = false;
+    std::optional<std::string> hwDecoderName_;
 
 public:
     std::shared_ptr<YuvRenderer> yuvRenderer_;

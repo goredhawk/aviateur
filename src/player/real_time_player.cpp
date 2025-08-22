@@ -112,7 +112,7 @@ void RealTimePlayer::play(const std::string &playUrl, bool forceSoftwareDecoding
         // Bitrate callback.
         decoder->bitrateUpdateCallback = [](uint64_t bitrate) { GuiInterface::Instance().EmitBitrateUpdate(bitrate); };
 
-        hwEnabled = decoder->hwDecoderEnabled;
+        hwDecoderName_ = decoder->hwDecoderName;
 
         decodeThread = std::thread([this] {
             decodeResMtx.lock();
@@ -331,8 +331,8 @@ void RealTimePlayer::forceSoftwareDecoding(bool force) {
     forceSoftwareDecoding_ = force;
 }
 
-bool RealTimePlayer::isHardwareAccelerated() const {
-    return hwEnabled;
+std::optional<std::string> RealTimePlayer::getHwDecoderName() const {
+    return hwDecoderName_;
 }
 
 std::shared_ptr<FfmpegDecoder> RealTimePlayer::getDecoder() const {

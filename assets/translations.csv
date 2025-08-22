@@ -3,7 +3,7 @@ lang,Language,语言,Язык,言語
 fullscreen,Fullscreen,全屏,Полноэкранный,全画面
 bit rate,Bit rate,码率,Битрейт,ビットレート
 display fps,Display FPS,显示帧率,Отображение FPS,ディスプレイFPS
-hw decoding,Hardware decoding,硬件解码,аппаратное декодирование,ハードウェアデコーディング
+hw decoder,Hardware decoder,硬件解码器,Аппаратный декодер,ハードウェアデコーダー
 capture frame,Capture frame,截图,кадр захвата,フレームキャプチャ
 player control,Player control,播放控制,контроль игрока,プレイヤーコントロール
 record mp4,Record MP4,录制 MP4,Запись MP4,MP4録画

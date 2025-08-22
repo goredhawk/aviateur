@@ -299,8 +299,9 @@ void PlayerRect::custom_ready() {
 void PlayerRect::custom_update(double dt) {
     player_->update(dt);
 
-    hw_status_label_->set_text(FTR("hw decoding") + ": " +
-                               std::string(player_->isHardwareAccelerated() ? FTR("on") : FTR("off")));
+    auto hw_decoder_name = player_->getHwDecoderName();
+    hw_status_label_->set_text(FTR("hw decoder") + ": " +
+                               (hw_decoder_name.has_value() ? hw_decoder_name.value() : std::string(FTR("off"))));
 
     display_fps_label_->set_text(FTR("display fps") + ": " +
                                  std::to_string(revector::Engine::get_singleton()->get_fps_int()));

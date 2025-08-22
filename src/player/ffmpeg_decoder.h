@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 
 #include "ffmpeg_include.h"
@@ -154,6 +155,7 @@ private:
     // Hardware decoding
     AVHWDeviceType hwDecoderType = AV_HWDEVICE_TYPE_NONE;
     bool hwDecoderEnabled = false;
+    std::optional<std::string> hwDecoderName;
     bool forceSwDecoder = false;
     AVPixelFormat hwPixFmt;
     AVBufferRef *hwDeviceCtx = nullptr;

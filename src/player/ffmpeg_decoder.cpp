@@ -273,6 +273,7 @@ bool FfmpegDecoder::OpenVideo() {
             }
 
             hwDecoderEnabled = false;
+            hwDecoderName = {};
 
             if (!forceSwDecoder) {
                 for (int configIndex = 0;; configIndex++) {
@@ -301,7 +302,9 @@ bool FfmpegDecoder::OpenVideo() {
                             continue;
                         }
 
+                        hwDecoderName = decoderName;
                         GuiInterface::Instance().PutLog(LogLevel::Info, "Using hardware decoder: {}", decoderName);
+
                         break;
                     }
                 }
