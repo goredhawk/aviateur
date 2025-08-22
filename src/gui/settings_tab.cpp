@@ -87,7 +87,10 @@ void SettingsContainer::custom_ready() {
         render_backend_btn->set_text(FTR("use vulkan"));
         vbox_container->add_child(render_backend_btn);
         render_backend_btn->set_toggled_no_signal(GuiInterface::Instance().use_vulkan_);
-        auto callback = [this](bool toggled) { GuiInterface::Instance().use_vulkan_ = toggled; };
+        auto callback = [this](bool toggled) {
+            GuiInterface::Instance().use_vulkan_ = toggled;
+            GuiInterface::Instance().ShowTip(FTR("restart app to take effect"));
+        };
         render_backend_btn->connect_signal("toggled", callback);
     }
 
