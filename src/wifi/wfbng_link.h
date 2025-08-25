@@ -33,11 +33,11 @@ public:
     ~WfbngLink();
 
     static WfbngLink &Instance() {
-        static WfbngLink wfb_receiver;
-        return wfb_receiver;
+        static WfbngLink link;
+        return link;
     }
 
-    static std::vector<DeviceId> GetDeviceList();
+    static std::vector<DeviceId> get_device_list();
 
     bool start(const DeviceId &deviceId, uint8_t channel, int channelWidth, const std::string &keyPath);
 
@@ -45,13 +45,13 @@ public:
 
     bool get_alink_enabled() const;
 
-    int get_alink_tx_power() const;
-
     void enable_alink(bool enable);
+
+    int get_alink_tx_power() const;
 
     void set_alink_tx_power(int tx_power);
 
-    /// Process a 802.11 frame
+    /// Process a 802.11 frame.
     void handle_80211_frame(const Packet &packet);
 
 #ifdef _WIN32
@@ -62,8 +62,10 @@ public:
 protected:
     libusb_context *ctx{};
     libusb_device_handle *devHandle{};
+
     std::shared_ptr<std::thread> usbThread;
     std::unique_ptr<Rtl8812aDevice> rtlDevice;
+
     std::string keyPath;
 
 #ifdef __linux__

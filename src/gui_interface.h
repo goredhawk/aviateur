@@ -154,7 +154,7 @@ public:
     }
 
     static std::vector<DeviceId> GetDeviceList() {
-        return WfbngLink::GetDeviceList();
+        return WfbngLink::get_device_list();
     }
 
     static std::string GetAppDataDir() {
@@ -337,12 +337,12 @@ public:
 
     void UpdateCount() {
         EmitWifiFrameCountUpdated(wifiFrameCount_);
-        EmitWfbFrameCountUpdated(wfbFrameCount_);
+        EmitWfbFrameCountUpdated(wfbngFrameCount_);
         EmitRtpPktCountUpdated(rtpPktCount_);
     }
 
-    long long GetWfbFrameCount() const {
-        return wfbFrameCount_;
+    long long GetWfbngFrameCount() const {
+        return wfbngFrameCount_;
     }
     long long GetRtpPktCount() const {
         return rtpPktCount_;
@@ -425,7 +425,7 @@ public:
     /// Number of received 802.11 frames
     long long wifiFrameCount_ = 0;
     /// Number of received wfb-ng frames
-    long long wfbFrameCount_ = 0;
+    long long wfbngFrameCount_ = 0;
     /// Number of received RTP packets
     long long rtpPktCount_ = 0;
 

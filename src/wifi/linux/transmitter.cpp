@@ -437,7 +437,6 @@ void UsbTransmitter::dumpStats(FILE *fp,
 
 void UsbTransmitter::injectPacket(const uint8_t *buf, const size_t size) {
     if (!rtlDevice_ || rtlDevice_->should_stop) {
-        printf("Main thread exited, cannot send packets");
         throw std::runtime_error("UsbTransmitter: main thread exit, should stop");
     }
 
@@ -470,7 +469,7 @@ void UsbTransmitter::injectPacket(const uint8_t *buf, const size_t size) {
 
     const bool result = rtlDevice_->send_packet(buffer.get(), totalSize);
     if (!result) {
-        printf("Rtl8812aDevice::send_packet failed!");
+        printf("Rtl8812aDevice::send_packet failed!\n");
     }
 
     const uint64_t key = (static_cast<uint64_t>(currentOutput_) << 8) | 0xff;

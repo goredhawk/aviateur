@@ -86,19 +86,16 @@ protected:
         }
 
         // Send payload via socket.
-        sendto(sockfd, reinterpret_cast<const char *>(payload), packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
+        sendto(sockfd, payload, packet_size, 0, (sockaddr *)&saddr, sizeof(saddr));
     }
 
 private:
     AggregatorX(const AggregatorX &);
     AggregatorX &operator=(const AggregatorX &);
-
-    // int sockfd;
-    // struct sockaddr_in saddr;
 };
 #endif
 
-std::vector<DeviceId> WfbngLink::GetDeviceList() {
+std::vector<DeviceId> WfbngLink::get_device_list() {
     std::vector<DeviceId> list;
 
     // Initialize libusb
@@ -107,7 +104,7 @@ std::vector<DeviceId> WfbngLink::GetDeviceList() {
 
     // Get a list of USB devices
     libusb_device **devs;
-    ssize_t count = libusb_get_device_list(find_ctx, &devs);
+    const ssize_t count = libusb_get_device_list(find_ctx, &devs);
     if (count < 0) {
         return list;
     }
@@ -165,7 +162,7 @@ std::vector<DeviceId> WfbngLink::GetDeviceList() {
 
 bool WfbngLink::start(const DeviceId &deviceId, uint8_t channel, int channelWidthMode, const std::string &kPath) {
     GuiInterface::Instance().wifiFrameCount_ = 0;
-    GuiInterface::Instance().wfbFrameCount_ = 0;
+    GuiInterface::Instance().wfbngFrameCount_ = 0;
     GuiInterface::Instance().rtpPktCount_ = 0;
     GuiInterface::Instance().UpdateCount();
 
@@ -480,7 +477,7 @@ void WfbngLink::start_link_quality_thread() {
                     }
                 }
 
-                int fec_lvl = fec_controller.value();
+                const int fec_lvl = fec_controller.value();
                 GuiInterface::Instance().drone_fec_level_ = fec_lvl;
 
                 // Prepare the TX message
@@ -505,11 +502,11 @@ void WfbngLink::start_link_quality_thread() {
 
                 // printf("TX message: %s", message + sizeof(len));
 
-                size_t buf_size = len + sizeof(len);
+                const size_t buf_size = len + sizeof(len);
 
                 // printf("Alink thread sends a packet, size %lu\n", buf_size);
 
-                ssize_t sent =
+                const ssize_t sent =
                     sendto(sock_fd, message, buf_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
                 if (sent < 0) {
                     printf("Failed to send message");
@@ -549,12 +546,12 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
     GuiInterface::Instance().wifiFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
-    RxFrame frame(packet.Data);
+    const RxFrame frame(packet.Data);
     if (!frame.IsValidWfbFrame()) {
         return;
     }
 
-    GuiInterface::Instance().wfbFrameCount_++;
+    GuiInterface::Instance().wfbngFrameCount_++;
     GuiInterface::Instance().UpdateCount();
 
     static uint32_t link_id = 7669206; // sha1 hash of link_domain="default"
@@ -637,6 +634,7 @@ void WfbngLink::handle_80211_frame(const Packet &packet) {
                                          antenna,
                                          rssi);
 #endif
+
         const auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
         GuiInterface::Instance().link_quality_ = map_range(quality.quality, -1024, 1024, 0, 100);
     }
