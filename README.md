@@ -19,26 +19,28 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 > [!NOTE]
 > No MAVLink support.
 
-### Usage
+### How to run
 
-1. (Windows) Download [Zadig](https://zadig.akeo.ie/)
-2. (Windows) Install the libusb driver for your adapter.
+1. (**Windows**) Install the GStreamer runtime (the development installer is not necessary)
+   from [GStreamer](https://gstreamer.freedesktop.org/download/#windows)
+2. (**Windows**) Download [Zadig](https://zadig.akeo.ie/)
+3. (**Windows**) Install the libusb driver for your adapter.
    Go *Options* → *List All Devices*[Screenshot.cpp](../../Downloads/Screenshot.cpp).
    ![](tutorials/zadig1.jpg)
    Select your adapter. Install the driver. Remember the USB ID, we will need it soon.
    ![](tutorials/zadig2.jpg)
-3. (Linux) Go to `/lib/udev/rules.d`, create a new file named `80-my8812au.rules` and add
+4. (**Linux**) Go to `/lib/udev/rules.d`, create a new file named `80-my8812au.rules` and add
    `SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", MODE="0666"` in it.
-4. (Linux) Call `sudo udevadm control --reload-rules`, then reboot (required).
-5. Run Aviateur (on Linux, if you skip step 3 & 4, root privileges are needed to access the adapter).
-6. Select the adapter of the correct USB ID.
-7. Select your drone channel.
-8. Select your WFB-NG key.
-9. *Start* & Fly!
+5. (**Linux**) Call `sudo udevadm control --reload-rules`, then reboot (required).
+6. Run Aviateur (on **Linux**, if you skip step 3 & 4, root privileges are needed to access the adapter).
+7. Select the adapter of the correct USB ID.
+8. Select your drone channel.
+9. Select your WFB-NG key.
+10. *Start* & Fly!
 
 ### Common run issues
 
-* If the application crashes at startup on Windows,
+* If the application crashes at startup on **Windows**,
   install [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version)
   first.
 
@@ -51,7 +53,6 @@ OpenIPC FPV ground station for Windows & Linux. Forked from [fpv4win](https://gi
 
 ### TODOs
 
-- GStreamer backend
 - Ground side OSD
 
 ### How to build on Windows
