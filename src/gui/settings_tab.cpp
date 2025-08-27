@@ -1,6 +1,6 @@
 #include "settings_tab.h"
 
-const std::string AVIATEUR_VERSION = "0.1.3";
+const std::string AVIATEUR_VERSION = "0.1.4";
 
 void open_explorer(const std::string& dir) {
 #ifdef _WIN32
