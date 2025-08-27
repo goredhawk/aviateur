@@ -299,9 +299,12 @@ void PlayerRect::custom_update(double dt) {
     player_->update(dt);
 
     std::string decoder_name;
+#ifdef AVIATEUR_USE_GSTREAMER
     if (GuiInterface::Instance().use_gstreamer_) {
         decoder_name = gst_decoder_->decoder_name_;
-    } else {
+    } else
+#endif
+    {
         auto hw_decoder_name = player_->getHwDecoderName();
         decoder_name = hw_decoder_name.has_value() ? hw_decoder_name.value() : std::string(FTR("off"));
     }

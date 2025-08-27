@@ -6,8 +6,8 @@ void open_explorer(const std::string& dir) {
 #ifdef _WIN32
     ShellExecuteA(NULL, "open", dir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 #else
-    std::string cmd = "xdg-open \"" + dir + "\"";
-    system(cmd.c_str());
+    const std::string cmd = "xdg-open " + dir;
+    std::system(cmd.c_str());
 #endif
 }
 
@@ -173,11 +173,28 @@ void SettingsContainer::custom_ready() {
 #endif
 
     {
+        auto button = std::make_shared<revector::Button>();
+
+        button->container_sizing.flag_h = revector::ContainerSizingFlag::ShrinkCenter;
+        button->container_sizing.expand_v = true;
+        button->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkEnd;
+        vbox_container->add_child(button);
+        auto icon = std::make_shared<revector::VectorImage>(revector::get_asset_dir("icon-github.svg"));
+        button->set_icon_normal(icon);
+        button->set_flat(true);
+        button->set_text("");
+
+        auto callback = [] {
+            const std::string url = "https://github.com/OpenIPC/aviateur";
+            open_explorer(url);
+        };
+        button->connect_signal("triggered", callback);
+    }
+
+    {
         auto version_label = std::make_shared<revector::Label>();
         version_label->container_sizing.expand_h = true;
         version_label->container_sizing.flag_h = revector::ContainerSizingFlag::Fill;
-        version_label->container_sizing.expand_v = true;
-        version_label->container_sizing.flag_v = revector::ContainerSizingFlag::ShrinkEnd;
         vbox_container->add_child(version_label);
         version_label->set_text(FTR("version") + " " + AVIATEUR_VERSION);
     }
