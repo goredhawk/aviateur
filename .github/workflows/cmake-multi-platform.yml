@@ -23,29 +23,18 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ ubuntu-latest, windows-2025 ]
+        os: [ ubuntu-24.04]
         build_type: [ Release ]
-        c_compiler: [ gcc, clang, cl ]
+        c_compiler: [ gcc]
         include:
-          - os: windows-2025
-            c_compiler: cl
-            cpp_compiler: cl
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-        exclude:
-          - os: windows-2025
-            c_compiler: gcc
-          - os: windows-2025
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set reusable strings
         # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -53,6 +42,7 @@ jobs:
         shell: bash
         run: |
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+          echo "artifact-name=build-output-${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Install dependency libraries (Windows)
         id: vars
@@ -107,3 +97,17 @@ jobs:
         # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
         run: ctest --build-config ${{ matrix.build_type }}
+
+      - name: List build artifacts
+        working-directory: ${{ steps.strings.outputs.build-output-dir }}
+        run: |
+          echo "Build artifacts:"
+          find . -name "*.so" -o -name "*.a" -o -name "*.exe" -o -name "*.dll" -o -type f -executable | head -20
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.strings.outputs.artifact-name }}
+          path: |
+            ${{ steps.strings.outputs.build-output-dir }}/**
+          retention-days: 30
