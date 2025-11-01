@@ -59,6 +59,7 @@ jobs:
       - name: Install dependency libraries (Linux)
         if: runner.os == 'Linux'
         run: |
+          sudo apt update
           git submodule update --init --recursive
           sudo apt install libusb-1.0-0-dev ffmpeg libsodium-dev libopencv-dev xorg-dev libpcap-dev
           sudo apt install gstreamer1.0-plugins-good gstreamer1.0-nice gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad libgstreamer-plugins-bad1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev glslang-tools libbsd-dev libgl1-mesa-dev libsystemd-dev libx11-dev libx11-xcb-dev libxxf86vm-dev pkg-config gstreamer1.0-libav libglib2.0-dev
